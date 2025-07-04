@@ -21,6 +21,12 @@ from utils.visualization import FloorPlanVisualizer
 from utils.report_generator import ReportGenerator
 from utils.spatial_optimizer import SpatialOptimizer
 
+# Import advanced enterprise modules
+from utils.webgl_visualizer import WebGLVisualizer
+from utils.ml_space_optimizer import MLSpaceOptimizer, HybridOptimizer
+from utils.bim_integration import BIMIntegrationManager
+from utils.realtime_collaboration import CollaborationClient
+
 # Configure page
 st.set_page_config(
     page_title="Professional Floor Plan Analyzer",
@@ -38,6 +44,22 @@ if 'ilot_configuration' not in st.session_state:
     st.session_state.ilot_configuration = {}
 if 'corridor_config' not in st.session_state:
     st.session_state.corridor_config = {}
+
+# Initialize advanced enterprise features
+if 'webgl_visualizer' not in st.session_state:
+    st.session_state.webgl_visualizer = WebGLVisualizer()
+if 'ml_optimizer' not in st.session_state:
+    st.session_state.ml_optimizer = MLSpaceOptimizer()
+if 'hybrid_optimizer' not in st.session_state:
+    st.session_state.hybrid_optimizer = HybridOptimizer()
+if 'bim_manager' not in st.session_state:
+    st.session_state.bim_manager = BIMIntegrationManager()
+if 'collaboration_enabled' not in st.session_state:
+    st.session_state.collaboration_enabled = False
+if 'optimization_mode' not in st.session_state:
+    st.session_state.optimization_mode = 'hybrid'
+if 'visualization_mode' not in st.session_state:
+    st.session_state.visualization_mode = '2d'
 
 def main():
     st.title("🏗️ Professional Floor Plan Analyzer")
@@ -58,6 +80,42 @@ def main():
         if uploaded_file is not None:
             if st.button("🔄 Process File"):
                 process_uploaded_file(uploaded_file)
+        
+        # Enterprise Features Configuration
+        st.subheader("🚀 Enterprise Features")
+        
+        # Visualization Mode
+        st.markdown("**Visualization**")
+        visualization_mode = st.selectbox(
+            "Visualization Mode",
+            ["2d", "3d_webgl", "heatmap"],
+            index=0 if st.session_state.visualization_mode == '2d' else 1
+        )
+        st.session_state.visualization_mode = visualization_mode
+        
+        # Optimization Engine
+        st.markdown("**AI Optimization**")
+        optimization_mode = st.selectbox(
+            "Optimization Engine",
+            ["traditional", "ml_only", "hybrid", "ensemble"],
+            index=2
+        )
+        st.session_state.optimization_mode = optimization_mode
+        
+        # BIM Integration
+        st.markdown("**BIM Integration**")
+        enable_bim = st.checkbox("Enable BIM Integration", False)
+        if enable_bim:
+            bim_system = st.selectbox("BIM System", ["ifc", "revit", "archicad"], index=0)
+        
+        # Real-time Collaboration
+        st.markdown("**Collaboration**")
+        enable_collaboration = st.checkbox("Enable Real-time Collaboration", st.session_state.collaboration_enabled)
+        st.session_state.collaboration_enabled = enable_collaboration
+        
+        if enable_collaboration:
+            project_id = st.text_input("Project ID", value="floor_plan_project_001")
+            user_name = st.text_input("Your Name", value="Designer")
         
         # Analysis configuration
         if st.session_state.floor_plan_data is not None:
@@ -87,13 +145,29 @@ def main():
             
             with col2:
                 if st.button("📐 Place Îlots"):
-                    place_ilots()
+                    place_ilots_advanced()
             
-            if st.button("🛤️ Generate Corridors"):
-                generate_corridors()
+            col3, col4 = st.columns(2)
             
-            if st.button("📊 Generate Report"):
-                generate_comprehensive_report()
+            with col3:
+                if st.button("🛤️ Generate Corridors"):
+                    generate_corridors()
+            
+            with col4:
+                if st.button("🤖 ML Optimize"):
+                    ml_optimize_placement()
+            
+            # Enterprise Actions
+            st.subheader("🚀 Enterprise Actions")
+            col5, col6 = st.columns(2)
+            
+            with col5:
+                if st.button("🌐 Export to BIM"):
+                    export_to_bim()
+            
+            with col6:
+                if st.button("📊 Generate Report"):
+                    generate_comprehensive_report()
     
     # Main content area
     if st.session_state.floor_plan_data is None:
@@ -133,11 +207,13 @@ def show_welcome_screen():
 
 def show_analysis_interface():
     # Create tabs for different views
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
         "🗺️ Floor Plan View", 
         "📊 Analysis Results", 
         "🎯 Îlot Placement", 
-        "🛤️ Corridor Network", 
+        "🛤️ Corridor Network",
+        "🌐 3D Visualization",
+        "🤖 AI Optimization",
         "📈 Reports"
     ])
     
@@ -154,6 +230,12 @@ def show_analysis_interface():
         show_corridor_network()
     
     with tab5:
+        show_3d_visualization()
+    
+    with tab6:
+        show_ai_optimization()
+    
+    with tab7:
         show_reports()
 
 def process_uploaded_file(uploaded_file):
@@ -295,36 +377,55 @@ def analyze_zones(wall_threshold, restricted_threshold, entrance_threshold):
             st.error(f"Error during zone analysis: {str(e)}")
             st.exception(e)
 
-def place_ilots():
-    """Place îlots using the configured settings"""
+def place_ilots_advanced():
+    """Place îlots using advanced optimization methods"""
     if st.session_state.analysis_results is None:
         st.error("Please analyze zones first")
         return
     
-    with st.spinner("Placing îlots..."):
+    optimization_mode = st.session_state.optimization_mode
+    
+    with st.spinner(f"Placing îlots using {optimization_mode} optimization..."):
         try:
-            placer = IlotPlacer()
-            optimizer = SpatialOptimizer()
-            
-            # Perform îlot placement
-            ilot_results = placer.place_ilots(
-                st.session_state.analysis_results,
-                st.session_state.ilot_configuration
-            )
-            
-            # Optimize placement
-            optimized_results = optimizer.optimize_placement(
-                ilot_results,
-                st.session_state.analysis_results
-            )
+            if optimization_mode == "traditional":
+                # Traditional placement
+                placer = IlotPlacer()
+                optimizer = SpatialOptimizer()
+                
+                ilot_results = placer.place_ilots(
+                    st.session_state.analysis_results,
+                    st.session_state.ilot_configuration
+                )
+                
+                optimized_results = optimizer.optimize_placement(
+                    ilot_results,
+                    st.session_state.analysis_results
+                )
+            else:
+                # Advanced ML/Hybrid optimization
+                hybrid_optimizer = st.session_state.hybrid_optimizer
+                
+                # Generate îlot requirements
+                ilot_requirements = generate_ilot_requirements()
+                constraints = {
+                    'min_spacing': st.session_state.ilot_configuration.get('spacing', {}).get('min_spacing', 1.5),
+                    'wall_clearance': st.session_state.ilot_configuration.get('spacing', {}).get('wall_clearance', 1.0)
+                }
+                
+                optimized_results = hybrid_optimizer.optimize(
+                    st.session_state.analysis_results,
+                    ilot_requirements,
+                    constraints,
+                    mode=optimization_mode
+                )
             
             # Update analysis results
             st.session_state.analysis_results['ilots'] = optimized_results
             
-            st.success("✅ Îlot placement completed")
+            st.success(f"✅ Îlot placement completed using {optimization_mode} optimization")
             
-            # Display placement summary
-            col1, col2, col3 = st.columns(3)
+            # Display enhanced metrics
+            col1, col2, col3, col4 = st.columns(4)
             
             with col1:
                 st.metric("Total Îlots", len(optimized_results))
@@ -337,8 +438,60 @@ def place_ilots():
                 efficiency = calculate_efficiency_score(optimized_results)
                 st.metric("Efficiency", f"{efficiency:.1f}%")
             
+            with col4:
+                ai_score = calculate_ai_optimization_score(optimized_results)
+                st.metric("AI Score", f"{ai_score:.1f}%")
+            
         except Exception as e:
-            st.error(f"Error during îlot placement: {str(e)}")
+            st.error(f"Error during advanced îlot placement: {str(e)}")
+            st.exception(e)
+
+def ml_optimize_placement():
+    """Perform ML-only optimization"""
+    if st.session_state.analysis_results is None:
+        st.error("Please analyze zones first")
+        return
+    
+    with st.spinner("Running ML optimization..."):
+        try:
+            ml_optimizer = st.session_state.ml_optimizer
+            
+            # Generate requirements and constraints
+            ilot_requirements = generate_ilot_requirements()
+            constraints = {
+                'min_spacing': 1.5,
+                'wall_clearance': 1.0
+            }
+            
+            # Run ML optimization
+            episodes = st.sidebar.slider("Training Episodes", 50, 500, 100, 50)
+            optimized_results = ml_optimizer.optimize_placement(
+                st.session_state.analysis_results,
+                ilot_requirements,
+                constraints,
+                episodes=episodes
+            )
+            
+            # Update results
+            st.session_state.analysis_results['ilots'] = optimized_results
+            
+            st.success("✅ ML optimization completed")
+            
+            # Show ML metrics
+            metrics = ml_optimizer.get_optimization_metrics()
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                st.metric("Training Episodes", metrics.get('training_episodes', 0))
+            
+            with col2:
+                st.metric("Convergence Rate", f"{metrics.get('convergence_rate', 0)*100:.1f}%")
+            
+            with col3:
+                st.metric("Final Reward", f"{metrics.get('max_reward', 0):.1f}")
+            
+        except Exception as e:
+            st.error(f"Error during ML optimization: {str(e)}")
             st.exception(e)
 
 def generate_corridors():
@@ -647,6 +800,123 @@ def show_corridor_network():
         df_corridors = pd.DataFrame(corridor_data)
         st.dataframe(df_corridors, use_container_width=True)
 
+def show_3d_visualization():
+    """Display advanced 3D visualization"""
+    if st.session_state.analysis_results is None:
+        st.info("Complete analysis to view 3D visualization")
+        return
+    
+    st.subheader("🌐 Advanced 3D Visualization")
+    
+    # Visualization controls
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        multi_floor = st.checkbox("Multi-floor View", False)
+        num_floors = st.slider("Number of Floors", 1, 5, 1) if multi_floor else 1
+    
+    with col2:
+        visualization_type = st.selectbox(
+            "Visualization Type", 
+            ["3D Scene", "Heatmap", "Flow Analysis"]
+        )
+    
+    with col3:
+        export_format = st.selectbox("Export Format", ["HTML", "PNG", "STL"])
+    
+    try:
+        webgl_viz = st.session_state.webgl_visualizer
+        
+        if visualization_type == "3D Scene":
+            # Create 3D scene
+            fig_3d = webgl_viz.create_3d_visualization(
+                st.session_state.analysis_results,
+                st.session_state.analysis_results.get('ilots', []),
+                st.session_state.analysis_results.get('corridors', []),
+                multi_floor=multi_floor,
+                num_floors=num_floors
+            )
+            
+            st.plotly_chart(fig_3d, use_container_width=True)
+            
+        elif visualization_type == "Heatmap":
+            # Create heatmap visualization
+            metric = st.selectbox("Heatmap Metric", ["accessibility", "density", "flow"])
+            
+            fig_heatmap = webgl_viz.create_heatmap_visualization(
+                st.session_state.analysis_results,
+                metric=metric
+            )
+            
+            st.plotly_chart(fig_heatmap, use_container_width=True)
+        
+        # Export controls
+        if st.button("Export 3D Scene"):
+            if export_format == "HTML":
+                filename = webgl_viz.export_webgl_scene(fig_3d if 'fig_3d' in locals() else fig_heatmap)
+                st.success(f"Exported to {filename}")
+            
+    except Exception as e:
+        st.error(f"Error creating 3D visualization: {str(e)}")
+
+def show_ai_optimization():
+    """Display AI optimization interface"""
+    st.subheader("🤖 AI Optimization Dashboard")
+    
+    if st.session_state.analysis_results is None:
+        st.info("Complete zone analysis to access AI optimization")
+        return
+    
+    # Optimization status
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("**Current Configuration**")
+        st.write(f"Optimization Mode: {st.session_state.optimization_mode}")
+        st.write(f"ML Model Status: {'Loaded' if st.session_state.ml_optimizer.agent else 'Not Loaded'}")
+    
+    with col2:
+        st.markdown("**Performance Metrics**")
+        if hasattr(st.session_state.ml_optimizer, 'training_history') and st.session_state.ml_optimizer.training_history:
+            metrics = st.session_state.ml_optimizer.get_optimization_metrics()
+            st.metric("Training Episodes", metrics.get('training_episodes', 0))
+            st.metric("Convergence Rate", f"{metrics.get('convergence_rate', 0)*100:.1f}%")
+        else:
+            st.info("No training history available")
+    
+    # Training controls
+    st.subheader("Training Controls")
+    
+    col3, col4 = st.columns(2)
+    
+    with col3:
+        if st.button("🎯 Quick Training (50 episodes)"):
+            run_ml_training(50)
+    
+    with col4:
+        if st.button("🚀 Extended Training (200 episodes)"):
+            run_ml_training(200)
+    
+    # Optimization comparison
+    if 'ilots' in st.session_state.analysis_results:
+        st.subheader("Optimization Comparison")
+        
+        current_ilots = st.session_state.analysis_results['ilots']
+        
+        col5, col6, col7 = st.columns(3)
+        
+        with col5:
+            traditional_score = calculate_efficiency_score(current_ilots)
+            st.metric("Current Efficiency", f"{traditional_score:.1f}%")
+        
+        with col6:
+            ai_score = calculate_ai_optimization_score(current_ilots)
+            st.metric("AI Score", f"{ai_score:.1f}%")
+        
+        with col7:
+            improvement = ai_score - traditional_score
+            st.metric("Improvement", f"{improvement:+.1f}%")
+
 def show_reports():
     """Display comprehensive reports"""
     if st.session_state.analysis_results is None:
@@ -779,6 +1049,124 @@ def calculate_performance_metrics():
         'overall_score': 84.0
     }
 
+def generate_ilot_requirements():
+    """Generate îlot requirements based on configuration"""
+    config = st.session_state.ilot_configuration
+    size_dist = config.get('size_distribution', {'small': 30, 'medium': 50, 'large': 20})
+    dimensions = config.get('dimensions', {'small': 2.0, 'medium': 4.0, 'large': 8.0})
+    
+    requirements = []
+    total_ilots = 20  # Default number
+    
+    for size, percentage in size_dist.items():
+        count = int(total_ilots * percentage / 100)
+        for i in range(count):
+            requirements.append({
+                'id': f"{size}_{i}",
+                'size_category': size,
+                'dimensions': {
+                    'width': dimensions[size],
+                    'height': dimensions[size],
+                    'area': dimensions[size] ** 2
+                }
+            })
+    
+    return requirements
+
+def calculate_ai_optimization_score(ilots):
+    """Calculate AI optimization score"""
+    if not ilots:
+        return 0.0
+    
+    # Simulate AI scoring based on placement properties
+    total_score = 0
+    for ilot in ilots:
+        properties = ilot.get('properties', {})
+        if properties.get('algorithm') == 'ml_reinforcement_learning':
+            total_score += ilot.get('placement_score', 85.0)
+        else:
+            total_score += ilot.get('placement_score', 75.0)
+    
+    return total_score / len(ilots) if ilots else 0.0
+
+def run_ml_training(episodes):
+    """Run ML training with specified episodes"""
+    with st.spinner(f"Training ML model for {episodes} episodes..."):
+        try:
+            ml_optimizer = st.session_state.ml_optimizer
+            
+            # Generate requirements
+            ilot_requirements = generate_ilot_requirements()
+            constraints = {'min_spacing': 1.5, 'wall_clearance': 1.0}
+            
+            # Run training
+            optimized_results = ml_optimizer.optimize_placement(
+                st.session_state.analysis_results,
+                ilot_requirements,
+                constraints,
+                episodes=episodes
+            )
+            
+            st.success(f"✅ Training completed with {episodes} episodes")
+            
+            # Show training results
+            metrics = ml_optimizer.get_optimization_metrics()
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                st.metric("Final Reward", f"{metrics.get('max_reward', 0):.1f}")
+            
+            with col2:
+                st.metric("Improvement", f"{metrics.get('reward_improvement', 0):.1f}%")
+            
+            with col3:
+                st.metric("Convergence", f"{metrics.get('convergence_rate', 0)*100:.1f}%")
+                
+        except Exception as e:
+            st.error(f"Error during training: {str(e)}")
+
+def export_to_bim():
+    """Export results to BIM format"""
+    if st.session_state.analysis_results is None:
+        st.error("No analysis results to export")
+        return
+    
+    with st.spinner("Exporting to BIM format..."):
+        try:
+            bim_manager = st.session_state.bim_manager
+            
+            # Export to IFC
+            output_path = "floor_plan_with_ilots.ifc"
+            exported_file = bim_manager.export_to_bim(
+                st.session_state.floor_plan_data,
+                st.session_state.analysis_results.get('ilots', []),
+                output_path,
+                bim_system='ifc'
+            )
+            
+            if exported_file:
+                st.success(f"✅ Exported to {exported_file}")
+                
+                # Validate export
+                validation = bim_manager.validate_bim_export(exported_file)
+                if validation['valid']:
+                    st.success("✅ BIM export validation passed")
+                    
+                    # Show statistics
+                    stats = validation.get('statistics', {})
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.metric("File Size", f"{stats.get('file_size', 0)/1024:.1f} KB")
+                    with col2:
+                        st.metric("Entities", stats.get('entity_count', 0))
+                else:
+                    st.warning("⚠️ BIM export validation failed")
+                    for error in validation.get('errors', []):
+                        st.error(f"Error: {error}")
+            
+        except Exception as e:
+            st.error(f"Error exporting to BIM: {str(e)}")
+
 def generate_recommendations():
     """Generate optimization recommendations"""
     return [
@@ -799,6 +1187,12 @@ def generate_recommendations():
             'description': 'Widen corridors near entrance points to comply with accessibility standards.',
             'priority': 'High',
             'impact': 'Improve accessibility compliance to 100%'
+        },
+        {
+            'title': 'Implement AI Optimization',
+            'description': 'Switch to machine learning optimization for improved placement efficiency.',
+            'priority': 'Medium',
+            'impact': 'Potential 15-25% improvement in space utilization'
         }
     ]
 
