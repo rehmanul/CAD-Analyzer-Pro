@@ -111,10 +111,16 @@ class DXFParser:
                     else:
                         dwg_version = "Unknown version"
                 
+                conversion_tools = [
+                    "• AutoCAD: Save As → DXF format",
+                    "• FreeCAD: File → Export → Autodesk DXF",
+                    "• LibreCAD: File → Export → DXF",
+                    "• Online: cloudconvert.com, zamzar.com, or anyconv.com"
+                ]
+                
                 raise Exception(
-                    f"DWG file detected ({dwg_version}). "
-                    f"Please convert to DXF format using AutoCAD, FreeCAD, or LibreCAD. "
-                    f"Online converters are also available at cloudconvert.com or zamzar.com. "
+                    f"DWG file detected ({dwg_version}). This application requires DXF format for processing.\n\n"
+                    f"Quick conversion options:\n" + "\n".join(conversion_tools) + "\n\n"
                     f"Alternatively, try uploading the file in DXF or PDF format."
                 )
 

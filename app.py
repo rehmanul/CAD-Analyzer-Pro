@@ -304,8 +304,31 @@ def process_uploaded_file(uploaded_file):
             st.info(f"Extracted {len(floor_plan_data.get('entities', []))} geometric entities")
             
         except Exception as e:
-            st.error(f"Error processing file: {str(e)}")
-            st.exception(e)
+            error_msg = str(e)
+            if "DWG file detected" in error_msg:
+                st.error("🔄 DWG File Conversion Required")
+                st.markdown("""
+                **Your file is in DWG format, which needs to be converted to DXF first.**
+                
+                **Quick conversion options:**
+                - **AutoCAD**: File → Save As → DXF format
+                - **FreeCAD**: File → Export → Autodesk DXF  
+                - **LibreCAD**: File → Export → DXF
+                - **Online tools**: cloudconvert.com, zamzar.com, anyconv.com
+                
+                **Alternative**: Try uploading your file in PDF format if available.
+                """)
+                
+                # Show the detected DWG version
+                if "AutoCAD" in error_msg:
+                    version_start = error_msg.find("(") + 1
+                    version_end = error_msg.find(")")
+                    if version_start > 0 and version_end > version_start:
+                        version = error_msg[version_start:version_end]
+                        st.info(f"📋 Detected: {version}")
+            else:
+                st.error(f"Error processing file: {error_msg}")
+                st.exception(e)
 
 def configure_ilot_settings():
     """Configure îlot placement settings"""
