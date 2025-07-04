@@ -1617,7 +1617,7 @@ class SpatialOptimizer:
         return True
     
     def _calculate_final_scores(self, ilot: Dict[str, Any], 
-                              constraints: Dict[str, Any]]) -> Dict[str, float]:
+                              constraints: Dict[str, Any]) -> Dict[str, float]:
         """Calculate final scores for optimized îlot"""
         position = ilot.get('position', {})
         dimensions = ilot.get('dimensions', {})
