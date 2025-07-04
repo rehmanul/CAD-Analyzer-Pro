@@ -81,17 +81,49 @@ class DXFParser:
         try:
             logger.info(f"Starting DWG parsing for: {file_path}")
 
-            # Note: For production use, you would need ODA File Converter
-            # or similar tool to convert DWG to DXF
-            # For now, we'll attempt direct parsing with ezdxf
-
-            doc = ezdxf.readfile(file_path)
-            return self.parse_dxf_document(doc)
+            # Try to read as DXF first (some .dwg files are actually DXF)
+            try:
+                doc = ezdxf.readfile(file_path)
+                logger.info("File successfully read as DXF format")
+                return self.parse_dxf_document(doc)
+            except ezdxf.DXFError as dxf_error:
+                logger.warning(f"File is not in DXF format: {str(dxf_error)}")
+                
+                # Check if it's a binary DWG file
+                with open(file_path, 'rb') as f:
+                    header = f.read(6)
+                    if header.startswith(b'AC10'):
+                        dwg_version = "AutoCAD R10/R11"
+                    elif header.startswith(b'AC12'):
+                        dwg_version = "AutoCAD R12/R13/R14"
+                    elif header.startswith(b'AC15'):
+                        dwg_version = "AutoCAD 2000/2002"
+                    elif header.startswith(b'AC18'):
+                        dwg_version = "AutoCAD 2004/2005/2006"
+                    elif header.startswith(b'AC21'):
+                        dwg_version = "AutoCAD 2007/2008/2009"
+                    elif header.startswith(b'AC24'):
+                        dwg_version = "AutoCAD 2010/2011/2012"
+                    elif header.startswith(b'AC27'):
+                        dwg_version = "AutoCAD 2013/2014/2015/2016/2017"
+                    elif header.startswith(b'AC32'):
+                        dwg_version = "AutoCAD 2018/2019/2020/2021/2022/2023/2024"
+                    else:
+                        dwg_version = "Unknown version"
+                
+                raise Exception(
+                    f"DWG file detected ({dwg_version}). "
+                    f"Please convert to DXF format using AutoCAD, FreeCAD, or LibreCAD. "
+                    f"Online converters are also available at cloudconvert.com or zamzar.com. "
+                    f"Alternatively, try uploading the file in DXF or PDF format."
+                )
 
         except Exception as e:
             logger.error(f"Error parsing DWG file: {str(e)}")
-            # Fallback: suggest conversion
-            raise Exception(f"DWG parsing failed. Please convert to DXF format first: {str(e)}")
+            if "DWG file detected" in str(e):
+                raise e
+            else:
+                raise Exception(f"DWG parsing failed. Please convert to DXF format first: {str(e)}")
 
     def parse_pdf(self, file_path: str) -> Dict[str, Any]:
         """Parse PDF file and extract vector graphics"""

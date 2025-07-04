@@ -40,7 +40,18 @@ except ImportError as e:
             return []
 
 from utils.bim_integration import BIMIntegrationManager
-from utils.realtime_collaboration import CollaborationClient
+
+# Import collaboration module optionally
+try:
+    from utils.realtime_collaboration import CollaborationClient
+    COLLABORATION_AVAILABLE = True
+except ImportError as e:
+    st.error(f"Collaboration features not available: {e}")
+    COLLABORATION_AVAILABLE = False
+    # Create dummy class
+    class CollaborationClient:
+        def __init__(self):
+            pass
 
 # Configure page
 st.set_page_config(
@@ -74,7 +85,7 @@ elif 'hybrid_optimizer' not in st.session_state:
 if 'bim_manager' not in st.session_state:
     st.session_state.bim_manager = BIMIntegrationManager()
 if 'collaboration_enabled' not in st.session_state:
-    st.session_state.collaboration_enabled = False
+    st.session_state.collaboration_enabled = False and COLLABORATION_AVAILABLE
 if 'optimization_mode' not in st.session_state:
     st.session_state.optimization_mode = 'hybrid'
 if 'visualization_mode' not in st.session_state:
@@ -129,12 +140,16 @@ def main():
         
         # Real-time Collaboration
         st.markdown("**Collaboration**")
-        enable_collaboration = st.checkbox("Enable Real-time Collaboration", st.session_state.collaboration_enabled)
-        st.session_state.collaboration_enabled = enable_collaboration
-        
-        if enable_collaboration:
-            project_id = st.text_input("Project ID", value="floor_plan_project_001")
-            user_name = st.text_input("Your Name", value="Designer")
+        if COLLABORATION_AVAILABLE:
+            enable_collaboration = st.checkbox("Enable Real-time Collaboration", st.session_state.collaboration_enabled)
+            st.session_state.collaboration_enabled = enable_collaboration
+            
+            if enable_collaboration:
+                project_id = st.text_input("Project ID", value="floor_plan_project_001")
+                user_name = st.text_input("Your Name", value="Designer")
+        else:
+            st.info("💡 Install 'websockets' package to enable collaboration features")
+            st.session_state.collaboration_enabled = False
         
         # Analysis configuration
         if st.session_state.floor_plan_data is not None:
