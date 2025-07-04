@@ -23,7 +23,22 @@ from utils.spatial_optimizer import SpatialOptimizer
 
 # Import advanced enterprise modules
 from utils.webgl_visualizer import WebGLVisualizer
-from utils.ml_space_optimizer import MLSpaceOptimizer, HybridOptimizer
+try:
+    from utils.ml_space_optimizer import MLSpaceOptimizer, HybridOptimizer
+    ML_AVAILABLE = True
+except ImportError as e:
+    st.error(f"ML optimization modules not available: {e}")
+    ML_AVAILABLE = False
+    # Create dummy classes
+    class MLSpaceOptimizer:
+        def optimize_placement(self, *args, **kwargs):
+            return []
+        def get_optimization_metrics(self):
+            return {}
+    class HybridOptimizer:
+        def optimize(self, *args, **kwargs):
+            return []
+
 from utils.bim_integration import BIMIntegrationManager
 from utils.realtime_collaboration import CollaborationClient
 
@@ -48,10 +63,14 @@ if 'corridor_config' not in st.session_state:
 # Initialize advanced enterprise features
 if 'webgl_visualizer' not in st.session_state:
     st.session_state.webgl_visualizer = WebGLVisualizer()
-if 'ml_optimizer' not in st.session_state:
+if 'ml_optimizer' not in st.session_state and ML_AVAILABLE:
     st.session_state.ml_optimizer = MLSpaceOptimizer()
-if 'hybrid_optimizer' not in st.session_state:
+elif 'ml_optimizer' not in st.session_state:
+    st.session_state.ml_optimizer = MLSpaceOptimizer()  # Dummy class
+if 'hybrid_optimizer' not in st.session_state and ML_AVAILABLE:
     st.session_state.hybrid_optimizer = HybridOptimizer()
+elif 'hybrid_optimizer' not in st.session_state:
+    st.session_state.hybrid_optimizer = HybridOptimizer()  # Dummy class
 if 'bim_manager' not in st.session_state:
     st.session_state.bim_manager = BIMIntegrationManager()
 if 'collaboration_enabled' not in st.session_state:
