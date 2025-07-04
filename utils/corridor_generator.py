@@ -1376,7 +1376,7 @@ class CorridorGenerator:
         return non_redundant
     
     def _are_corridors_redundant(self, corridor1: Dict[str, Any], 
-                               corridor2: Dict[str, Any]]) -> bool:
+                               corridor2: Dict[str, Any]) -> bool:
         """Check if two corridors are redundant"""
         # Simple check based on path similarity
         path1 = corridor1['path']
