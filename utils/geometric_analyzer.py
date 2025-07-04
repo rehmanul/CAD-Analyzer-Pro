@@ -611,3 +611,493 @@ class GeometricAnalyzer:
         score = min(100, connectivity_ratio * 100)
         
         return score
+import numpy as np
+import pandas as pd
+from shapely.geometry import Point, LineString, Polygon, MultiPolygon, box
+from shapely.ops import unary_union, voronoi_diagram
+from sklearn.cluster import DBSCAN
+from scipy.spatial import ConvexHull, distance
+import logging
+from typing import Dict, List, Any, Tuple, Optional
+
+logger = logging.getLogger(__name__)
+
+class GeometricAnalyzer:
+    """Advanced geometric analysis for floor plan elements"""
+    
+    def __init__(self):
+        self.wall_thickness_threshold = 0.5
+        self.min_area_threshold = 1.0
+        self.clustering_eps = 2.0
+        self.min_samples = 3
+    
+    def analyze_zones(self, floor_plan_data: Dict[str, Any], 
+                     wall_threshold: float = 0.1,
+                     restricted_threshold: float = 0.8,
+                     entrance_threshold: float = 0.3) -> Dict[str, Any]:
+        """Analyze zones in the floor plan"""
+        logger.info("Starting zone analysis")
+        
+        entities = floor_plan_data.get('entities', [])
+        
+        # Extract different entity types
+        walls = self._extract_walls(entities, wall_threshold)
+        restricted_areas = self._extract_restricted_areas(entities, restricted_threshold)
+        entrances = self._extract_entrances(entities, entrance_threshold)
+        open_spaces = self._extract_open_spaces(entities, walls, restricted_areas)
+        
+        # Perform spatial analysis
+        analysis_results = {
+            'walls': walls,
+            'restricted_areas': restricted_areas,
+            'entrances': entrances,
+            'open_spaces': open_spaces,
+            'spatial_metrics': self._calculate_spatial_metrics(walls, restricted_areas, open_spaces),
+            'connectivity': self._analyze_connectivity(walls, entrances),
+            'accessibility': self._analyze_accessibility(walls, restricted_areas, entrances)
+        }
+        
+        logger.info(f"Zone analysis completed: {len(walls)} walls, {len(restricted_areas)} restricted areas")
+        return analysis_results
+    
+    def _extract_walls(self, entities: List[Dict[str, Any]], threshold: float) -> List[Dict[str, Any]]:
+        """Extract wall entities from floor plan"""
+        walls = []
+        
+        for entity in entities:
+            # Check if entity represents a wall (lines, polylines on wall layers)
+            if self._is_wall_entity(entity, threshold):
+                wall = self._process_wall_entity(entity)
+                if wall:
+                    walls.append(wall)
+        
+        # Merge connected walls
+        merged_walls = self._merge_connected_walls(walls)
+        
+        return merged_walls
+    
+    def _is_wall_entity(self, entity: Dict[str, Any], threshold: float) -> bool:
+        """Determine if entity represents a wall"""
+        entity_type = entity.get('type', '').upper()
+        layer = entity.get('layer', '').lower()
+        color = entity.get('color', [0, 0, 0])
+        
+        # Check entity type
+        if entity_type not in ['LINE', 'POLYLINE', 'LWPOLYLINE']:
+            return False
+        
+        # Check layer name for wall indicators
+        wall_keywords = ['wall', 'mur', 'partition', 'cloison']
+        if any(keyword in layer for keyword in wall_keywords):
+            return True
+        
+        # Check color (dark colors often represent walls)
+        color_intensity = sum(color) / (3 * 255) if isinstance(color, list) else 0
+        if color_intensity < threshold:
+            return True
+        
+        # Check geometry properties
+        geometry = entity.get('geometry', {})
+        if geometry.get('type') == 'line':
+            length = geometry.get('length', 0)
+            if length > 2.0:  # Minimum wall length
+                return True
+        
+        return False
+    
+    def _process_wall_entity(self, entity: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Process individual wall entity"""
+        geometry = entity.get('geometry', {})
+        
+        if geometry.get('type') == 'line':
+            start = geometry.get('start', {})
+            end = geometry.get('end', {})
+            
+            return {
+                'id': f"wall_{len(entity)}",
+                'type': 'wall',
+                'start': start,
+                'end': end,
+                'length': geometry.get('length', 0),
+                'angle': geometry.get('angle', 0),
+                'thickness': self._estimate_wall_thickness(entity),
+                'layer': entity.get('layer', ''),
+                'geometry': LineString([(start.get('x', 0), start.get('y', 0)), 
+                                      (end.get('x', 0), end.get('y', 0))])
+            }
+        
+        elif geometry.get('type') in ['polyline', 'polygon']:
+            points = geometry.get('points', [])
+            if len(points) >= 2:
+                return {
+                    'id': f"wall_{len(entity)}",
+                    'type': 'wall',
+                    'points': points,
+                    'length': geometry.get('length', 0),
+                    'thickness': self._estimate_wall_thickness(entity),
+                    'layer': entity.get('layer', ''),
+                    'geometry': LineString(points) if len(points) >= 2 else None
+                }
+        
+        return None
+    
+    def _estimate_wall_thickness(self, entity: Dict[str, Any]) -> float:
+        """Estimate wall thickness from entity properties"""
+        # Default thickness
+        thickness = 0.2
+        
+        # Check entity properties
+        properties = entity.get('properties', {})
+        if 'thickness' in properties:
+            thickness = properties['thickness']
+        elif 'width' in properties:
+            thickness = properties['width']
+        
+        # Check lineweight
+        lineweight = entity.get('lineweight', 0)
+        if lineweight > 0:
+            thickness = max(0.1, lineweight / 100)
+        
+        return thickness
+    
+    def _merge_connected_walls(self, walls: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Merge connected wall segments"""
+        if not walls:
+            return []
+        
+        merged = []
+        processed = set()
+        
+        for i, wall in enumerate(walls):
+            if i in processed:
+                continue
+            
+            current_wall = wall.copy()
+            processed.add(i)
+            
+            # Find connected walls
+            connected = True
+            while connected:
+                connected = False
+                for j, other_wall in enumerate(walls):
+                    if j in processed:
+                        continue
+                    
+                    if self._are_walls_connected(current_wall, other_wall):
+                        current_wall = self._merge_two_walls(current_wall, other_wall)
+                        processed.add(j)
+                        connected = True
+                        break
+            
+            merged.append(current_wall)
+        
+        return merged
+    
+    def _are_walls_connected(self, wall1: Dict[str, Any], wall2: Dict[str, Any]) -> bool:
+        """Check if two walls are connected"""
+        tolerance = 0.1
+        
+        # Get endpoints
+        if 'start' in wall1 and 'end' in wall1:
+            p1_start = (wall1['start'].get('x', 0), wall1['start'].get('y', 0))
+            p1_end = (wall1['end'].get('x', 0), wall1['end'].get('y', 0))
+        else:
+            return False
+        
+        if 'start' in wall2 and 'end' in wall2:
+            p2_start = (wall2['start'].get('x', 0), wall2['start'].get('y', 0))
+            p2_end = (wall2['end'].get('x', 0), wall2['end'].get('y', 0))
+        else:
+            return False
+        
+        # Check if any endpoints are close
+        points1 = [p1_start, p1_end]
+        points2 = [p2_start, p2_end]
+        
+        for pt1 in points1:
+            for pt2 in points2:
+                dist = distance.euclidean(pt1, pt2)
+                if dist < tolerance:
+                    return True
+        
+        return False
+    
+    def _merge_two_walls(self, wall1: Dict[str, Any], wall2: Dict[str, Any]) -> Dict[str, Any]:
+        """Merge two connected walls"""
+        # Simplified merging - in practice, you'd handle angles and alignment
+        merged = wall1.copy()
+        merged['length'] += wall2.get('length', 0)
+        merged['id'] = f"{wall1['id']}_{wall2['id']}"
+        
+        return merged
+    
+    def _extract_restricted_areas(self, entities: List[Dict[str, Any]], 
+                                threshold: float) -> List[Dict[str, Any]]:
+        """Extract restricted areas from entities"""
+        restricted_areas = []
+        
+        for entity in entities:
+            if self._is_restricted_area(entity, threshold):
+                area = self._process_restricted_area(entity)
+                if area:
+                    restricted_areas.append(area)
+        
+        return restricted_areas
+    
+    def _is_restricted_area(self, entity: Dict[str, Any], threshold: float) -> bool:
+        """Determine if entity represents a restricted area"""
+        layer = entity.get('layer', '').lower()
+        entity_type = entity.get('type', '').upper()
+        
+        # Check layer name
+        restricted_keywords = ['restricted', 'private', 'equipment', 'storage', 'mechanical']
+        if any(keyword in layer for keyword in restricted_keywords):
+            return True
+        
+        # Check entity type
+        if entity_type in ['HATCH', 'SOLID']:
+            return True
+        
+        # Check color (red, blue often indicate restricted areas)
+        color = entity.get('color', [0, 0, 0])
+        if isinstance(color, list) and len(color) >= 3:
+            if color[0] > 200 or color[2] > 200:  # Red or blue
+                return True
+        
+        return False
+    
+    def _process_restricted_area(self, entity: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Process restricted area entity"""
+        geometry = entity.get('geometry', {})
+        
+        if geometry.get('type') in ['polygon', 'hatch']:
+            points = geometry.get('points', [])
+            if len(points) >= 3:
+                polygon = Polygon(points)
+                
+                return {
+                    'id': f"restricted_{len(entity)}",
+                    'type': 'restricted_area',
+                    'points': points,
+                    'area': polygon.area,
+                    'perimeter': polygon.length,
+                    'center': {'x': polygon.centroid.x, 'y': polygon.centroid.y},
+                    'geometry': polygon
+                }
+        
+        return None
+    
+    def _extract_entrances(self, entities: List[Dict[str, Any]], 
+                          threshold: float) -> List[Dict[str, Any]]:
+        """Extract entrance/exit points"""
+        entrances = []
+        
+        for entity in entities:
+            if self._is_entrance(entity, threshold):
+                entrance = self._process_entrance(entity)
+                if entrance:
+                    entrances.append(entrance)
+        
+        return entrances
+    
+    def _is_entrance(self, entity: Dict[str, Any], threshold: float) -> bool:
+        """Determine if entity represents an entrance"""
+        layer = entity.get('layer', '').lower()
+        entity_type = entity.get('type', '').upper()
+        
+        # Check layer name
+        entrance_keywords = ['door', 'entrance', 'exit', 'opening', 'porte']
+        if any(keyword in layer for keyword in entrance_keywords):
+            return True
+        
+        # Check entity type
+        if entity_type in ['INSERT'] and 'door' in entity.get('block_name', '').lower():
+            return True
+        
+        return False
+    
+    def _process_entrance(self, entity: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Process entrance entity"""
+        geometry = entity.get('geometry', {})
+        
+        if geometry.get('type') == 'point':
+            position = geometry.get('point', {})
+            width = geometry.get('width', 0.9)
+            
+            return {
+                'id': f"entrance_{len(entity)}",
+                'type': 'entrance',
+                'position': position,
+                'width': width,
+                'entrance_type': 'door',
+                'geometry': Point(position.get('x', 0), position.get('y', 0))
+            }
+        
+        return None
+    
+    def _extract_open_spaces(self, entities: List[Dict[str, Any]], 
+                           walls: List[Dict[str, Any]],
+                           restricted_areas: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Extract open/usable spaces"""
+        # Create floor plan boundary
+        all_geometries = []
+        
+        # Add wall geometries
+        for wall in walls:
+            if wall.get('geometry'):
+                all_geometries.append(wall['geometry'])
+        
+        if not all_geometries:
+            return []
+        
+        # Create overall boundary using convex hull
+        all_points = []
+        for geom in all_geometries:
+            if hasattr(geom, 'coords'):
+                all_points.extend(list(geom.coords))
+        
+        if len(all_points) < 3:
+            return []
+        
+        try:
+            hull = ConvexHull(all_points)
+            boundary_points = [all_points[i] for i in hull.vertices]
+            floor_boundary = Polygon(boundary_points)
+        except:
+            # Fallback to bounding box
+            bounds = self._calculate_bounds_from_points(all_points)
+            floor_boundary = box(bounds['min_x'], bounds['min_y'], 
+                               bounds['max_x'], bounds['max_y'])
+        
+        # Subtract restricted areas
+        usable_area = floor_boundary
+        for restricted in restricted_areas:
+            if restricted.get('geometry'):
+                try:
+                    usable_area = usable_area.difference(restricted['geometry'])
+                except:
+                    continue
+        
+        # Create open space zones using Voronoi tessellation
+        open_spaces = []
+        
+        if isinstance(usable_area, Polygon):
+            center = usable_area.centroid
+            open_spaces.append({
+                'id': 'open_space_0',
+                'type': 'open_space',
+                'area': usable_area.area,
+                'usable_area': usable_area.area * 0.8,  # Account for circulation
+                'center': {'x': center.x, 'y': center.y},
+                'shape': 'polygon',
+                'geometry': usable_area
+            })
+        elif isinstance(usable_area, MultiPolygon):
+            for i, poly in enumerate(usable_area.geoms):
+                if poly.area > self.min_area_threshold:
+                    center = poly.centroid
+                    open_spaces.append({
+                        'id': f'open_space_{i}',
+                        'type': 'open_space',
+                        'area': poly.area,
+                        'usable_area': poly.area * 0.8,
+                        'center': {'x': center.x, 'y': center.y},
+                        'shape': 'polygon',
+                        'geometry': poly
+                    })
+        
+        return open_spaces
+    
+    def _calculate_bounds_from_points(self, points: List[Tuple[float, float]]) -> Dict[str, float]:
+        """Calculate bounding box from points"""
+        if not points:
+            return {'min_x': 0, 'min_y': 0, 'max_x': 0, 'max_y': 0}
+        
+        x_coords = [p[0] for p in points]
+        y_coords = [p[1] for p in points]
+        
+        return {
+            'min_x': min(x_coords),
+            'min_y': min(y_coords),
+            'max_x': max(x_coords),
+            'max_y': max(y_coords)
+        }
+    
+    def _calculate_spatial_metrics(self, walls: List[Dict[str, Any]], 
+                                 restricted_areas: List[Dict[str, Any]],
+                                 open_spaces: List[Dict[str, Any]]) -> Dict[str, float]:
+        """Calculate spatial metrics"""
+        total_wall_length = sum(wall.get('length', 0) for wall in walls)
+        total_restricted_area = sum(area.get('area', 0) for area in restricted_areas)
+        total_open_area = sum(space.get('area', 0) for space in open_spaces)
+        total_usable_area = sum(space.get('usable_area', 0) for space in open_spaces)
+        
+        total_area = total_restricted_area + total_open_area
+        
+        return {
+            'total_wall_length': total_wall_length,
+            'total_area': total_area,
+            'restricted_area': total_restricted_area,
+            'open_area': total_open_area,
+            'usable_area': total_usable_area,
+            'space_efficiency': total_usable_area / total_area if total_area > 0 else 0,
+            'wall_density': total_wall_length / total_area if total_area > 0 else 0
+        }
+    
+    def _analyze_connectivity(self, walls: List[Dict[str, Any]], 
+                            entrances: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Analyze connectivity between spaces"""
+        return {
+            'entrance_count': len(entrances),
+            'wall_intersections': self._count_wall_intersections(walls),
+            'connectivity_score': min(1.0, len(entrances) / max(1, len(walls) * 0.1))
+        }
+    
+    def _count_wall_intersections(self, walls: List[Dict[str, Any]]) -> int:
+        """Count wall intersections"""
+        intersections = 0
+        
+        for i, wall1 in enumerate(walls):
+            for j, wall2 in enumerate(walls[i+1:], i+1):
+                if self._walls_intersect(wall1, wall2):
+                    intersections += 1
+        
+        return intersections
+    
+    def _walls_intersect(self, wall1: Dict[str, Any], wall2: Dict[str, Any]) -> bool:
+        """Check if two walls intersect"""
+        geom1 = wall1.get('geometry')
+        geom2 = wall2.get('geometry')
+        
+        if geom1 and geom2:
+            try:
+                return geom1.intersects(geom2)
+            except:
+                return False
+        
+        return False
+    
+    def _analyze_accessibility(self, walls: List[Dict[str, Any]], 
+                             restricted_areas: List[Dict[str, Any]],
+                             entrances: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Analyze accessibility metrics"""
+        entrance_width_sum = sum(entrance.get('width', 0) for entrance in entrances)
+        avg_entrance_width = entrance_width_sum / len(entrances) if entrances else 0
+        
+        # Calculate accessibility score based on entrance availability and width
+        accessibility_score = 0.0
+        if entrances:
+            # Base score from number of entrances
+            entrance_score = min(1.0, len(entrances) / 3.0)  # Optimal: 3+ entrances
+            
+            # Width score (minimum 0.8m for accessibility)
+            width_score = min(1.0, avg_entrance_width / 0.8) if avg_entrance_width > 0 else 0
+            
+            accessibility_score = (entrance_score + width_score) / 2
+        
+        return {
+            'entrance_count': len(entrances),
+            'average_entrance_width': avg_entrance_width,
+            'accessibility_score': accessibility_score,
+            'ada_compliant': avg_entrance_width >= 0.8 and len(entrances) >= 1
+        }
