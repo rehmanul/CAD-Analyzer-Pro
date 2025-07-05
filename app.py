@@ -30,6 +30,11 @@ try:
 except ImportError:
     skimage = None
 
+# Configure Streamlit to run on correct port
+import os
+os.environ['STREAMLIT_SERVER_PORT'] = '5000'
+os.environ['STREAMLIT_SERVER_ADDRESS'] = '0.0.0.0'
+
 # Configure page
 st.set_page_config(
     page_title="Professional Floor Plan Analyzer - Enhanced",
