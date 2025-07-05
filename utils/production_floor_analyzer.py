@@ -8,7 +8,7 @@ import numpy as np
 from shapely.geometry import Polygon, Point, LineString
 from shapely.ops import unary_union
 import ezdxf
-from ezdxf.addons.drawing import matplotlib_backend
+from ezdxf import recover
 import fitz  # PyMuPDF
 from typing import Dict, List, Tuple, Optional, Any
 import json
@@ -34,7 +34,11 @@ class ProductionFloorAnalyzer:
                 f.write(file_content)
             
             # Load DXF document
-            doc = ezdxf.readfile(temp_path)
+            try:
+                doc = ezdxf.readfile(temp_path)
+            except Exception as e:
+                # Try with audit mode for corrupted files
+                doc = ezdxf.read(temp_path)
             
             # Extract entities by layer and type
             entities = []
