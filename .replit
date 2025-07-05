@@ -2,7 +2,7 @@ modules = ["python-3.11"]
 
 [nix]
 channel = "stable-24_05"
-packages = ["freetype", "geos", "glibcLocales", "gumbo", "harfbuzz", "jbig2dec", "libGL", "libGLU", "libjpeg_turbo", "libxcrypt", "mupdf", "openjpeg", "pkg-config", "swig", "xcbuild", "xsimd"]
+packages = ["freetype", "geos", "glibcLocales", "gumbo", "harfbuzz", "jbig2dec", "lcms2", "libGL", "libGLU", "libimagequant", "libjpeg", "libjpeg_turbo", "libtiff", "libwebp", "libxcrypt", "mupdf", "openjpeg", "pkg-config", "swig", "tcl", "tk", "xcbuild", "xsimd", "zlib"]
 
 [deployment]
 deploymentTarget = "autoscale"
@@ -46,6 +46,10 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "streamlit run app.py --server.port 5000 --server.address 0.0.0.0"
+
+[[ports]]
+localPort = 5000
+externalPort = 80
 
 [[ports]]
 localPort = 8080
