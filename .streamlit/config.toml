@@ -1,14 +1,20 @@
 [server]
-headless = true
+port = 8080
 address = "0.0.0.0"
-port = 5000
-maxUploadSize = 100
+headless = true
+enableCORS = false
+enableXsrfProtection = false
+maxUploadSize = 200
+
+[client]
+showErrorDetails = true
+toolbarMode = "minimal"
+
+[browser]
+gatherUsageStats = false
 
 [theme]
 primaryColor = "#2E86AB"
 backgroundColor = "#FFFFFF"
 secondaryBackgroundColor = "#F0F2F6"
-textColor = "#2C3E50"
-
-[browser]
-gatherUsageStats = false
+textColor = "#262730"
