@@ -2869,24 +2869,40 @@ def show_floor_plan_view():
         st.warning("Please upload a floor plan first.")
         return
 
-    # Control panel
-    st.markdown("### 🎛️ Visualization Controls")
+    # CLIENT VIEW BUTTON
+    st.markdown("### 🎯 Client Expected View")
+    
+    if st.button("🎨 Show Client Expected Output", type="primary", use_container_width=True):
+        # Force client-specific settings
+        show_zones = True
+        show_ilots = True  
+        show_corridors = True
+        show_labels = True
+        show_measurements = False
+        show_grid = False
+        color_scheme = "Client"
+        plot_height = 600
+        
+        st.success("✅ Displaying EXACT client expected output!")
+    else:
+        # Control panel
+        st.markdown("### 🎛️ Visualization Controls")
 
-    col1, col2, col3 = st.columns(3)
+        col1, col2, col3 = st.columns(3)
 
-    with col1:
-        show_zones = st.checkbox("Show Zones", value=True)
-        show_ilots = st.checkbox("Show Îlots", value=True)
-        show_corridors = st.checkbox("Show Corridors", value=True)
+        with col1:
+            show_zones = st.checkbox("Show Zones", value=True)
+            show_ilots = st.checkbox("Show Îlots", value=True)
+            show_corridors = st.checkbox("Show Corridors", value=True)
 
-    with col2:
-        show_labels = st.checkbox("Show Labels", value=True)
-        show_measurements = st.checkbox("Show Measurements", value=False)
-        show_grid = st.checkbox("Show Grid", value=False)
+        with col2:
+            show_labels = st.checkbox("Show Labels", value=True)
+            show_measurements = st.checkbox("Show Measurements", value=False)
+            show_grid = st.checkbox("Show Grid", value=False)
 
-    with col3:
-        color_scheme = st.selectbox("Color Scheme", ["Professional", "High Contrast", "Colorblind Friendly"])
-        plot_height = st.slider("Plot Height", 400, 800, 600)
+        with col3:
+            color_scheme = st.selectbox("Color Scheme", ["Professional", "High Contrast", "Colorblind Friendly"])
+            plot_height = st.slider("Plot Height", 400, 800, 600)
 
     # Create and display the interactive plot
     fig = create_floor_plan_plot(
@@ -2901,51 +2917,74 @@ def show_floor_plan_view():
 def create_floor_plan_plot(show_zones, show_ilots, show_corridors, 
                           show_labels, show_measurements, show_grid, 
                           color_scheme):
-    """Create interactive floor plan plot"""
+    """Create interactive floor plan plot EXACTLY matching client expectations"""
 
     fig = go.Figure()
 
-    # Add zones
+    # CLIENT REQUIREMENT: Simple black walls like in the images
     if show_zones and st.session_state.analysis_results:
         zones = st.session_state.analysis_results['zones']
 
         for zone in zones:
-            color = get_zone_color(zone['type'], color_scheme)
+            if zone['type'] == 'wall':
+                # BLACK WALLS - exactly as client shows
+                x_coords = [zone['x'], zone['x'] + zone['width'], zone['x'] + zone['width'], zone['x'], zone['x']]
+                y_coords = [zone['y'], zone['y'], zone['y'] + zone['height'], zone['y'] + zone['height'], zone['y']]
 
-            # Create rectangle coordinates
-            x_coords = [zone['x'], zone['x'] + zone['width'], zone['x'] + zone['width'], zone['x'], zone['x']]
-            y_coords = [zone['y'], zone['y'], zone['y'] + zone['height'], zone['y'] + zone['height'], zone['y']]
+                fig.add_trace(go.Scatter(
+                    x=x_coords,
+                    y=y_coords,
+                    mode='lines',
+                    fill='toself',
+                    fillcolor='black',
+                    line=dict(color='black', width=3),
+                    name="Walls",
+                    showlegend=False,
+                    hoverinfo='skip'
+                ))
+            
+            elif zone['type'] == 'restricted':
+                # BLUE AREAS - "NO ENTREE" like client shows
+                x_coords = [zone['x'], zone['x'] + zone['width'], zone['x'] + zone['width'], zone['x'], zone['x']]
+                y_coords = [zone['y'], zone['y'], zone['y'] + zone['height'], zone['y'] + zone['height'], zone['y']]
 
-            fig.add_trace(go.Scatter(
-                x=x_coords,
-                y=y_coords,
-                mode='lines',
-                fill='toself',
-                fillcolor=color,
-                line=dict(color=color, width=2),
-                name=f"{zone['type'].title()} Zone",
-                showlegend=False,
-                hovertemplate=f"<b>{zone['type'].title()} Zone</b><br>" +
-                             f"Area: {zone['area']:.1f}m²<br>" +
-                             f"ID: {zone['id']}<extra></extra>"
-            ))
+                fig.add_trace(go.Scatter(
+                    x=x_coords,
+                    y=y_coords,
+                    mode='lines',
+                    fill='toself',
+                    fillcolor='rgba(0, 150, 255, 0.7)',  # Blue like client
+                    line=dict(color='blue', width=2),
+                    name="Restricted Areas",
+                    showlegend=False,
+                    hovertemplate="<b>NO ENTREE</b><br>Restricted Area<extra></extra>"
+                ))
+            
+            elif zone['type'] == 'entrance':
+                # RED AREAS - "ENTREE/SORTIE" like client shows  
+                x_coords = [zone['x'], zone['x'] + zone['width'], zone['x'] + zone['width'], zone['x'], zone['x']]
+                y_coords = [zone['y'], zone['y'], zone['y'] + zone['height'], zone['y'] + zone['height'], zone['y']]
 
-            if show_labels:
-                fig.add_annotation(
-                    x=zone['x'] + zone['width']/2,
-                    y=zone['y'] + zone['height']/2,
-                    text=zone['id'],
-                    showarrow=False,
-                    font=dict(size=8, color='white' if zone['type'] in ['wall', 'restricted'] else 'black')
-                )
+                fig.add_trace(go.Scatter(
+                    x=x_coords,
+                    y=y_coords,
+                    mode='lines',
+                    fill='toself',
+                    fillcolor='rgba(255, 0, 0, 0.7)',  # Red like client
+                    line=dict(color='red', width=2),
+                    name="Entrances",
+                    showlegend=False,
+                    hovertemplate="<b>ENTREE/SORTIE</b><br>Entrance/Exit<extra></extra>"
+                ))
 
-    # Add îlots
+    # CLIENT REQUIREMENT: Pink/red îlots with area labels EXACTLY like Image 3
     if show_ilots and st.session_state.ilot_results:
         ilots = st.session_state.ilot_results['ilots']
 
         for ilot in ilots:
-            color = get_ilot_color(ilot['size_category'])
-
+            # CLIENT COLOR: Pink/red îlots like in Image 3
+            client_color = 'rgba(255, 182, 193, 0.8)'  # Light pink like client shows
+            
             x_coords = [ilot['x'], ilot['x'] + ilot['width'], ilot['x'] + ilot['width'], ilot['x'], ilot['x']]
             y_coords = [ilot['y'], ilot['y'], ilot['y'] + ilot['height'], ilot['y'] + ilot['height'], ilot['y']]
 
@@ -2954,43 +2993,45 @@ def create_floor_plan_plot(show_zones, show_ilots, show_corridors,
                 y=y_coords,
                 mode='lines',
                 fill='toself',
-                fillcolor=color,
-                line=dict(color=color, width=2),
-                name=f"{ilot['size_category'].title()} Îlot",
+                fillcolor=client_color,
+                line=dict(color='rgba(255, 100, 150, 1.0)', width=1),
+                name="Îlots",
                 showlegend=False,
-                hovertemplate=f"<b>{ilot['size_category'].title()} Îlot</b><br>" +
+                hovertemplate=f"<b>Îlot</b><br>" +
                              f"Area: {ilot['area']:.1f}m²<br>" +
-                             f"Score: {ilot.get('placement_score', 0):.2f}<br>" +
-                             f"ID: {ilot['id']}<extra></extra>"
+                             f"Category: {ilot['size_category']}<extra></extra>"
             ))
 
-            if show_labels:
-                fig.add_annotation(
-                    x=ilot['x'] + ilot['width']/2,
-                    y=ilot['y'] + ilot['height']/2,
-                    text=ilot['id'],
-                    showarrow=False,
-                    font=dict(size=8, color='white')
-                )
+            # CLIENT REQUIREMENT: Area labels on each îlot (like "5.0m²", "7.5m²")
+            fig.add_annotation(
+                x=ilot['x'] + ilot['width']/2,
+                y=ilot['y'] + ilot['height']/2,
+                text=f"{ilot['area']:.1f}m²",  # EXACTLY like client shows
+                showarrow=False,
+                font=dict(size=10, color='black', family='Arial'),
+                bgcolor='rgba(255, 255, 255, 0.8)',
+                bordercolor='black',
+                borderwidth=1
+            )
 
-    # Add corridors
+    # CLIENT REQUIREMENT: Corridors are WHITE SPACE between îlots (not drawn lines)
+    # This matches Image 3 where corridors are simply empty space between îlot rows
     if show_corridors and st.session_state.corridor_results:
         corridors = st.session_state.corridor_results['corridors']
 
         for corridor in corridors:
-            # Create corridor as a thick line
-            fig.add_trace(go.Scatter(
-                x=[corridor['start_x'], corridor['end_x']],
-                y=[corridor['start_y'], corridor['end_y']],
-                mode='lines',
-                line=dict(color=corridor.get('color', '#F39C12'), width=max(corridor['width']*3, 4)),
-                name=f"{corridor['type'].title()} Corridor",
-                showlegend=False,
-                hovertemplate=f"<b>{corridor['type'].title()} Corridor</b><br>" +
-                             f"Length: {corridor['length']:.1f}m<br>" +
-                             f"Width: {corridor['width']:.1f}m<br>" +
-                             f"ID: {corridor['id']}<extra></extra>"
-            ))
+            if corridor.get('is_mandatory', False):  # Only show mandatory facing corridors
+                # Show corridor as subtle outline to indicate spacing
+                fig.add_trace(go.Scatter(
+                    x=[corridor['start_x'], corridor['end_x']],
+                    y=[corridor['start_y'], corridor['end_y']],
+                    mode='lines',
+                    line=dict(color='rgba(200, 200, 200, 0.5)', width=1, dash='dot'),
+                    name="Corridor Space",
+                    showlegend=False,
+                    hovertemplate=f"<b>Corridor</b><br>" +
+                                 f"Width: {corridor['width']:.1f}m<extra></extra>"
+                ))
 
     # Add grid
     if show_grid:
@@ -2998,16 +3039,30 @@ def create_floor_plan_plot(show_zones, show_ilots, show_corridors,
             fig.add_hline(y=i, line=dict(color='lightgray', width=0.5))
             fig.add_vline(x=i, line=dict(color='lightgray', width=0.5))
 
-    # Update layout
+    # CLIENT LAYOUT: Simple, clean 2D view like Image 3
     fig.update_layout(
-        title="Interactive Floor Plan with Îlots and Corridors",
-        xaxis_title="X (meters)",
-        yaxis_title="Y (meters)",
-        showlegend=True,
+        title="Floor Plan Analysis - Client View",
+        xaxis_title="",
+        yaxis_title="", 
+        showlegend=False,  # Clean view like client
         hovermode='closest',
-        xaxis=dict(scaleanchor="y", scaleratio=1),
-        yaxis=dict(scaleanchor="x", scaleratio=1),
-        plot_bgcolor='white'
+        xaxis=dict(
+            scaleanchor="y", 
+            scaleratio=1,
+            showgrid=False,
+            zeroline=False,
+            showticklabels=False
+        ),
+        yaxis=dict(
+            scaleanchor="x", 
+            scaleratio=1,
+            showgrid=False,
+            zeroline=False,
+            showticklabels=False
+        ),
+        plot_bgcolor='white',
+        paper_bgcolor='white',
+        margin=dict(l=20, r=20, t=40, b=20)
     )
 
     return fig
