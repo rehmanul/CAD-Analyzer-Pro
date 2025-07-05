@@ -11,7 +11,6 @@ reportlab>=4.0.0
 opencv-python>=4.8.0
 networkx>=3.0
 pillow>=10.0.0
-sqlite3
 hashlib
 uuid
 smtplib
