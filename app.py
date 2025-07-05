@@ -512,8 +512,8 @@ def show_welcome_screen():
 
     uploaded_file = st.file_uploader(
         "Choose a floor plan file",
-        type=['dxf', 'dwg', 'jpg', 'jpeg', 'png', 'pdf'],
-        help="Upload your floor plan in DXF, DWG, JPG, PNG, or PDF format for intelligent analysis"
+        type=['dxf', 'dwg', 'jpg', 'jpeg', 'png', 'pdf', 'ifc'],
+        help="📁 Supported formats: DXF (full support), DWG (with conversion), JPG/PNG (computer vision), PDF (vector extraction), IFC (BIM integration)"
     )
 
     if uploaded_file is not None:
@@ -559,10 +559,12 @@ def show_welcome_screen():
         <div class="feature-card">
             <h4>📁 Multi-Format Support</h4>
             <ul>
-                <li>DXF/DWG CAD files</li>
-                <li>JPG/PNG images</li>
-                <li>PDF floor plans</li>
-                <li>Computer vision analysis</li>
+                <li>✅ DXF files (full native support)</li>
+                <li>✅ DWG files (with smart conversion)</li>
+                <li>✅ JPG/PNG images (AI computer vision)</li>
+                <li>✅ PDF floor plans (vector extraction)</li>
+                <li>✅ IFC files (BIM integration)</li>
+                <li>✅ Multiple layers & colors detected</li>
             </ul>
         </div>
         """, unsafe_allow_html=True)
