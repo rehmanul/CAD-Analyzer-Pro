@@ -12,7 +12,19 @@ import io
 from typing import Dict, List, Tuple, Optional, Any
 import time
 import warnings
+import os
+from pathlib import Path
+import os
+from pathlib import Path
 warnings.filterwarnings('ignore')
+
+# Configure page
+st.set_page_config(
+    page_title="Professional Floor Plan Analyzer - Enhanced",
+    page_icon="🏢",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
 # Lazy imports for better performance
 @st.cache_data
