@@ -15,23 +15,14 @@ import warnings
 import os
 from pathlib import Path
 import hashlib
-import sqlite3
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-import smtplib
 warnings.filterwarnings('ignore')
 
-# Additional imports for enhanced functionality
-try:
-    import skimage
-    from skimage import measure, morphology
-    from skimage.color import rgb2gray
-    from skimage.filters import threshold_otsu
-except ImportError:
-    skimage = None
+# Production system imports
+from utils.production_database import production_db
+from utils.production_floor_analyzer import ProductionFloorAnalyzer
+from utils.production_ilot_system import ProductionIlotPlacer
 
 # Configure Streamlit to run on correct port
-import os
 os.environ['STREAMLIT_SERVER_PORT'] = '5000'
 os.environ['STREAMLIT_SERVER_ADDRESS'] = '0.0.0.0'
 
@@ -3413,6 +3404,6 @@ def run_advanced_optimization(method, iterations, objectives, weight):
         }
     }
 
-# Run the application
 if __name__ == "__main__":
-    main()
+    # Run production app
+    exec(open('production_app.py').read())
