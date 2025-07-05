@@ -60,6 +60,16 @@ st.markdown("""
         border-left: 6px solid #2E86AB;
         margin: 1rem 0;
         box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+        color: #2C3E50;
+    }
+    .info-box h3, .info-box h4 {
+        color: #2E86AB;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    .info-box p {
+        color: #495057;
+        margin-bottom: 0;
     }
     .success-box {
         background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
@@ -68,6 +78,16 @@ st.markdown("""
         border-left: 6px solid #28a745;
         margin: 1rem 0;
         box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+        color: #155724;
+    }
+    .success-box h3, .success-box h4 {
+        color: #155724;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    .success-box p {
+        color: #155724;
+        margin-bottom: 0;
     }
     .warning-box {
         background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
@@ -76,6 +96,16 @@ st.markdown("""
         border-left: 6px solid #ffc107;
         margin: 1rem 0;
         box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+        color: #856404;
+    }
+    .warning-box h3, .warning-box h4 {
+        color: #856404;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    .warning-box p {
+        color: #856404;
+        margin-bottom: 0;
     }
     .feature-card {
         background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
