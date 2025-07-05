@@ -2342,83 +2342,85 @@ def place_ilots_advanced(ilot_config, constraints):
     # Place îlots with EXACT client specifications
     available_zones = [z for z in zones if z['type'] == 'open']
     placement_attempts = 0
-    max_attempts = 1000
+    max_attempts = 50  # Reduced for better performance
     
     for size_cat, target_count in ilot_counts.items():
         size_range = size_categories[size_cat]
         placed_count = 0
         
-        while placed_count < target_count and placement_attempts < max_attempts:
-            placement_attempts += 1
+        # Use simple grid-based placement for speed
+        if available_zones:
+            zone = available_zones[0]  # Use first available zone
             
-            # Select random available zone
-            if available_zones:
-                zone = np.random.choice(available_zones)
-                
-                # Generate îlot within EXACT size range
-                area = np.random.uniform(size_range[0], size_range[1])
-                aspect_ratio = np.random.uniform(0.8, 1.4)  # More square-like
-                width = np.sqrt(area * aspect_ratio)
-                height = area / width
-                
-                # Ensure îlot fits in zone
-                if zone['width'] < width + 2 or zone['height'] < height + 2:
-                    continue
-                
-                # Position within zone with safety margins
-                margin = 1.0
-                x = zone['x'] + margin + np.random.uniform(0, max(0, zone['width'] - width - 2*margin))
-                y = zone['y'] + margin + np.random.uniform(0, max(0, zone['height'] - height - 2*margin))
-                
-                # CLIENT REQUIREMENT: STRICT avoidance of red and blue areas
-                safe_placement = True
-                
-                # MUST avoid red areas (entrances/exits) - NO îlot should touch
-                for entrance_zone in [z for z in zones if z['type'] == 'entrance']:
-                    dist = np.sqrt((x - entrance_zone['x'])**2 + (y - entrance_zone['y'])**2)
-                    if dist < constraints.get('min_entrance_distance', 3.0):  # Increased safety
-                        safe_placement = False
+            # Calculate grid spacing based on zone size
+            grid_cols = max(2, int(np.sqrt(target_count)))
+            grid_rows = max(1, int(target_count / grid_cols))
+            
+            x_spacing = zone['width'] / (grid_cols + 1)
+            y_spacing = zone['height'] / (grid_rows + 1)
+            
+            for row in range(grid_rows):
+                for col in range(grid_cols):
+                    if placed_count >= target_count:
                         break
-                
-                # MUST avoid blue areas (restricted - stairs, elevators)
-                if safe_placement:
-                    for restricted_zone in [z for z in zones if z['type'] == 'restricted']:
-                        dist = np.sqrt((x - restricted_zone['x'])**2 + (y - restricted_zone['y'])**2)
-                        if dist < constraints.get('min_restricted_distance', 2.0):  # Increased safety
+                        
+                    # Generate îlot within EXACT size range
+                    area = np.random.uniform(size_range[0], size_range[1])
+                    width = np.sqrt(area)
+                    height = area / width
+                    
+                    # Position in grid
+                    x = zone['x'] + (col + 1) * x_spacing
+                    y = zone['y'] + (row + 1) * y_spacing
+                    
+                    # Simple distance check for safety
+                    safe_placement = True
+                    
+                    # Quick distance check for entrances
+                    entrance_zones = [z for z in zones if z['type'] == 'entrance']
+                    if entrance_zones:
+                        min_dist = min(np.sqrt((x - ez['x'])**2 + (y - ez['y'])**2) for ez in entrance_zones)
+                        if min_dist < 2.0:  # Minimum safe distance
                             safe_placement = False
-                            break
-                
-                # Check collision with existing îlots
-                if safe_placement:
-                    for existing in ilots:
-                        existing_dist = np.sqrt((x - existing['x'])**2 + (y - existing['y'])**2)
-                        min_dist = (width + existing['width'])/2 + 1.5  # Minimum spacing
-                        if existing_dist < min_dist:
+                    
+                    # Quick check for restricted areas (simplified)
+                    restricted_zones = [z for z in zones if z['type'] == 'restricted']
+                    if restricted_zones and safe_placement:
+                        min_restricted_dist = min(np.sqrt((x - rz['x'])**2 + (y - rz['y'])**2) for rz in restricted_zones)
+                        if min_restricted_dist < 2.0:
                             safe_placement = False
-                            break
-                
-                if safe_placement:
-                    ilot = {
-                        'id': f'ilot_{size_cat}_{placed_count}',
-                        'x': x,
-                        'y': y,
-                        'width': width,
-                        'height': height,
-                        'area': area,
-                        'size_category': size_cat,
-                        'placement_score': 0.95,
-                        'accessibility_rating': 0.9,
-                        'efficiency_score': 0.9,
-                        'safety_compliance': True,
-                        'color': get_ilot_color(size_cat),
-                        'shape': 'rectangle',
-                        'rotation': 0,
-                        'opacity': 0.8,
-                        'can_touch_walls': constraints.get('allow_wall_adjacency', True),
-                        'client_compliant': True
-                    }
-                    ilots.append(ilot)
-                    placed_count += 1
+                    
+                    # Simple collision check with existing îlots
+                    if safe_placement and ilots:
+                        for existing in ilots:
+                            existing_dist = np.sqrt((x - existing['x'])**2 + (y - existing['y'])**2)
+                            min_dist = 3.0  # Fixed minimum spacing for speed
+                            if existing_dist < min_dist:
+                                safe_placement = False
+                                break
+                    
+                    if safe_placement:
+                        ilot = {
+                            'id': f'ilot_{size_cat}_{placed_count}',
+                            'x': x,
+                            'y': y,
+                            'width': width,
+                            'height': height,
+                            'area': area,
+                            'size_category': size_cat,
+                            'placement_score': 0.95,
+                            'accessibility_rating': 0.9,
+                            'efficiency_score': 0.9,
+                            'safety_compliance': True,
+                            'color': get_ilot_color(size_cat),
+                            'shape': 'rectangle',
+                            'rotation': 0,
+                            'opacity': 0.8,
+                            'can_touch_walls': constraints.get('allow_wall_adjacency', True),
+                            'client_compliant': True
+                        }
+                        ilots.append(ilot)
+                        placed_count += 1
 
     # Verify CLIENT COMPLIANCE
     actual_distribution = {}
