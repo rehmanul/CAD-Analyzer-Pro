@@ -9,7 +9,7 @@ deploymentTarget = "autoscale"
 run = ["streamlit", "run", "app.py", "--server.port", "5000"]
 
 [workflows]
-runButton = "Floor Plan Analyzer"
+runButton = "Project"
 
 [[workflows.workflow]]
 name = "Project"
@@ -54,3 +54,7 @@ externalPort = 80
 [[ports]]
 localPort = 8080
 externalPort = 8080
+
+[[ports]]
+localPort = 8501
+externalPort = 3000
