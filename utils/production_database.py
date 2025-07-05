@@ -21,7 +21,8 @@ class ProductionDatabaseManager:
     """Production PostgreSQL database manager"""
     
     def __init__(self):
-        self.database_url = os.getenv('DATABASE_URL')
+        # Use Render PostgreSQL database URL
+        self.database_url = "postgresql://de_de:PUPB8V0s2b3bvNZUblolz7d6UM9bcBzb@dpg-d1h53rffte5s739b1i40-a.oregon-postgres.render.com/dwg_analyzer_pro"
         self.connection_pool = None
         self.init_connection_pool()
         self.init_production_schema()
@@ -29,10 +30,12 @@ class ProductionDatabaseManager:
     def init_connection_pool(self):
         """Initialize connection pool for production use"""
         try:
+            # Configure SSL settings for Render PostgreSQL
             self.connection_pool = SimpleConnectionPool(
                 minconn=1,
                 maxconn=20,
-                dsn=self.database_url
+                dsn=self.database_url,
+                sslmode='require'
             )
             print("✅ PostgreSQL connection pool initialized")
         except Exception as e:
