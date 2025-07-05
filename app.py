@@ -2036,54 +2036,104 @@ def extract_entities_from_pdf(doc):
         return generate_sample_entities()
 
 def parse_dxf_content(content):
-    """Parse DXF file content"""
+    """Parse DXF file content with performance optimizations"""
+    import time
+    
+    start_time = time.time()
+    timeout_seconds = 10  # 10 second timeout
+    
+    # Show progress
+    progress_container = st.container()
+    with progress_container:
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+        status_text.text("Parsing DXF content...")
+
     entities = []
 
-    # Extract basic entities from DXF
-    lines = content.decode('utf-8', errors='ignore').split('\n')
+    try:
+        # Extract basic entities from DXF
+        lines = content.decode('utf-8', errors='ignore').split('\n')
+        
+        # Limit processing for large files
+        max_lines = min(len(lines), 20000)  # Process max 20k lines
+        if len(lines) > max_lines:
+            st.warning(f"Large DXF file detected ({len(lines):,} lines). Processing first {max_lines:,} lines for performance.")
+        
+        lines = lines[:max_lines]
+        total_lines = len(lines)
+        
+        current_entity = None
+        processed_entities = 0
+        max_entities = 200  # Limit total entities for speed
+        
+        for i, line in enumerate(lines):
+            # Check timeout
+            if time.time() - start_time > timeout_seconds:
+                st.warning("Processing timeout - using partial results")
+                break
+                
+            # Check entity limit
+            if processed_entities >= max_entities:
+                st.info(f"Processed {max_entities} entities for optimal performance")
+                break
+                
+            line = line.strip()
 
-    current_entity = None
-    for i, line in enumerate(lines):
-        line = line.strip()
+            if line == "LINE":
+                current_entity = {'type': 'line', 'points': []}
+            elif line == "LWPOLYLINE":
+                current_entity = {'type': 'polyline', 'points': []}
+            elif line == "CIRCLE":
+                current_entity = {'type': 'circle', 'center': None, 'radius': None}
 
-        if line == "LINE":
-            current_entity = {'type': 'line', 'points': []}
-        elif line == "LWPOLYLINE":
-            current_entity = {'type': 'polyline', 'points': []}
-        elif line == "CIRCLE":
-            current_entity = {'type': 'circle', 'center': None, 'radius': None}
+            # Extract coordinates (simplified)
+            if current_entity and line.replace('.', '').replace('-', '').replace('e', '').replace('E', '').replace('+', '').isdigit():
+                try:
+                    value = float(line)
+                    if current_entity['type'] in ['line', 'polyline']:
+                        if 'points' not in current_entity:
+                            current_entity['points'] = []
+                        if len(current_entity['points']) < 6:  # Limit points per entity
+                            current_entity['points'].append(value)
+                    elif current_entity['type'] == 'circle':
+                        if current_entity['center'] is None:
+                            current_entity['center'] = [value]
+                        elif len(current_entity['center']) == 1:
+                            current_entity['center'].append(value)
+                        elif current_entity['radius'] is None:
+                            current_entity['radius'] = value
+                except ValueError:
+                    pass
 
-        # Extract coordinates
-        if current_entity and line.replace('.', '').replace('-', '').replace('e', '').replace('E', '').replace('+', '').isdigit():
-            try:
-                value = float(line)
-                if current_entity['type'] in ['line', 'polyline']:
-                    if 'points' not in current_entity:
-                        current_entity['points'] = []
-                    current_entity['points'].append(value)
-                elif current_entity['type'] == 'circle':
-                    if current_entity['center'] is None:
-                        current_entity['center'] = [value]
-                    elif len(current_entity['center']) == 1:
-                        current_entity['center'].append(value)
-                    elif current_entity['radius'] is None:
-                        current_entity['radius'] = value
-            except ValueError:
-                pass
+            # Add completed entity
+            if current_entity and (
+                (current_entity['type'] in ['line', 'polyline'] and len(current_entity.get('points', [])) >= 4) or
+                (current_entity['type'] == 'circle' and current_entity.get('radius') is not None)
+            ):
+                entities.append(current_entity)
+                processed_entities += 1
+                current_entity = None
+            
+            # Update progress every 1000 lines
+            if i % 1000 == 0:
+                progress = i / total_lines
+                progress_bar.progress(progress)
+                status_text.text(f"Processing line {i:,} of {total_lines:,}...")
 
-        # Add completed entity
-        if current_entity and (
-            (current_entity['type'] in ['line', 'polyline'] and len(current_entity.get('points', [])) >= 4) or
-            (current_entity['type'] == 'circle' and current_entity.get('radius') is not None)
-        ):
-            entities.append(current_entity)
-            current_entity = None
+        progress_bar.progress(1.0)
+        status_text.text(f"Extracted {len(entities)} entities")
+        
+        # Add sample entities if none found
+        if len(entities) < 10:
+            st.info("Adding sample entities for demonstration")
+            entities.extend(generate_sample_entities())
 
-    # Add sample entities for demonstration
-    if len(entities) < 10:
-        entities.extend(generate_sample_entities())
-
-    return entities
+        return entities
+        
+    except Exception as e:
+        st.error(f"Error parsing DXF: {str(e)}")
+        return generate_sample_entities()
 
 def generate_sample_entities():
     """Generate sample entities for demonstration"""
