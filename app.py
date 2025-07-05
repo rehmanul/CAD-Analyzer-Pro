@@ -37,8 +37,12 @@ st.set_page_config(
 # Lazy imports for better performance
 @st.cache_data
 def get_cv2():
-    import cv2
-    return cv2
+    try:
+        import cv2
+        return cv2
+    except ImportError:
+        st.warning("⚠️ OpenCV not available - image processing features limited")
+        return None
 
 @st.cache_data
 def get_sklearn():
@@ -1835,6 +1839,10 @@ def process_image_file(content, filename):
     """Process image file (JPG, PNG) using computer vision"""
     try:
         cv2 = get_cv2()
+        if cv2 is None:
+            st.error("Image processing not available on this platform. Please use DXF files instead.")
+            return None
+            
         _, _, Image = get_file_processors()
 
         # Convert content to numpy array
@@ -1900,6 +1908,9 @@ def extract_entities_from_image(img):
     """Extract floor plan entities from image using computer vision with color-based detection"""
     try:
         cv2 = get_cv2()
+        if cv2 is None:
+            return []
+            
         entities = []
 
         # Convert to different color spaces for better detection

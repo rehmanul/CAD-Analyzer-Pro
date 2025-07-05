@@ -3,7 +3,13 @@ Production Floor Plan Analyzer
 Complete implementation matching client visual requirements
 """
 
-import cv2
+try:
+    import cv2
+    CV2_AVAILABLE = True
+except ImportError:
+    CV2_AVAILABLE = False
+    print("⚠️ OpenCV not available - image processing features will be limited")
+
 import numpy as np
 from shapely.geometry import Polygon, Point, LineString
 from shapely.ops import unary_union
@@ -97,6 +103,12 @@ class ProductionFloorAnalyzer:
     def process_image_file(self, file_content: bytes, filename: str) -> Dict[str, Any]:
         """Process image file with color-based zone detection matching client requirements"""
         try:
+            if not CV2_AVAILABLE:
+                return {
+                    'success': False, 
+                    'error': 'Image processing not available on this platform. Please use DXF files instead.'
+                }
+            
             # Convert bytes to numpy array
             nparr = np.frombuffer(file_content, np.uint8)
             img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
@@ -243,6 +255,9 @@ class ProductionFloorAnalyzer:
     
     def extract_walls_from_image(self, img: np.ndarray) -> List[List[Tuple[float, float]]]:
         """Extract walls (black lines) from image"""
+        if not CV2_AVAILABLE:
+            return []
+            
         # Convert to grayscale
         gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
         
@@ -268,6 +283,9 @@ class ProductionFloorAnalyzer:
     
     def extract_restricted_areas_from_image(self, img: np.ndarray) -> List[List[Tuple[float, float]]]:
         """Extract restricted areas (light blue zones) from image"""
+        if not CV2_AVAILABLE:
+            return []
+            
         # Define blue color range in HSV
         hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
         
@@ -297,6 +315,9 @@ class ProductionFloorAnalyzer:
     
     def extract_entrances_from_image(self, img: np.ndarray) -> List[List[Tuple[float, float]]]:
         """Extract entrances (red zones) from image"""
+        if not CV2_AVAILABLE:
+            return []
+            
         # Define red color range in HSV
         hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
         
