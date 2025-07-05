@@ -56,17 +56,17 @@ def get_file_processors():
         import ezdxf
     except ImportError:
         ezdxf = None
-    
+
     try:
         import fitz  # PyMuPDF
     except ImportError:
         fitz = None
-    
+
     try:
         from PIL import Image
     except ImportError:
         Image = None
-    
+
     return ezdxf, fitz, Image
 
 # Set page config
@@ -222,23 +222,23 @@ class MLSpaceOptimizer:
         self.optimization_history = []
         self.best_solution = None
         self.convergence_data = []
-        
+
     def _get_scaler(self):
         """Get StandardScaler lazily"""
         if self.scaler is None:
             DBSCAN, StandardScaler = get_sklearn()
             self.scaler = StandardScaler()
         return self.scaler
-        
+
     def optimize_placement(self, zones, ilot_config, constraints):
         """Advanced ML-based optimization for îlot placement"""
         try:
             # Get differential evolution lazily
             distance, differential_evolution = get_scipy()
-            
+
             # Use differential evolution for global optimization
             bounds = self._get_optimization_bounds(zones, ilot_config)
-            
+
             result = differential_evolution(
                 self._objective_function,
                 bounds,
@@ -246,31 +246,31 @@ class MLSpaceOptimizer:
                 maxiter=500,
                 popsize=10
             )
-            
+
             return self._decode_solution(result.x, zones, ilot_config)
-            
+
         except Exception as e:
             return self._fallback_optimization(zones, ilot_config, constraints)
-    
+
     def _objective_function(self, x, zones, ilot_config, constraints):
         """Multi-objective optimization function"""
         ilots = self._decode_solution(x, zones, ilot_config)
-        
+
         # Calculate multiple objectives
         space_utilization = self._calculate_space_utilization(ilots, zones)
         accessibility = self._calculate_accessibility_score(ilots, zones)
         circulation = self._calculate_circulation_efficiency(ilots, zones)
         safety = self._calculate_safety_score(ilots, zones, constraints)
-        
+
         # Weighted combination (minimization problem)
         return -(0.3 * space_utilization + 0.25 * accessibility + 
                 0.25 * circulation + 0.2 * safety)
-    
+
     def _decode_solution(self, x, zones, ilot_config):
         """Decode optimization solution to îlot placements"""
         ilots = []
         x_idx = 0
-        
+
         for size_category, percentage in ilot_config.items():
             count = int(percentage * len(zones) / 100)
             for _ in range(count):
@@ -285,17 +285,17 @@ class MLSpaceOptimizer:
                     }
                     ilots.append(ilot)
                     x_idx += 4
-        
+
         return ilots
-    
+
     def _get_optimization_bounds(self, zones, ilot_config):
         """Get bounds for optimization variables"""
         bounds = []
-        
+
         for size_category, percentage in ilot_config.items():
             count = int(percentage * len(zones) / 100)
             size_range = self._get_size_range(size_category)
-            
+
             for _ in range(count):
                 bounds.extend([
                     (0, 100),  # x position
@@ -303,9 +303,9 @@ class MLSpaceOptimizer:
                     (size_range[0], size_range[1]),  # width
                     (size_range[0], size_range[1])   # height
                 ])
-        
+
         return bounds
-    
+
     def _get_size_range(self, size_category):
         """Get size range for îlot category"""
         ranges = {
@@ -315,13 +315,13 @@ class MLSpaceOptimizer:
             'xlarge': (8, 12)
         }
         return ranges.get(size_category, (2, 5))
-    
+
     def _calculate_space_utilization(self, ilots, zones):
         """Calculate space utilization efficiency"""
         total_ilot_area = sum(ilot.get('area', 0) for ilot in ilots)
         total_zone_area = sum(zone.get('area', 0) for zone in zones)
         return total_ilot_area / total_zone_area if total_zone_area > 0 else 0
-    
+
     def _calculate_accessibility_score(self, ilots, zones):
         """Calculate accessibility score"""
         scores = []
@@ -331,33 +331,33 @@ class MLSpaceOptimizer:
                 if zone.get('type') == 'entrance':
                     dist = np.sqrt((ilot['x'] - zone['x'])**2 + (ilot['y'] - zone['y'])**2)
                     min_distance = min(min_distance, dist)
-            
+
             score = 1 / (1 + min_distance) if min_distance < float('inf') else 0
             scores.append(score)
-        
+
         return np.mean(scores) if scores else 0
-    
+
     def _calculate_circulation_efficiency(self, ilots, zones):
         """Calculate circulation efficiency"""
         if len(ilots) < 2:
             return 1.0
-        
+
         distances = []
         for i in range(len(ilots)):
             for j in range(i + 1, len(ilots)):
                 dist = np.sqrt((ilots[i]['x'] - ilots[j]['x'])**2 + 
                              (ilots[i]['y'] - ilots[j]['y'])**2)
                 distances.append(dist)
-        
+
         mean_distance = np.mean(distances)
         optimal_distance = 5.0
         return 1 / (1 + abs(mean_distance - optimal_distance))
-    
+
     def _calculate_safety_score(self, ilots, zones, constraints):
         """Calculate safety compliance score"""
         violations = 0
         total_checks = 0
-        
+
         for ilot in ilots:
             for zone in zones:
                 if zone.get('type') == 'restricted':
@@ -365,24 +365,24 @@ class MLSpaceOptimizer:
                     if dist < constraints.get('min_distance_restricted', 2):
                         violations += 1
                     total_checks += 1
-                
+
                 if zone.get('type') == 'entrance':
                     dist = np.sqrt((ilot['x'] - zone['x'])**2 + (ilot['y'] - zone['y'])**2)
                     if dist < constraints.get('min_distance_entrance', 3):
                         violations += 1
                     total_checks += 1
-        
+
         return 1 - (violations / total_checks) if total_checks > 0 else 1
-    
+
     def _fallback_optimization(self, zones, ilot_config, constraints):
         """Fallback optimization method"""
         ilots = []
         available_zones = [z for z in zones if z.get('type') not in ['restricted', 'entrance']]
-        
+
         for size_category, percentage in ilot_config.items():
             count = int(percentage * len(available_zones) / 100)
             size_range = self._get_size_range(size_category)
-            
+
             for i in range(count):
                 if i < len(available_zones):
                     zone = available_zones[i]
@@ -395,9 +395,9 @@ class MLSpaceOptimizer:
                         'area': size_range[0] * size_range[1]
                     }
                     ilots.append(ilot)
-        
+
         return ilots
-    
+
     def get_optimization_metrics(self):
         """Get optimization performance metrics"""
         return {
@@ -423,39 +423,39 @@ def cache_expensive_computation(data_hash):
 def main():
     """Main application function"""
     st.markdown('<h1 class="main-header">🏗️ Advanced Floor Plan Analyzer</h1>', unsafe_allow_html=True)
-    
+
     # Sidebar navigation
     with st.sidebar:
         st.markdown("## 🧭 Navigation")
-        
+
         if st.button("🏠 Home", use_container_width=True):
             st.session_state.current_page = "welcome"
             st.rerun()
-        
+
         if st.button("🔍 Analysis", use_container_width=True):
             st.session_state.current_page = "analysis"
             st.rerun()
-        
+
         if st.button("📊 Results", use_container_width=True):
             st.session_state.current_page = "results"
             st.rerun()
-        
+
         if st.button("🎨 Visualization", use_container_width=True):
             st.session_state.current_page = "visualization"
             st.rerun()
-        
+
         if st.button("🤖 AI Optimization", use_container_width=True):
             st.session_state.current_page = "optimization"
             st.rerun()
-        
+
         if st.button("📄 Reports", use_container_width=True):
             st.session_state.current_page = "reports"
             st.rerun()
-        
+
         # Legend
         st.markdown("---")
         st.markdown("## 🎨 Color Legend")
-        
+
         legend_items = [
             ("Walls", "#2C3E50"),
             ("Entrances/Exits", "#E74C3C"),
@@ -466,7 +466,7 @@ def main():
             ("XL Îlots", "#96CEB4"),
             ("Corridors", "#F39C12")
         ]
-        
+
         for name, color in legend_items:
             st.markdown(f"""
             <div class="legend-item">
@@ -474,7 +474,7 @@ def main():
                 <span>{name}</span>
             </div>
             """, unsafe_allow_html=True)
-    
+
     # Main content
     if st.session_state.current_page == "welcome":
         show_welcome_screen()
@@ -499,29 +499,29 @@ def show_welcome_screen():
         Upload your floor plan to experience the power of AI-driven spatial optimization.</p>
     </div>
     """, unsafe_allow_html=True)
-    
+
     # File upload section
     st.markdown("### 📁 Upload Your Floor Plan")
-    
+
     uploaded_file = st.file_uploader(
         "Choose a floor plan file",
         type=['dxf', 'dwg', 'jpg', 'jpeg', 'png', 'pdf'],
         help="Upload your floor plan in DXF, DWG, JPG, PNG, or PDF format for intelligent analysis"
     )
-    
+
     if uploaded_file is not None:
         with st.spinner("🔄 Processing your floor plan..."):
             file_data = process_uploaded_file(uploaded_file)
             if file_data:
                 st.session_state.uploaded_file_data = file_data
-                
+
                 st.markdown("""
                 <div class="success-box">
                     <h4>✅ File Successfully Processed!</h4>
                     <p>Your floor plan has been analyzed and is ready for intelligent processing.</p>
                 </div>
                 """, unsafe_allow_html=True)
-                
+
                 # Show file information
                 col1, col2, col3, col4 = st.columns(4)
                 with col1:
@@ -532,21 +532,21 @@ def show_welcome_screen():
                     st.metric("📏 Bounds", f"{file_data.get('bounds', {}).get('max_x', 0):.1f}m")
                 with col4:
                     st.metric("🎯 Layers", len(file_data.get('metadata', {}).get('layers', [])))
-                
+
                 # Quick preview
                 st.markdown("### 👀 Floor Plan Preview")
                 create_preview_plot(file_data)
-                
+
                 if st.button("🚀 Start Advanced Analysis", type="primary", use_container_width=True):
                     st.session_state.current_page = "analysis"
                     st.rerun()
-    
+
     # Features showcase
     st.markdown("---")
     st.markdown("### 🌟 Advanced Features")
-    
+
     col1, col2, col3, col4 = st.columns(4)
-    
+
     with col1:
         st.markdown("""
         <div class="feature-card">
@@ -559,7 +559,7 @@ def show_welcome_screen():
             </ul>
         </div>
         """, unsafe_allow_html=True)
-    
+
     with col2:
         st.markdown("""
         <div class="feature-card">
@@ -572,7 +572,7 @@ def show_welcome_screen():
             </ul>
         </div>
         """, unsafe_allow_html=True)
-    
+
     with col3:
         st.markdown("""
         <div class="feature-card">
@@ -585,7 +585,7 @@ def show_welcome_screen():
             </ul>
         </div>
         """, unsafe_allow_html=True)
-    
+
     with col4:
         st.markdown("""
         <div class="feature-card">
@@ -602,10 +602,10 @@ def show_welcome_screen():
 def create_preview_plot(file_data):
     """Create a preview plot of the uploaded floor plan"""
     fig = go.Figure()
-    
+
     entities = file_data.get('entities', [])
     bounds = file_data.get('bounds', {})
-    
+
     for entity in entities:
         if entity.get('type') == 'line' and 'points' in entity:
             points = entity['points']
@@ -618,7 +618,7 @@ def create_preview_plot(file_data):
                     showlegend=False,
                     hoverinfo='skip'
                 ))
-    
+
     fig.update_layout(
         title="Floor Plan Preview",
         xaxis_title="X (meters)",
@@ -628,13 +628,13 @@ def create_preview_plot(file_data):
         xaxis=dict(scaleanchor="y", scaleratio=1),
         yaxis=dict(scaleanchor="x", scaleratio=1)
     )
-    
+
     st.plotly_chart(fig, use_container_width=True)
 
 def show_analysis_interface():
     """Display analysis configuration interface"""
     st.markdown('<h2 class="sub-header">🔧 Advanced Analysis Configuration</h2>', unsafe_allow_html=True)
-    
+
     if st.session_state.uploaded_file_data is None:
         st.markdown("""
         <div class="warning-box">
@@ -643,28 +643,28 @@ def show_analysis_interface():
         </div>
         """, unsafe_allow_html=True)
         return
-    
+
     # Configuration tabs
     tab1, tab2, tab3, tab4 = st.tabs(["🗺️ Zone Analysis", "🏢 Îlot Configuration", "🛤️ Corridor Settings", "🎯 Optimization"])
-    
+
     with tab1:
         st.markdown("### 🔍 Zone Detection Settings")
-        
+
         col1, col2 = st.columns(2)
         with col1:
             wall_threshold = st.slider("Wall Detection Sensitivity", 0.1, 2.0, 0.5, 0.1)
             restricted_threshold = st.slider("Restricted Area Sensitivity", 0.1, 2.0, 0.3, 0.1)
-        
+
         with col2:
             entrance_threshold = st.slider("Entrance Detection Sensitivity", 0.1, 2.0, 0.4, 0.1)
             min_zone_area = st.slider("Minimum Zone Area (m²)", 1, 20, 5, 1)
-        
+
         if st.button("🔍 Run Zone Analysis", type="primary", use_container_width=True):
             with st.spinner("🧠 Analyzing zones with AI..."):
                 results = analyze_zones(wall_threshold, restricted_threshold, entrance_threshold)
                 st.session_state.analysis_results = results
                 st.success("✅ Zone analysis completed successfully!")
-                
+
                 # Show quick stats
                 if results:
                     stats = results['statistics']
@@ -677,16 +677,16 @@ def show_analysis_interface():
                         st.metric("Entrances", stats['entrance_zones'])
                     with col4:
                         st.metric("Usable Area", f"{stats['usable_area']:.1f}m²")
-    
+
     with tab2:
         configure_ilot_settings()
-    
+
     with tab3:
         configure_corridor_settings()
-    
+
     with tab4:
         st.markdown("### 🎯 AI Optimization Settings")
-        
+
         col1, col2 = st.columns(2)
         with col1:
             optimization_method = st.selectbox(
@@ -694,18 +694,18 @@ def show_analysis_interface():
                 ["Hybrid AI", "Machine Learning", "Genetic Algorithm", "Simulated Annealing"],
                 help="Hybrid AI combines multiple approaches for optimal results"
             )
-            
+
             max_iterations = st.slider("Maximum Iterations", 100, 2000, 500, 100)
-        
+
         with col2:
             optimization_objectives = st.multiselect(
                 "Optimization Objectives",
                 ["Space Utilization", "Accessibility", "Circulation", "Safety", "Aesthetics"],
                 default=["Space Utilization", "Accessibility", "Safety"]
             )
-            
+
             constraint_weight = st.slider("Constraint Weight", 0.1, 2.0, 1.0, 0.1)
-        
+
         if st.button("🚀 Run AI Optimization", type="primary", use_container_width=True):
             if st.session_state.analysis_results:
                 with st.spinner("🤖 Running advanced AI optimization..."):
@@ -720,48 +720,48 @@ def show_analysis_interface():
 def configure_ilot_settings():
     """Configure îlot placement settings"""
     st.markdown("### 🏢 Îlot Configuration")
-    
+
     col1, col2 = st.columns(2)
-    
+
     with col1:
         st.markdown("**📊 Size Distribution**")
         small_percent = st.slider("Small îlots (0-1m²)", 0, 50, 10, 5)
         medium_percent = st.slider("Medium îlots (1-3m²)", 0, 50, 25, 5)
         large_percent = st.slider("Large îlots (3-5m²)", 0, 50, 30, 5)
         xlarge_percent = st.slider("Extra Large îlots (5-10m²)", 0, 50, 35, 5)
-        
+
         total_percent = small_percent + medium_percent + large_percent + xlarge_percent
         if total_percent != 100:
             st.warning(f"⚠️ Total percentage: {total_percent}%. Please adjust to 100%.")
-    
+
     with col2:
         st.markdown("**🛡️ Safety Constraints**")
         min_wall_distance = st.slider("Minimum Wall Distance (m)", 0.1, 3.0, 0.5, 0.1)
         min_entrance_distance = st.slider("Minimum Entrance Distance (m)", 0.5, 5.0, 2.0, 0.1)
         min_restricted_distance = st.slider("Minimum Restricted Distance (m)", 0.5, 5.0, 1.0, 0.1)
         allow_wall_adjacency = st.checkbox("Allow Wall Adjacency", value=True)
-    
+
     ilot_config = {
         'small': small_percent,
         'medium': medium_percent,
         'large': large_percent,
         'xlarge': xlarge_percent
     }
-    
+
     constraints = {
         'min_wall_distance': min_wall_distance,
         'min_entrance_distance': min_entrance_distance,
         'min_restricted_distance': min_restricted_distance,
         'allow_wall_adjacency': allow_wall_adjacency
     }
-    
+
     if st.button("🏢 Place Îlots with AI", type="primary", use_container_width=True):
         if st.session_state.analysis_results:
             with st.spinner("🤖 Placing îlots with advanced AI algorithms..."):
                 ilot_results = place_ilots_advanced(ilot_config, constraints)
                 st.session_state.ilot_results = ilot_results
                 st.success("✅ Îlots placed successfully with AI optimization!")
-                
+
                 # Show quick stats
                 if ilot_results:
                     stats = ilot_results['placement_statistics']
@@ -780,19 +780,19 @@ def configure_ilot_settings():
 def configure_corridor_settings():
     """Configure corridor generation settings"""
     st.markdown("### 🛤️ Corridor Configuration")
-    
+
     col1, col2 = st.columns(2)
-    
+
     with col1:
         st.markdown("**📏 Corridor Dimensions**")
         main_corridor_width = st.slider("Main Corridor Width (m)", 1.0, 5.0, 2.5, 0.1)
         secondary_corridor_width = st.slider("Secondary Corridor Width (m)", 0.8, 3.0, 1.5, 0.1)
         access_corridor_width = st.slider("Access Corridor Width (m)", 0.6, 2.0, 1.0, 0.1)
-        
+
         generate_main_corridors = st.checkbox("Generate Main Corridors", value=True)
         generate_secondary_corridors = st.checkbox("Generate Secondary Corridors", value=True)
         generate_access_corridors = st.checkbox("Generate Access Corridors", value=True)
-    
+
     with col2:
         st.markdown("**🧠 AI Pathfinding**")
         pathfinding_algorithm = st.selectbox(
@@ -800,16 +800,16 @@ def configure_corridor_settings():
             ["A* (Recommended)", "Dijkstra", "BFS", "Custom AI"],
             index=0
         )
-        
+
         corridor_optimization = st.selectbox(
             "Corridor Optimization",
             ["Balanced (Recommended)", "Minimize Length", "Maximize Width", "Accessibility First"],
             index=0
         )
-        
+
         allow_corridor_intersections = st.checkbox("Allow Corridor Intersections", value=True)
         force_corridor_between_facing = st.checkbox("Force Corridors Between Facing Îlots", value=True)
-    
+
     corridor_config = {
         'main_width': main_corridor_width,
         'secondary_width': secondary_corridor_width,
@@ -822,14 +822,14 @@ def configure_corridor_settings():
         'allow_intersections': allow_corridor_intersections,
         'force_between_facing': force_corridor_between_facing
     }
-    
+
     if st.button("🛤️ Generate Intelligent Corridors", type="primary", use_container_width=True):
         if st.session_state.ilot_results:
             with st.spinner("🤖 Generating intelligent corridor network..."):
                 corridor_results = generate_corridors(corridor_config)
                 st.session_state.corridor_results = corridor_results
                 st.success("✅ Corridors generated successfully!")
-                
+
                 # Show quick stats
                 if corridor_results:
                     stats = corridor_results['network_statistics']
@@ -851,7 +851,7 @@ def process_uploaded_file(uploaded_file):
     try:
         file_name = uploaded_file.name.lower()
         content = uploaded_file.read()
-        
+
         # Determine file type
         if file_name.endswith('.dxf'):
             return process_dxf_file(content, uploaded_file.name)
@@ -864,7 +864,7 @@ def process_uploaded_file(uploaded_file):
         else:
             st.error(f"Unsupported file type: {file_name}")
             return None
-            
+
     except Exception as e:
         st.error(f"Error processing file: {str(e)}")
         return None
@@ -874,7 +874,7 @@ def process_dxf_file(content, filename):
     try:
         # Use basic DXF parsing for now
         entities = parse_dxf_content(content)
-        
+
         return {
             'type': 'dxf',
             'entities': entities,
@@ -897,7 +897,7 @@ def process_dwg_file(content, filename):
         # Generate sample entities for DWG files (DWG support requires special licensing)
         entities = generate_sample_entities()
         st.info("DWG file processed. Using extracted geometric data.")
-        
+
         return {
             'type': 'dwg',
             'entities': entities,
@@ -919,18 +919,18 @@ def process_image_file(content, filename):
     try:
         cv2 = get_cv2()
         _, _, Image = get_file_processors()
-        
+
         # Convert content to numpy array
         nparr = np.frombuffer(content, np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        
+
         if img is None:
             st.error("Could not decode image file")
             return None
-        
+
         # Extract floor plan features using computer vision
         entities = extract_entities_from_image(img)
-        
+
         return {
             'type': 'image',
             'entities': entities,
@@ -952,7 +952,7 @@ def process_pdf_file(content, filename):
     """Process PDF file content"""
     try:
         _, fitz, _ = get_file_processors()
-        
+
         if fitz is None:
             # Generate sample entities for PDF files when PyMuPDF is not available
             entities = generate_sample_entities()
@@ -962,7 +962,7 @@ def process_pdf_file(content, filename):
             doc = fitz.open(stream=content, filetype="pdf")
             entities = extract_entities_from_pdf(doc)
             doc.close()
-        
+
         return {
             'type': 'pdf',
             'entities': entities,
@@ -983,30 +983,30 @@ def extract_entities_from_image(img):
     """Extract floor plan entities from image using computer vision"""
     try:
         cv2 = get_cv2()
-        
+
         # Convert to grayscale
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        
+
         # Apply edge detection
         edges = cv2.Canny(gray, 50, 150, apertureSize=3)
-        
+
         # Find contours
         contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        
+
         entities = []
-        
+
         # Convert contours to entities
         for i, contour in enumerate(contours):
             if cv2.contourArea(contour) > 100:  # Filter small contours
                 # Approximate contour to polygon
                 epsilon = 0.02 * cv2.arcLength(contour, True)
                 approx = cv2.approxPolyDP(contour, epsilon, True)
-                
+
                 points = []
                 for point in approx:
                     x, y = point[0]
                     points.append([float(x), float(y)])
-                
+
                 if len(points) >= 3:
                     entities.append({
                         'type': 'polyline',
@@ -1014,13 +1014,13 @@ def extract_entities_from_image(img):
                         'layer': 'walls' if len(points) > 4 else 'furniture',
                         'color': 'black'
                     })
-        
+
         # Add some sample entities if none found
         if not entities:
             entities = generate_sample_entities()
-        
+
         return entities
-        
+
     except Exception as e:
         st.error(f"Error extracting entities from image: {str(e)}")
         return generate_sample_entities()
@@ -1029,17 +1029,17 @@ def extract_entities_from_pdf(doc):
     """Extract floor plan entities from PDF"""
     try:
         entities = []
-        
+
         # Process first page
         page = doc.load_page(0)
-        
+
         # Get page dimensions
         rect = page.rect
         width, height = rect.width, rect.height
-        
+
         # Extract drawings/paths from PDF
         drawings = page.get_drawings()
-        
+
         for drawing in drawings:
             for item in drawing.get("items", []):
                 if item.get("type") == "l":  # Line
@@ -1060,13 +1060,13 @@ def extract_entities_from_pdf(doc):
                             'layer': 'walls',
                             'color': 'black'
                         })
-        
+
         # Add sample entities if none found
         if not entities:
             entities = generate_sample_entities()
-        
+
         return entities
-        
+
     except Exception as e:
         st.error(f"Error extracting entities from PDF: {str(e)}")
         return generate_sample_entities()
@@ -1074,21 +1074,21 @@ def extract_entities_from_pdf(doc):
 def parse_dxf_content(content):
     """Parse DXF file content"""
     entities = []
-    
+
     # Extract basic entities from DXF
     lines = content.decode('utf-8', errors='ignore').split('\n')
-    
+
     current_entity = None
     for i, line in enumerate(lines):
         line = line.strip()
-        
+
         if line == "LINE":
             current_entity = {'type': 'line', 'points': []}
         elif line == "LWPOLYLINE":
             current_entity = {'type': 'polyline', 'points': []}
         elif line == "CIRCLE":
             current_entity = {'type': 'circle', 'center': None, 'radius': None}
-        
+
         # Extract coordinates
         if current_entity and line.replace('.', '').replace('-', '').replace('e', '').replace('E', '').replace('+', '').isdigit():
             try:
@@ -1106,7 +1106,7 @@ def parse_dxf_content(content):
                         current_entity['radius'] = value
             except ValueError:
                 pass
-        
+
         # Add completed entity
         if current_entity and (
             (current_entity['type'] in ['line', 'polyline'] and len(current_entity.get('points', [])) >= 4) or
@@ -1114,17 +1114,17 @@ def parse_dxf_content(content):
         ):
             entities.append(current_entity)
             current_entity = None
-    
+
     # Add sample entities for demonstration
     if len(entities) < 10:
         entities.extend(generate_sample_entities())
-    
+
     return entities
 
 def generate_sample_entities():
     """Generate sample entities for demonstration"""
     entities = []
-    
+
     # Generate walls (based on the provided images)
     wall_lines = [
         # Outer walls
@@ -1132,7 +1132,7 @@ def generate_sample_entities():
         {'type': 'line', 'points': [90, 10, 90, 70], 'layer': 'walls'},  # Right
         {'type': 'line', 'points': [90, 70, 10, 70], 'layer': 'walls'},  # Top
         {'type': 'line', 'points': [10, 70, 10, 10], 'layer': 'walls'},  # Left
-        
+
         # Interior walls
         {'type': 'line', 'points': [30, 10, 30, 40], 'layer': 'walls'},
         {'type': 'line', 'points': [60, 10, 60, 40], 'layer': 'walls'},
@@ -1140,36 +1140,36 @@ def generate_sample_entities():
         {'type': 'line', 'points': [10, 50, 40, 50], 'layer': 'walls'},
         {'type': 'line', 'points': [70, 50, 90, 50], 'layer': 'walls'},
     ]
-    
+
     entities.extend(wall_lines)
-    
+
     # Generate entrances/exits (red areas from images)
     entrances = [
         {'type': 'rectangle', 'points': [45, 10, 2, 1], 'layer': 'doors'},
         {'type': 'rectangle', 'points': [10, 35, 1, 2], 'layer': 'doors'},
         {'type': 'rectangle', 'points': [88, 35, 2, 1], 'layer': 'doors'},
     ]
-    
+
     entities.extend(entrances)
-    
+
     # Generate restricted areas (blue areas - stairs, elevators)
     restricted = [
         {'type': 'rectangle', 'points': [20, 55, 8, 8], 'layer': 'restricted'},
         {'type': 'rectangle', 'points': [75, 55, 6, 6], 'layer': 'restricted'},
     ]
-    
+
     entities.extend(restricted)
-    
+
     return entities
 
 def calculate_bounds(entities):
     """Calculate bounding box of entities"""
     if not entities:
         return {'min_x': 0, 'min_y': 0, 'max_x': 100, 'max_y': 100}
-    
+
     x_coords = []
     y_coords = []
-    
+
     for entity in entities:
         if 'points' in entity and len(entity['points']) >= 2:
             points = entity['points']
@@ -1177,10 +1177,10 @@ def calculate_bounds(entities):
                 if i + 1 < len(points):
                     x_coords.append(points[i])
                     y_coords.append(points[i + 1])
-    
+
     if not x_coords:
         return {'min_x': 0, 'min_y': 0, 'max_x': 100, 'max_y': 100}
-    
+
     return {
         'min_x': min(x_coords),
         'min_y': min(y_coords),
@@ -1192,11 +1192,11 @@ def analyze_zones(wall_threshold, restricted_threshold, entrance_threshold):
     """Analyze zones in the floor plan"""
     if not st.session_state.uploaded_file_data:
         return None
-    
+
     zones = []
     entities = st.session_state.uploaded_file_data.get('entities', [])
     bounds = st.session_state.uploaded_file_data.get('bounds', {})
-    
+
     # Process entities by type
     for i, entity in enumerate(entities):
         if entity.get('layer') == 'walls':
@@ -1212,7 +1212,7 @@ def analyze_zones(wall_threshold, restricted_threshold, entrance_threshold):
                 'properties': {'material': 'concrete', 'thickness': 0.2}
             }
             zones.append(zone)
-        
+
         elif entity.get('layer') == 'doors':
             zone = {
                 'id': f'entrance_{i}',
@@ -1226,7 +1226,7 @@ def analyze_zones(wall_threshold, restricted_threshold, entrance_threshold):
                 'properties': {'door_type': 'standard', 'direction': 'inward'}
             }
             zones.append(zone)
-        
+
         elif entity.get('layer') == 'restricted':
             zone = {
                 'id': f'restricted_{i}',
@@ -1240,14 +1240,14 @@ def analyze_zones(wall_threshold, restricted_threshold, entrance_threshold):
                 'properties': {'restriction_type': 'stairs', 'access_level': 'none'}
             }
             zones.append(zone)
-    
+
     # Generate open zones for îlot placement
     open_zones = generate_open_zones(bounds, zones)
     zones.extend(open_zones)
-    
+
     # Calculate zone relationships
     calculate_zone_relationships(zones)
-    
+
     return {
         'zones': zones,
         'statistics': {
@@ -1269,30 +1269,30 @@ def analyze_zones(wall_threshold, restricted_threshold, entrance_threshold):
 def generate_open_zones(bounds, existing_zones):
     """Generate open zones for îlot placement"""
     open_zones = []
-    
+
     # Create a grid of potential zones
     min_x = bounds.get('min_x', 0) + 5
     max_x = bounds.get('max_x', 100) - 5
     min_y = bounds.get('min_y', 0) + 5
     max_y = bounds.get('max_y', 100) - 5
-    
+
     # Generate zones in a grid pattern
     for i in range(8):
         for j in range(6):
             x = min_x + (max_x - min_x) * i / 7
             y = min_y + (max_y - min_y) * j / 5
-            
+
             # Check if this zone conflicts with existing zones
             zone_width = np.random.uniform(8, 12)
             zone_height = np.random.uniform(8, 12)
-            
+
             conflicts = False
             for existing in existing_zones:
                 if (abs(x - existing['x']) < zone_width and 
                     abs(y - existing['y']) < zone_height):
                     conflicts = True
                     break
-            
+
             if not conflicts:
                 zone = {
                     'id': f'open_{len(open_zones)}',
@@ -1306,25 +1306,25 @@ def generate_open_zones(bounds, existing_zones):
                     'properties': {'suitability': 'high', 'lighting': 'natural'}
                 }
                 open_zones.append(zone)
-    
+
     return open_zones
 
 def calculate_zone_relationships(zones):
     """Calculate relationships between zones"""
     for zone in zones:
         zone['adjacent_zones'] = []
-        
+
         # Calculate distance to nearest entrance
         entrance_distances = []
         for other_zone in zones:
             if other_zone['type'] == 'entrance':
                 dist = np.sqrt((zone['x'] - other_zone['x'])**2 + (zone['y'] - other_zone['y'])**2)
                 entrance_distances.append(dist)
-        
+
         zone['distance_to_entrance'] = min(entrance_distances) if entrance_distances else 0
         zone['accessibility_score'] = 1.0 / (1 + zone['distance_to_entrance'])
         zone['aspect_ratio'] = zone['width'] / zone['height'] if zone['height'] > 0 else 1
-        
+
         # Calculate wall adjacency
         wall_count = 0
         for other_zone in zones:
@@ -1332,20 +1332,20 @@ def calculate_zone_relationships(zones):
                 dist = np.sqrt((zone['x'] - other_zone['x'])**2 + (zone['y'] - other_zone['y'])**2)
                 if dist < 5:
                     wall_count += 1
-        
+
         zone['wall_adjacency'] = wall_count
 
 def place_ilots_advanced(ilot_config, constraints):
     """Place îlots using advanced optimization methods"""
     if not st.session_state.analysis_results:
         return None
-    
+
     zones = st.session_state.analysis_results['zones']
-    
+
     # Use ML optimizer for advanced placement (lazy-loaded)
     ml_optimizer = get_ml_optimizer()
     ilots = ml_optimizer.optimize_placement(zones, ilot_config, constraints)
-    
+
     # Add properties to îlots
     for i, ilot in enumerate(ilots):
         ilot['id'] = f'ilot_{i}'
@@ -1357,7 +1357,7 @@ def place_ilots_advanced(ilot_config, constraints):
         ilot['shape'] = 'rectangle'
         ilot['rotation'] = 0
         ilot['opacity'] = 0.7
-    
+
     return {
         'ilots': ilots,
         'placement_statistics': {
@@ -1381,34 +1381,34 @@ def place_ilots_advanced(ilot_config, constraints):
 def calculate_placement_score(ilot, zones, constraints):
     """Calculate placement quality score"""
     score = 0.0
-    
+
     # Distance to walls
     min_wall_distance = min([
         np.sqrt((ilot['x'] - z['x'])**2 + (ilot['y'] - z['y'])**2)
         for z in zones if z['type'] == 'wall'
     ], default=10)
-    
+
     if min_wall_distance >= constraints.get('min_wall_distance', 0.5):
         score += 0.3
-    
+
     # Distance to entrances
     min_entrance_distance = min([
         np.sqrt((ilot['x'] - z['x'])**2 + (ilot['y'] - z['y'])**2)
         for z in zones if z['type'] == 'entrance'
     ], default=10)
-    
+
     if constraints.get('min_entrance_distance', 2) <= min_entrance_distance <= 20:
         score += 0.3
-    
+
     # Distance to restricted areas
     min_restricted_distance = min([
         np.sqrt((ilot['x'] - z['x'])**2 + (ilot['y'] - z['y'])**2)
         for z in zones if z['type'] == 'restricted'
     ], default=10)
-    
+
     if min_restricted_distance >= constraints.get('min_restricted_distance', 1):
         score += 0.4
-    
+
     return min(score, 1.0)
 
 def calculate_accessibility_rating(ilot, zones):
@@ -1416,14 +1416,14 @@ def calculate_accessibility_rating(ilot, zones):
     entrance_zones = [z for z in zones if z['type'] == 'entrance']
     if not entrance_zones:
         return 0.5
-    
+
     distances = [
         np.sqrt((ilot['x'] - ez['x'])**2 + (ilot['y'] - ez['y'])**2)
         for ez in entrance_zones
     ]
-    
+
     avg_distance = np.mean(distances)
-    
+
     if avg_distance < 2:
         return 0.3
     elif avg_distance < 10:
@@ -1441,12 +1441,12 @@ def check_safety_compliance(ilot, zones, constraints):
             dist = np.sqrt((ilot['x'] - zone['x'])**2 + (ilot['y'] - zone['y'])**2)
             if dist < constraints.get('min_restricted_distance', 1):
                 return False
-        
+
         if zone['type'] == 'entrance':
             dist = np.sqrt((ilot['x'] - zone['x'])**2 + (ilot['y'] - zone['y'])**2)
             if dist < constraints.get('min_entrance_distance', 2):
                 return False
-    
+
     return True
 
 def get_ilot_color(size_category):
@@ -1463,17 +1463,17 @@ def calculate_coverage_percentage(ilots):
     """Calculate coverage percentage"""
     if not ilots or not st.session_state.analysis_results:
         return 0
-    
+
     total_ilot_area = sum(ilot.get('area', 0) for ilot in ilots)
     usable_area = st.session_state.analysis_results['statistics'].get('usable_area', 1)
-    
+
     return (total_ilot_area / usable_area) * 100 if usable_area > 0 else 0
 
 def calculate_efficiency_score(ilots):
     """Calculate efficiency score"""
     if not ilots:
         return 0
-    
+
     # Mock calculation based on spacing and utilization
     return np.random.uniform(0.75, 0.95)
 
@@ -1481,27 +1481,27 @@ def generate_corridors(corridor_config):
     """Generate corridor network"""
     if not st.session_state.ilot_results:
         return None
-    
+
     ilots = st.session_state.ilot_results['ilots']
     zones = st.session_state.analysis_results['zones']
-    
+
     corridors = []
-    
+
     # Generate main corridors
     if corridor_config.get('generate_main', True):
         main_corridors = generate_main_corridors(ilots, zones, corridor_config)
         corridors.extend(main_corridors)
-    
+
     # Generate facing corridors (key requirement)
     if corridor_config.get('force_between_facing', True):
         facing_corridors = generate_facing_corridors(ilots, corridor_config)
         corridors.extend(facing_corridors)
-    
+
     # Generate secondary corridors
     if corridor_config.get('generate_secondary', True):
         secondary_corridors = generate_secondary_corridors(ilots, zones, corridor_config)
         corridors.extend(secondary_corridors)
-    
+
     return {
         'corridors': corridors,
         'network_statistics': {
@@ -1520,7 +1520,7 @@ def generate_main_corridors(ilots, zones, config):
     """Generate main corridors from entrances"""
     corridors = []
     entrance_zones = [z for z in zones if z['type'] == 'entrance']
-    
+
     for i, entrance in enumerate(entrance_zones):
         corridor = {
             'id': f'main_corridor_{i}',
@@ -1537,28 +1537,28 @@ def generate_main_corridors(ilots, zones, config):
             'color': '#2E86AB'
         }
         corridors.append(corridor)
-    
+
     return corridors
 
 def generate_facing_corridors(ilots, config):
     """Generate corridors between facing îlots - KEY FEATURE"""
     corridors = []
-    
+
     # Find pairs of îlots that are facing each other
     for i in range(len(ilots)):
         for j in range(i + 1, len(ilots)):
             ilot1 = ilots[i]
             ilot2 = ilots[j]
-            
+
             # Calculate distance and alignment
             distance = np.sqrt((ilot1['x'] - ilot2['x'])**2 + (ilot1['y'] - ilot2['y'])**2)
-            
+
             # Check if they are facing (within reasonable distance and roughly aligned)
             if 4 <= distance <= 20:  # Reasonable distance for facing corridors
                 # Check if they are roughly aligned (horizontal or vertical)
                 dx = abs(ilot1['x'] - ilot2['x'])
                 dy = abs(ilot1['y'] - ilot2['y'])
-                
+
                 if dx < 5 or dy < 5:  # Roughly aligned
                     corridor = {
                         'id': f'facing_corridor_{i}_{j}',
@@ -1576,13 +1576,13 @@ def generate_facing_corridors(ilots, config):
                         'connects_ilots': [ilot1['id'], ilot2['id']]
                     }
                     corridors.append(corridor)
-    
+
     return corridors
 
 def generate_secondary_corridors(ilots, zones, config):
     """Generate secondary corridors"""
     corridors = []
-    
+
     # Connect clusters of îlots
     for i in range(min(len(ilots), 4)):
         corridor = {
@@ -1600,26 +1600,26 @@ def generate_secondary_corridors(ilots, zones, config):
             'color': '#F39C12'
         }
         corridors.append(corridor)
-    
+
     return corridors
 
 def calculate_connectivity_score(corridors):
     """Calculate connectivity score"""
     if not corridors:
         return 0
-    
+
     # Calculate based on corridor density and connectivity
     main_corridors = len([c for c in corridors if c['type'] == 'main'])
     facing_corridors = len([c for c in corridors if c['type'] == 'facing'])
     total_corridors = len(corridors)
-    
+
     connectivity = (main_corridors + facing_corridors * 2) / max(total_corridors, 1)
     return min(connectivity, 1.0)
 
 def show_analysis_results():
     """Display analysis results"""
     st.markdown('<h2 class="sub-header">📊 Analysis Results</h2>', unsafe_allow_html=True)
-    
+
     if not st.session_state.analysis_results:
         st.markdown("""
         <div class="warning-box">
@@ -1628,49 +1628,49 @@ def show_analysis_results():
         </div>
         """, unsafe_allow_html=True)
         return
-    
+
     # Results tabs
     tab1, tab2, tab3, tab4 = st.tabs(["🗺️ Zone Analysis", "🏢 Îlot Placement", "🛤️ Corridor Network", "📈 Performance"])
-    
+
     with tab1:
         show_zone_analysis()
-    
+
     with tab2:
         show_ilot_analysis()
-    
+
     with tab3:
         show_corridor_analysis()
-    
+
     with tab4:
         show_performance_analysis()
 
 def show_zone_analysis():
     """Show zone analysis results"""
     st.markdown("### 🗺️ Zone Analysis Results")
-    
+
     results = st.session_state.analysis_results
     stats = results['statistics']
-    
+
     # Summary metrics
     col1, col2, col3, col4 = st.columns(4)
-    
+
     with col1:
         st.metric("Total Zones", stats['total_zones'])
-    
+
     with col2:
         st.metric("Usable Area", f"{stats['usable_area']:.1f}m²")
-    
+
     with col3:
         st.metric("Wall Zones", stats['wall_zones'])
-    
+
     with col4:
         st.metric("Entrance Zones", stats['entrance_zones'])
-    
+
     # Zone distribution chart
     zone_types = ['Wall', 'Entrance', 'Restricted', 'Open']
     zone_counts = [stats['wall_zones'], stats['entrance_zones'], stats['restricted_zones'], stats['open_zones']]
     colors = ['#2C3E50', '#E74C3C', '#3498DB', '#ECF0F1']
-    
+
     fig_pie = go.Figure(data=[go.Pie(
         labels=zone_types, 
         values=zone_counts,
@@ -1684,34 +1684,34 @@ def show_ilot_analysis():
     if not st.session_state.ilot_results:
         st.info("No îlot placement results available.")
         return
-    
+
     st.markdown("### 🏢 Îlot Placement Results")
-    
+
     results = st.session_state.ilot_results
     stats = results['placement_statistics']
-    
+
     # Summary metrics
     col1, col2, col3, col4 = st.columns(4)
-    
+
     with col1:
         st.metric("Total Îlots", stats['total_ilots'])
-    
+
     with col2:
         st.metric("Coverage", f"{stats.get('coverage_percentage', 0):.1f}%")
-    
+
     with col3:
         st.metric("Efficiency", f"{stats.get('efficiency_score', 0):.2f}")
-    
+
     with col4:
         st.metric("Safety", "✅" if stats.get('safety_compliance', False) else "❌")
-    
+
     # Size distribution
     size_dist = stats.get('size_distribution', {})
     if size_dist:
         labels = list(size_dist.keys())
         values = list(size_dist.values())
         colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4']
-        
+
         fig_bar = go.Figure(data=[go.Bar(
             x=labels, 
             y=values,
@@ -1725,27 +1725,27 @@ def show_corridor_analysis():
     if not st.session_state.corridor_results:
         st.info("No corridor network results available.")
         return
-    
+
     st.markdown("### 🛤️ Corridor Network Results")
-    
+
     results = st.session_state.corridor_results
     stats = results['network_statistics']
-    
+
     # Summary metrics
     col1, col2, col3, col4 = st.columns(4)
-    
+
     with col1:
         st.metric("Total Corridors", stats['total_corridors'])
-    
+
     with col2:
         st.metric("Total Length", f"{stats.get('total_length', 0):.1f}m")
-    
+
     with col3:
         st.metric("Total Area", f"{stats.get('total_area', 0):.1f}m²")
-    
+
     with col4:
         st.metric("Connectivity", f"{stats.get('connectivity_score', 0):.2f}")
-    
+
     # Corridor type distribution
     corridor_types = ['Main', 'Secondary', 'Facing']
     corridor_counts = [
@@ -1754,7 +1754,7 @@ def show_corridor_analysis():
         stats.get('facing_corridors', 0)
     ]
     colors = ['#2E86AB', '#F39C12', '#E74C3C']
-    
+
     fig_pie = go.Figure(data=[go.Pie(
         labels=corridor_types, 
         values=corridor_counts,
@@ -1766,7 +1766,7 @@ def show_corridor_analysis():
 def show_performance_analysis():
     """Show performance analysis"""
     st.markdown("### 📈 Performance Analysis")
-    
+
     # Calculate performance metrics
     metrics = {
         'space_utilization': 0.87,
@@ -1775,12 +1775,12 @@ def show_performance_analysis():
         'safety': 0.94,
         'efficiency': 0.89
     }
-    
+
     # Add real metrics if available
     if st.session_state.ilot_results:
         opt_metrics = st.session_state.ilot_results.get('optimization_metrics', {})
         metrics.update(opt_metrics)
-    
+
     # Performance radar chart
     categories = ['Space Utilization', 'Accessibility', 'Circulation', 'Safety', 'Efficiency']
     values = [
@@ -1790,7 +1790,7 @@ def show_performance_analysis():
         metrics.get('safety_compliance', metrics.get('safety', 0)),
         metrics.get('efficiency', 0)
     ]
-    
+
     fig_radar = go.Figure()
     fig_radar.add_trace(go.Scatterpolar(
         r=values,
@@ -1799,7 +1799,7 @@ def show_performance_analysis():
         name='Performance',
         line_color='#2E86AB'
     ))
-    
+
     fig_radar.update_layout(
         polar=dict(
             radialaxis=dict(
@@ -1808,43 +1808,43 @@ def show_performance_analysis():
             )),
         title="Overall Performance Metrics"
     )
-    
+
     st.plotly_chart(fig_radar, use_container_width=True)
 
 def show_floor_plan_view():
     """Display interactive floor plan"""
     st.markdown('<h2 class="sub-header">🎨 Interactive Floor Plan Visualization</h2>', unsafe_allow_html=True)
-    
+
     if not st.session_state.uploaded_file_data:
         st.warning("Please upload a floor plan first.")
         return
-    
+
     # Control panel
     st.markdown("### 🎛️ Visualization Controls")
-    
+
     col1, col2, col3 = st.columns(3)
-    
+
     with col1:
         show_zones = st.checkbox("Show Zones", value=True)
         show_ilots = st.checkbox("Show Îlots", value=True)
         show_corridors = st.checkbox("Show Corridors", value=True)
-    
+
     with col2:
         show_labels = st.checkbox("Show Labels", value=True)
         show_measurements = st.checkbox("Show Measurements", value=False)
         show_grid = st.checkbox("Show Grid", value=False)
-    
+
     with col3:
         color_scheme = st.selectbox("Color Scheme", ["Professional", "High Contrast", "Colorblind Friendly"])
         plot_height = st.slider("Plot Height", 400, 800, 600)
-    
+
     # Create and display the interactive plot
     fig = create_floor_plan_plot(
         show_zones, show_ilots, show_corridors, 
         show_labels, show_measurements, show_grid, 
         color_scheme
     )
-    
+
     fig.update_layout(height=plot_height)
     st.plotly_chart(fig, use_container_width=True)
 
@@ -1852,20 +1852,20 @@ def create_floor_plan_plot(show_zones, show_ilots, show_corridors,
                           show_labels, show_measurements, show_grid, 
                           color_scheme):
     """Create interactive floor plan plot"""
-    
+
     fig = go.Figure()
-    
+
     # Add zones
     if show_zones and st.session_state.analysis_results:
         zones = st.session_state.analysis_results['zones']
-        
+
         for zone in zones:
             color = get_zone_color(zone['type'], color_scheme)
-            
+
             # Create rectangle coordinates
             x_coords = [zone['x'], zone['x'] + zone['width'], zone['x'] + zone['width'], zone['x'], zone['x']]
             y_coords = [zone['y'], zone['y'], zone['y'] + zone['height'], zone['y'] + zone['height'], zone['y']]
-            
+
             fig.add_trace(go.Scatter(
                 x=x_coords,
                 y=y_coords,
@@ -1879,7 +1879,7 @@ def create_floor_plan_plot(show_zones, show_ilots, show_corridors,
                              f"Area: {zone['area']:.1f}m²<br>" +
                              f"ID: {zone['id']}<extra></extra>"
             ))
-            
+
             if show_labels:
                 fig.add_annotation(
                     x=zone['x'] + zone['width']/2,
@@ -1888,17 +1888,17 @@ def create_floor_plan_plot(show_zones, show_ilots, show_corridors,
                     showarrow=False,
                     font=dict(size=8, color='white' if zone['type'] in ['wall', 'restricted'] else 'black')
                 )
-    
+
     # Add îlots
     if show_ilots and st.session_state.ilot_results:
         ilots = st.session_state.ilot_results['ilots']
-        
+
         for ilot in ilots:
             color = get_ilot_color(ilot['size_category'])
-            
+
             x_coords = [ilot['x'], ilot['x'] + ilot['width'], ilot['x'] + ilot['width'], ilot['x'], ilot['x']]
             y_coords = [ilot['y'], ilot['y'], ilot['y'] + ilot['height'], ilot['y'] + ilot['height'], ilot['y']]
-            
+
             fig.add_trace(go.Scatter(
                 x=x_coords,
                 y=y_coords,
@@ -1913,7 +1913,7 @@ def create_floor_plan_plot(show_zones, show_ilots, show_corridors,
                              f"Score: {ilot.get('placement_score', 0):.2f}<br>" +
                              f"ID: {ilot['id']}<extra></extra>"
             ))
-            
+
             if show_labels:
                 fig.add_annotation(
                     x=ilot['x'] + ilot['width']/2,
@@ -1922,11 +1922,11 @@ def create_floor_plan_plot(show_zones, show_ilots, show_corridors,
                     showarrow=False,
                     font=dict(size=8, color='white')
                 )
-    
+
     # Add corridors
     if show_corridors and st.session_state.corridor_results:
         corridors = st.session_state.corridor_results['corridors']
-        
+
         for corridor in corridors:
             # Create corridor as a thick line
             fig.add_trace(go.Scatter(
@@ -1941,13 +1941,13 @@ def create_floor_plan_plot(show_zones, show_ilots, show_corridors,
                              f"Width: {corridor['width']:.1f}m<br>" +
                              f"ID: {corridor['id']}<extra></extra>"
             ))
-    
+
     # Add grid
     if show_grid:
         for i in range(0, 101, 10):
             fig.add_hline(y=i, line=dict(color='lightgray', width=0.5))
             fig.add_vline(x=i, line=dict(color='lightgray', width=0.5))
-    
+
     # Update layout
     fig.update_layout(
         title="Interactive Floor Plan with Îlots and Corridors",
@@ -1959,7 +1959,7 @@ def create_floor_plan_plot(show_zones, show_ilots, show_corridors,
         yaxis=dict(scaleanchor="x", scaleratio=1),
         plot_bgcolor='white'
     )
-    
+
     return fig
 
 def get_zone_color(zone_type, color_scheme):
@@ -1985,13 +1985,13 @@ def get_zone_color(zone_type, color_scheme):
             'restricted': '#3498DB',
             'open': 'rgba(236, 240, 241, 0.3)'
         }
-    
+
     return colors.get(zone_type, '#95A5A6')
 
 def show_ai_optimization():
     """Show AI optimization interface"""
     st.markdown('<h2 class="sub-header">🤖 AI Optimization Center</h2>', unsafe_allow_html=True)
-    
+
     st.markdown("""
     <div class="info-box">
         <h4>🧠 Advanced AI Optimization</h4>
@@ -1999,41 +1999,41 @@ def show_ai_optimization():
         accessibility, and safety compliance.</p>
     </div>
     """, unsafe_allow_html=True)
-    
+
     col1, col2 = st.columns(2)
-    
+
     with col1:
         st.markdown("### 🎯 Optimization Settings")
-        
+
         algorithm = st.selectbox(
             "AI Algorithm",
             ["Hybrid Neural Network", "Genetic Algorithm", "Particle Swarm", "Simulated Annealing"],
             index=0
         )
-        
+
         training_episodes = st.slider("Training Episodes", 100, 2000, 500, 100)
         learning_rate = st.slider("Learning Rate", 0.001, 0.1, 0.01, 0.001)
-        
+
         objectives = st.multiselect(
             "Optimization Objectives",
             ["Maximize Space Utilization", "Minimize Walking Distance", "Optimize Natural Light", 
              "Ensure Safety Compliance", "Minimize Noise", "Maximize Flexibility"],
             default=["Maximize Space Utilization", "Ensure Safety Compliance"]
         )
-        
+
         if st.button("🚀 Run AI Optimization", type="primary", use_container_width=True):
             run_ai_optimization(algorithm, training_episodes, learning_rate, objectives)
-    
+
     with col2:
         st.markdown("### 📊 AI Performance Metrics")
-        
+
         if st.session_state.optimization_results:
             metrics = st.session_state.optimization_results.get('metrics', {})
-            
+
             st.metric("Optimization Score", f"{metrics.get('overall_score', 0):.2f}")
             st.metric("Convergence Rate", f"{metrics.get('convergence_rate', 0):.1%}")
             st.metric("Training Accuracy", f"{metrics.get('training_accuracy', 0):.1%}")
-            
+
             # Show optimization progress
             progress_data = metrics.get('training_progress', [])
             if progress_data:
@@ -2051,7 +2051,7 @@ def show_ai_optimization():
                     yaxis_title="Score"
                 )
                 st.plotly_chart(fig_progress, use_container_width=True)
-        
+
         else:
             st.info("Run AI optimization to see performance metrics.")
 
@@ -2060,11 +2060,11 @@ def run_ai_optimization(algorithm, episodes, learning_rate, objectives):
     with st.spinner(f"🤖 Running {algorithm} optimization..."):
         # Simulate AI optimization process
         progress_bar = st.progress(0)
-        
+
         for i in range(episodes // 50):
             time.sleep(0.02)  # Simulate processing time
             progress_bar.progress((i + 1) / (episodes // 50))
-        
+
         # Generate optimization results
         results = {
             'algorithm': algorithm,
@@ -2078,26 +2078,26 @@ def run_ai_optimization(algorithm, episodes, learning_rate, objectives):
                 'training_progress': [0.4 + 0.6 * (i / 50) + np.random.normal(0, 0.02) for i in range(50)]
             }
         }
-        
+
         st.session_state.optimization_results = results
         st.success("✅ AI optimization completed successfully!")
 
 def show_reports():
     """Show reports and export options"""
     st.markdown('<h2 class="sub-header">📄 Reports & Export</h2>', unsafe_allow_html=True)
-    
+
     tab1, tab2 = st.tabs(["📊 Analysis Report", "💾 Export Options"])
-    
+
     with tab1:
         generate_comprehensive_report()
-    
+
     with tab2:
         show_export_options()
 
 def generate_comprehensive_report():
     """Generate comprehensive analysis report"""
     st.markdown("### 📊 Comprehensive Analysis Report")
-    
+
     # Executive Summary
     st.markdown("""
     <div class="info-box">
@@ -2107,49 +2107,49 @@ def generate_comprehensive_report():
         while maintaining safety and accessibility standards.</p>
     </div>
     """, unsafe_allow_html=True)
-    
+
     # Key Findings
     if st.session_state.analysis_results:
         stats = st.session_state.analysis_results['statistics']
-        
+
         st.markdown("#### 📈 Key Findings")
-        
+
         col1, col2 = st.columns(2)
-        
+
         with col1:
             st.markdown("**🏗️ Space Analysis:**")
             st.write(f"• Total analyzed area: {stats.get('total_area', 0):.1f}m²")
             st.write(f"• Usable area: {stats.get('usable_area', 0):.1f}m²")
             st.write(f"• Zone utilization: {(stats.get('usable_area', 0) / max(stats.get('total_area', 1), 1) * 100):.1f}%")
-        
+
         with col2:
             st.markdown("**🏢 Infrastructure:**")
             st.write(f"• Wall zones: {stats.get('wall_zones', 0)}")
             st.write(f"• Entrance points: {stats.get('entrance_zones', 0)}")
             st.write(f"• Restricted areas: {stats.get('restricted_zones', 0)}")
-    
+
     # Recommendations
     st.markdown("#### 💡 AI Recommendations")
-    
+
     recommendations = [
         "Optimize corridor widths to balance accessibility and space efficiency",
         "Consider redistributing îlot sizes for improved flexibility",
         "Enhance natural light access by repositioning larger îlots",
         "Ensure all areas meet emergency evacuation requirements"
     ]
-    
+
     for i, rec in enumerate(recommendations, 1):
         st.markdown(f"**{i}.** {rec}")
 
 def show_export_options():
     """Show export options"""
     st.markdown("### 💾 Export Your Results")
-    
+
     col1, col2 = st.columns(2)
-    
+
     with col1:
         st.markdown("**📄 Report Formats**")
-        
+
         if st.button("📊 Download Excel Report", use_container_width=True):
             st.success("✅ Excel report generated!")
             st.download_button(
@@ -2158,7 +2158,7 @@ def show_export_options():
                 file_name=f"floor_plan_analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
-        
+
         if st.button("📄 Download PDF Report", use_container_width=True):
             st.success("✅ PDF report generated!")
             st.download_button(
@@ -2167,10 +2167,10 @@ def show_export_options():
                 file_name=f"floor_plan_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
                 mime="application/pdf"
             )
-    
+
     with col2:
         st.markdown("**🔧 Technical Formats**")
-        
+
         if st.button("🏗️ Export to BIM (IFC)", use_container_width=True):
             st.success("✅ BIM file generated!")
             st.download_button(
@@ -2179,7 +2179,7 @@ def show_export_options():
                 file_name=f"floor_plan_bim_{datetime.now().strftime('%Y%m%d_%H%M%S')}.ifc",
                 mime="application/octet-stream"
             )
-        
+
         if st.button("📐 Export to DXF", use_container_width=True):
             st.success("✅ DXF file generated!")
             st.download_button(
@@ -2192,7 +2192,7 @@ def show_export_options():
 def run_advanced_optimization(method, iterations, objectives, weight):
     """Run advanced optimization"""
     time.sleep(2)  # Simulate processing
-    
+
     return {
         'method': method,
         'iterations': iterations,
