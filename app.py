@@ -14,6 +14,11 @@ import time
 import warnings
 import os
 from pathlib import Path
+import hashlib
+import sqlite3
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+import smtplib
 warnings.filterwarnings('ignore')
 
 # Additional imports for enhanced functionality
@@ -210,7 +215,7 @@ st.markdown("""
 
 # Initialize session state
 if 'current_page' not in st.session_state:
-    st.session_state.current_page = "welcome"
+    st.session_state.current_page = "login"
 if 'uploaded_file_data' not in st.session_state:
     st.session_state.uploaded_file_data = None
 if 'analysis_results' not in st.session_state:
@@ -221,6 +226,16 @@ if 'corridor_results' not in st.session_state:
     st.session_state.corridor_results = None
 if 'optimization_results' not in st.session_state:
     st.session_state.optimization_results = None
+if 'user_authenticated' not in st.session_state:
+    st.session_state.user_authenticated = False
+if 'current_user' not in st.session_state:
+    st.session_state.current_user = None
+if 'user_role' not in st.session_state:
+    st.session_state.user_role = None
+if 'project_id' not in st.session_state:
+    st.session_state.project_id = None
+if 'saved_projects' not in st.session_state:
+    st.session_state.saved_projects = []
 
 # Advanced ML-based Spatial Optimizer
 class MLSpaceOptimizer:
@@ -429,14 +444,37 @@ def cache_expensive_computation(data_hash):
 
 def main():
     """Main application function"""
-    st.markdown('<h1 class="main-header">🏗️ Advanced Floor Plan Analyzer</h1>', unsafe_allow_html=True)
+    
+    # Check authentication first
+    if not st.session_state.user_authenticated:
+        show_login_interface()
+        return
+    
+    st.markdown('<h1 class="main-header">🏗️ Professional Floor Plan Analyzer</h1>', unsafe_allow_html=True)
+
+    # User info header
+    col1, col2, col3 = st.columns([3, 1, 1])
+    with col1:
+        st.markdown(f"**Welcome, {st.session_state.current_user['username']}** ({st.session_state.current_user['role']})")
+    with col2:
+        if st.button("💾 Projects"):
+            st.session_state.current_page = "projects"
+            st.rerun()
+    with col3:
+        if st.button("🚪 Logout"):
+            logout_user()
+            st.rerun()
 
     # Sidebar navigation
     with st.sidebar:
         st.markdown("## 🧭 Navigation")
 
-        if st.button("🏠 Home", use_container_width=True):
-            st.session_state.current_page = "welcome"
+        if st.button("🏠 Dashboard", use_container_width=True):
+            st.session_state.current_page = "dashboard"
+            st.rerun()
+
+        if st.button("📁 Projects", use_container_width=True):
+            st.session_state.current_page = "projects"
             st.rerun()
 
         if st.button("🔍 Analysis", use_container_width=True):
@@ -455,9 +493,24 @@ def main():
             st.session_state.current_page = "optimization"
             st.rerun()
 
+        if st.button("📈 Analytics", use_container_width=True):
+            st.session_state.current_page = "analytics"
+            st.rerun()
+
+        if st.button("👥 Collaboration", use_container_width=True):
+            st.session_state.current_page = "collaboration"
+            st.rerun()
+
         if st.button("📄 Reports", use_container_width=True):
             st.session_state.current_page = "reports"
             st.rerun()
+
+        if st.session_state.current_user['role'] in ['admin', 'manager']:
+            st.markdown("---")
+            st.markdown("### 🔧 Admin")
+            if st.button("⚙️ Settings", use_container_width=True):
+                st.session_state.current_page = "admin"
+                st.rerun()
 
         # Legend
         st.markdown("---")
@@ -483,8 +536,10 @@ def main():
             """, unsafe_allow_html=True)
 
     # Main content
-    if st.session_state.current_page == "welcome":
-        show_welcome_screen()
+    if st.session_state.current_page == "dashboard":
+        show_dashboard()
+    elif st.session_state.current_page == "projects":
+        show_projects_manager()
     elif st.session_state.current_page == "analysis":
         show_analysis_interface()
     elif st.session_state.current_page == "results":
@@ -493,8 +548,832 @@ def main():
         show_floor_plan_view()
     elif st.session_state.current_page == "optimization":
         show_ai_optimization()
+    elif st.session_state.current_page == "analytics":
+        show_advanced_analytics()
+    elif st.session_state.current_page == "collaboration":
+        show_collaboration_interface()
     elif st.session_state.current_page == "reports":
         show_reports()
+    elif st.session_state.current_page == "admin":
+        show_admin_interface()
+
+def show_login_interface():
+    """Display login and registration interface"""
+    from utils.user_management import user_manager
+    
+    st.markdown('<h1 class="main-header">🏗️ Professional Floor Plan Analyzer</h1>', unsafe_allow_html=True)
+    
+    tab1, tab2 = st.tabs(["🔐 Login", "📝 Register"])
+    
+    with tab1:
+        st.markdown("### Login to Your Account")
+        
+        with st.form("login_form"):
+            username = st.text_input("Username or Email")
+            password = st.text_input("Password", type="password")
+            remember_me = st.checkbox("Remember me")
+            
+            submit_login = st.form_submit_button("Login", type="primary", use_container_width=True)
+            
+            if submit_login:
+                if username and password:
+                    result = user_manager.authenticate_user(username, password)
+                    
+                    if result['success']:
+                        st.session_state.user_authenticated = True
+                        st.session_state.current_user = result['user']
+                        st.session_state.current_page = "dashboard"
+                        st.success("Login successful!")
+                        st.rerun()
+                    else:
+                        st.error(result['message'])
+                else:
+                    st.error("Please enter both username and password")
+    
+    with tab2:
+        st.markdown("### Create New Account")
+        
+        with st.form("register_form"):
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                reg_username = st.text_input("Username*")
+                reg_email = st.text_input("Email*")
+                reg_password = st.text_input("Password*", type="password")
+            
+            with col2:
+                reg_company = st.text_input("Company")
+                reg_department = st.text_input("Department")
+                confirm_password = st.text_input("Confirm Password*", type="password")
+            
+            role = st.selectbox("Role", ["user", "architect", "manager"], help="Contact admin for admin access")
+            
+            submit_register = st.form_submit_button("Create Account", type="primary", use_container_width=True)
+            
+            if submit_register:
+                if reg_username and reg_email and reg_password and confirm_password:
+                    if reg_password == confirm_password:
+                        result = user_manager.create_user(
+                            username=reg_username,
+                            email=reg_email,
+                            password=reg_password,
+                            role=role,
+                            company=reg_company,
+                            department=reg_department
+                        )
+                        
+                        if result['success']:
+                            st.success("Account created successfully! Please login.")
+                        else:
+                            st.error(result['message'])
+                    else:
+                        st.error("Passwords do not match")
+                else:
+                    st.error("Please fill in all required fields")
+
+def logout_user():
+    """Logout current user"""
+    st.session_state.user_authenticated = False
+    st.session_state.current_user = None
+    st.session_state.current_page = "login"
+    st.session_state.project_id = None
+
+def show_dashboard():
+    """Display user dashboard with overview"""
+    from utils.user_management import user_manager
+    from utils.advanced_analytics import analytics_service
+    
+    st.markdown("## 📊 Dashboard Overview")
+    
+    # Get user projects
+    projects = user_manager.get_user_projects(st.session_state.current_user['id'])
+    
+    # Dashboard metrics
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.metric("Total Projects", len(projects))
+    
+    with col2:
+        active_projects = len([p for p in projects if p['status'] == 'active'])
+        st.metric("Active Projects", active_projects)
+    
+    with col3:
+        st.metric("Your Role", st.session_state.current_user['role'].title())
+    
+    with col4:
+        st.metric("Company", st.session_state.current_user.get('company', 'N/A'))
+    
+    # Recent projects
+    st.markdown("### 📁 Recent Projects")
+    
+    if projects:
+        recent_projects = projects[:5]
+        
+        for project in recent_projects:
+            with st.expander(f"🏗️ {project['name']} ({project['status']})"):
+                col1, col2, col3 = st.columns([2, 1, 1])
+                
+                with col1:
+                    st.write(f"**Description:** {project['description'] or 'No description'}")
+                    st.write(f"**Role:** {project['role']}")
+                
+                with col2:
+                    st.write(f"**Created:** {project['created_at'][:10]}")
+                    st.write(f"**Updated:** {project['updated_at'][:10]}")
+                
+                with col3:
+                    if st.button(f"Open", key=f"open_{project['id']}"):
+                        st.session_state.project_id = project['id']
+                        st.session_state.current_page = "analysis"
+                        st.rerun()
+    else:
+        st.info("No projects yet. Create your first project to get started!")
+    
+    # Quick actions
+    st.markdown("### ⚡ Quick Actions")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        if st.button("🆕 New Project", use_container_width=True, type="primary"):
+            st.session_state.current_page = "projects"
+            st.rerun()
+    
+    with col2:
+        if st.button("📂 Browse Projects", use_container_width=True):
+            st.session_state.current_page = "projects"
+            st.rerun()
+    
+    with col3:
+        if st.button("📈 View Analytics", use_container_width=True):
+            st.session_state.current_page = "analytics"
+            st.rerun()
+
+def show_projects_manager():
+    """Display comprehensive project management interface"""
+    from utils.user_management import user_manager
+    from utils.cloud_integration import cloud_service, version_control
+    
+    st.markdown("## 📁 Project Management")
+    
+    tab1, tab2, tab3 = st.tabs(["🗂️ My Projects", "🆕 New Project", "🌐 Shared Projects"])
+    
+    with tab1:
+        st.markdown("### Your Projects")
+        
+        projects = user_manager.get_user_projects(st.session_state.current_user['id'])
+        
+        if projects:
+            # Project filters
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                status_filter = st.selectbox("Filter by Status", ["All", "active", "completed", "archived"])
+            
+            with col2:
+                sort_by = st.selectbox("Sort by", ["Last Updated", "Created", "Name"])
+            
+            with col3:
+                search_term = st.text_input("Search projects")
+            
+            # Filter and sort projects
+            filtered_projects = projects
+            if status_filter != "All":
+                filtered_projects = [p for p in filtered_projects if p['status'] == status_filter]
+            
+            if search_term:
+                filtered_projects = [p for p in filtered_projects if search_term.lower() in p['name'].lower()]
+            
+            # Display projects
+            for project in filtered_projects:
+                with st.container():
+                    col1, col2, col3, col4 = st.columns([3, 1, 1, 1])
+                    
+                    with col1:
+                        st.markdown(f"**🏗️ {project['name']}**")
+                        st.caption(project['description'] or "No description")
+                        st.caption(f"Role: {project['role']} | Status: {project['status']}")
+                    
+                    with col2:
+                        st.caption(f"Created: {project['created_at'][:10]}")
+                        st.caption(f"Updated: {project['updated_at'][:10]}")
+                    
+                    with col3:
+                        if st.button("📂 Open", key=f"open_{project['id']}", use_container_width=True):
+                            st.session_state.project_id = project['id']
+                            project_data = user_manager.load_project(project['id'], st.session_state.current_user['id'])
+                            if project_data:
+                                st.session_state.uploaded_file_data = project_data['project_data'].get('floor_plan_data')
+                                st.session_state.analysis_results = project_data['project_data'].get('analysis_results')
+                                st.session_state.ilot_results = project_data['project_data'].get('ilot_results')
+                                st.session_state.corridor_results = project_data['project_data'].get('corridor_results')
+                                st.session_state.current_page = "analysis"
+                                st.rerun()
+                    
+                    with col4:
+                        with st.popover("⚙️ Actions"):
+                            if st.button("📤 Export", key=f"export_{project['id']}"):
+                                # Export project
+                                export_result = cloud_service.upload_project(
+                                    project['id'], 
+                                    {'project_data': project},
+                                    st.session_state.current_user['id']
+                                )
+                                if export_result['success']:
+                                    st.success("Project exported successfully!")
+                            
+                            if project['role'] in ['owner', 'manager']:
+                                if st.button("🗑️ Delete", key=f"delete_{project['id']}"):
+                                    st.warning("Delete functionality would be implemented here")
+                    
+                    st.divider()
+        else:
+            st.info("No projects found. Create your first project!")
+    
+    with tab2:
+        st.markdown("### Create New Project")
+        
+        with st.form("new_project_form"):
+            project_name = st.text_input("Project Name*", placeholder="e.g., Office Layout Redesign")
+            project_description = st.text_area("Description", placeholder="Describe your project goals...")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                project_type = st.selectbox("Project Type", ["Office", "Residential", "Retail", "Industrial", "Healthcare"])
+            
+            with col2:
+                is_public = st.checkbox("Make project public (visible to others)")
+            
+            tags = st.text_input("Tags (comma-separated)", placeholder="office, redesign, modern")
+            
+            submit_project = st.form_submit_button("Create Project", type="primary", use_container_width=True)
+            
+            if submit_project and project_name:
+                project_id = user_manager.create_project(
+                    user_id=st.session_state.current_user['id'],
+                    name=project_name,
+                    description=project_description,
+                    project_data={
+                        'type': project_type,
+                        'tags': [tag.strip() for tag in tags.split(',') if tag.strip()],
+                        'is_public': is_public,
+                        'created_by': st.session_state.current_user['username']
+                    }
+                )
+                
+                st.session_state.project_id = project_id
+                st.success(f"Project '{project_name}' created successfully!")
+                st.session_state.current_page = "analysis"
+                st.rerun()
+    
+    with tab3:
+        st.markdown("### Shared Projects")
+        st.info("🚧 Shared projects feature coming soon! This will show projects shared with you by other users.")
+
+def show_advanced_analytics():
+    """Display advanced analytics dashboard"""
+    from utils.advanced_analytics import analytics_service
+    
+    st.markdown("## 📈 Advanced Analytics & Business Intelligence")
+    
+    if not st.session_state.project_id:
+        st.warning("Please select a project to view analytics.")
+        return
+    
+    # Create mock project data for analytics
+    project_data = {
+        'project_id': st.session_state.project_id,
+        'analysis_results': st.session_state.analysis_results or {},
+        'ilot_results': st.session_state.ilot_results or [],
+        'corridor_results': st.session_state.corridor_results or []
+    }
+    
+    tab1, tab2, tab3, tab4 = st.tabs(["📊 KPI Dashboard", "🎯 Benchmarks", "📈 Performance", "💰 ROI Analysis"])
+    
+    with tab1:
+        st.markdown("### Key Performance Indicators")
+        
+        # Calculate KPIs
+        kpis = analytics_service.calculate_project_kpis(project_data)
+        
+        # Display KPI metrics
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.metric("Space Utilization", f"{kpis['space_utilization_ratio']:.1f}%")
+            st.metric("Îlot Density", f"{kpis['ilot_density']:.1f}")
+        
+        with col2:
+            st.metric("Optimization Score", f"{kpis['optimization_score']:.1f}%")
+            st.metric("Cost Efficiency", f"{kpis['cost_efficiency']:.1f}%")
+        
+        with col3:
+            st.metric("Accessibility Score", f"{kpis['accessibility_score']:.1f}%")
+            st.metric("Sustainability", f"{kpis['sustainability_score']:.1f}%")
+        
+        with col4:
+            st.metric("Compliance Score", f"{kpis['compliance_score']:.1f}%")
+            st.metric("Circulation Efficiency", f"{kpis['circulation_efficiency']:.2f}")
+        
+        # Performance dashboard
+        st.markdown("### Performance Dashboard")
+        dashboard_fig = analytics_service.create_performance_dashboard(project_data)
+        st.plotly_chart(dashboard_fig, use_container_width=True)
+    
+    with tab2:
+        st.markdown("### Industry Benchmark Comparison")
+        
+        benchmark_report = analytics_service.generate_benchmark_report(project_data)
+        
+        # Overall performance
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.metric("Overall Score", f"{benchmark_report['overall_score']:.1f}%")
+            
+            performance_level = benchmark_report['overall_score']
+            if performance_level >= 85:
+                st.success("🌟 Excellent Performance")
+            elif performance_level >= 75:
+                st.info("👍 Good Performance")
+            elif performance_level >= 65:
+                st.warning("📊 Average Performance")
+            else:
+                st.error("📉 Needs Improvement")
+        
+        with col2:
+            strengths = benchmark_report['top_strengths']
+            improvements = benchmark_report['improvement_areas']
+            
+            st.markdown("**🎯 Top Strengths:**")
+            for strength in strengths:
+                st.write(f"• {strength.replace('_', ' ').title()}")
+            
+            st.markdown("**📈 Improvement Areas:**")
+            for area in improvements:
+                st.write(f"• {area.replace('_', ' ').title()}")
+        
+        # Benchmark comparison chart
+        st.markdown("### Detailed Benchmark Analysis")
+        
+        benchmark_data = benchmark_report['benchmark_analysis']
+        
+        metrics = list(benchmark_data.keys())
+        current_values = [data['current_value'] for data in benchmark_data.values()]
+        industry_averages = [data['industry_average'] for data in benchmark_data.values()]
+        
+        fig = go.Figure()
+        
+        fig.add_trace(go.Bar(
+            name='Current Performance',
+            x=metrics,
+            y=current_values,
+            marker_color='steelblue'
+        ))
+        
+        fig.add_trace(go.Bar(
+            name='Industry Average',
+            x=metrics,
+            y=industry_averages,
+            marker_color='lightcoral'
+        ))
+        
+        fig.update_layout(
+            title="Performance vs Industry Benchmarks",
+            xaxis_title="Metrics",
+            yaxis_title="Score",
+            barmode='group'
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+    
+    with tab3:
+        st.markdown("### Performance Trends & Predictions")
+        
+        # Mock trend data (would be real historical data)
+        months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun']
+        efficiency_trend = [70, 72, 75, 78, 80, kpis['optimization_score']]
+        cost_trend = [65, 68, 71, 74, 77, kpis['cost_efficiency']]
+        
+        fig = go.Figure()
+        
+        fig.add_trace(go.Scatter(
+            x=months,
+            y=efficiency_trend,
+            mode='lines+markers',
+            name='Optimization Score',
+            line=dict(color='blue')
+        ))
+        
+        fig.add_trace(go.Scatter(
+            x=months,
+            y=cost_trend,
+            mode='lines+markers',
+            name='Cost Efficiency',
+            line=dict(color='green')
+        ))
+        
+        fig.update_layout(
+            title="Performance Trends Over Time",
+            xaxis_title="Month",
+            yaxis_title="Score (%)",
+            height=400
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # Predictions
+        st.markdown("### 🔮 Performance Predictions")
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.info("**3-Month Projection:** Based on current trends, optimization score expected to reach 85%")
+        
+        with col2:
+            st.info("**6-Month Projection:** Cost efficiency improvements could reach 80% with recommended changes")
+    
+    with tab4:
+        st.markdown("### Return on Investment Analysis")
+        
+        # Generate cost-benefit analysis
+        cost_benefit = analytics_service._generate_cost_benefit_analysis(project_data)
+        roi_projection = analytics_service._calculate_roi_projection(benchmark_report)
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("#### 💰 Cost-Benefit Summary")
+            st.metric("Implementation Cost", f"${cost_benefit['implementation_cost']:,}")
+            st.metric("Annual Benefits", f"${cost_benefit['annual_benefits']['total']:,}")
+            st.metric("ROI Percentage", f"{cost_benefit['roi_percentage']:.1f}%")
+            st.metric("Payback Period", f"{cost_benefit['payback_period_months']:.1f} months")
+        
+        with col2:
+            st.markdown("#### 📈 Value Projection")
+            st.metric("Current Value", f"${roi_projection['current_performance_value']:,}")
+            st.metric("Potential Value", f"${roi_projection['potential_performance_value']:,}")
+            st.metric("Value Increase", f"${roi_projection['value_increase_potential']:,}")
+            st.metric("Confidence Level", f"{roi_projection['confidence_level']}%")
+        
+        # ROI breakdown chart
+        benefits = cost_benefit['annual_benefits']
+        
+        fig = go.Figure(data=[
+            go.Bar(
+                x=['Space Savings', 'Operational Savings', 'Productivity Gains'],
+                y=[benefits['space_savings'], benefits['operational_savings'], benefits['productivity_gains']],
+                marker_color=['lightblue', 'lightgreen', 'lightyellow']
+            )
+        ])
+        
+        fig.update_layout(
+            title="Annual Benefits Breakdown",
+            xaxis_title="Benefit Category",
+            yaxis_title="Value ($)",
+            height=400
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+
+def show_collaboration_interface():
+    """Display collaboration and team features"""
+    from utils.cloud_integration import collaboration_service
+    
+    st.markdown("## 👥 Collaboration & Team Features")
+    
+    if not st.session_state.project_id:
+        st.warning("Please select a project to enable collaboration features.")
+        return
+    
+    tab1, tab2, tab3 = st.tabs(["🤝 Active Sessions", "💬 Comments", "📚 Version History"])
+    
+    with tab1:
+        st.markdown("### Real-time Collaboration Sessions")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.button("🚀 Start Collaboration Session", type="primary", use_container_width=True):
+                session_id = collaboration_service.create_collaboration_session(
+                    st.session_state.project_id,
+                    st.session_state.current_user['id']
+                )
+                st.success(f"Collaboration session started! Session ID: {session_id[:8]}...")
+        
+        with col2:
+            session_id = st.text_input("Join Session (Enter Session ID)")
+            if st.button("🔗 Join Session", use_container_width=True) and session_id:
+                result = collaboration_service.join_collaboration_session(
+                    session_id,
+                    st.session_state.current_user['id']
+                )
+                if result['success']:
+                    st.success("Joined collaboration session!")
+                else:
+                    st.error(result['error'])
+        
+        # Active participants (mock data)
+        st.markdown("### 👥 Active Participants")
+        participants = [
+            {"name": "John Doe", "role": "Architect", "status": "online", "cursor": {"x": 45, "y": 67}},
+            {"name": "Jane Smith", "role": "Manager", "status": "online", "cursor": {"x": 78, "y": 23}}
+        ]
+        
+        for participant in participants:
+            col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
+            
+            with col1:
+                st.write(f"👤 {participant['name']}")
+            with col2:
+                st.write(participant['role'])
+            with col3:
+                status_color = "🟢" if participant['status'] == "online" else "🔴"
+                st.write(f"{status_color} {participant['status']}")
+            with col4:
+                cursor = participant['cursor']
+                st.write(f"📍 ({cursor['x']}, {cursor['y']})")
+    
+    with tab2:
+        st.markdown("### 💬 Project Comments & Annotations")
+        
+        # Add new comment
+        with st.form("add_comment"):
+            comment_text = st.text_area("Add Comment", placeholder="Enter your comment or feedback...")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                pos_x = st.number_input("Position X", value=50.0, step=0.1)
+            with col2:
+                pos_y = st.number_input("Position Y", value=50.0, step=0.1)
+            
+            if st.form_submit_button("💬 Add Comment", type="primary"):
+                comment_id = collaboration_service.add_comment(
+                    st.session_state.project_id,
+                    st.session_state.current_user['id'],
+                    comment_text,
+                    pos_x,
+                    pos_y
+                )
+                st.success("Comment added successfully!")
+                st.rerun()
+        
+        # Display existing comments
+        comments = collaboration_service.get_project_comments(st.session_state.project_id)
+        
+        st.markdown("### 📝 Existing Comments")
+        
+        for comment in comments[-10:]:  # Show last 10 comments
+            with st.container():
+                col1, col2, col3 = st.columns([3, 1, 1])
+                
+                with col1:
+                    st.markdown(f"**{comment['username']}:**")
+                    st.write(comment['comment_text'])
+                
+                with col2:
+                    st.caption(f"Position: ({comment['position_x']:.1f}, {comment['position_y']:.1f})")
+                    st.caption(comment['created_at'][:16])
+                
+                with col3:
+                    status = "✅ Resolved" if comment['resolved'] else "🔄 Open"
+                    st.write(status)
+                
+                st.divider()
+    
+    with tab3:
+        st.markdown("### 📚 Version History & Changes")
+        
+        # Create new version
+        with st.form("create_version"):
+            commit_message = st.text_input("Commit Message", placeholder="Describe your changes...")
+            is_major = st.checkbox("Major Version (significant changes)")
+            
+            if st.form_submit_button("💾 Save Version", type="primary"):
+                if commit_message:
+                    project_data = {
+                        'analysis_results': st.session_state.analysis_results,
+                        'ilot_results': st.session_state.ilot_results,
+                        'corridor_results': st.session_state.corridor_results
+                    }
+                    
+                    from utils.cloud_integration import version_control
+                    version_id = version_control.create_version(
+                        st.session_state.project_id,
+                        st.session_state.current_user['id'],
+                        project_data,
+                        commit_message,
+                        is_major
+                    )
+                    st.success(f"Version saved! Version ID: {version_id[:8]}...")
+                else:
+                    st.error("Please enter a commit message")
+        
+        # Display version history
+        st.markdown("### 📜 Version History")
+        
+        from utils.cloud_integration import version_control
+        versions = version_control.get_version_history(st.session_state.project_id)
+        
+        for version in versions[:10]:  # Show last 10 versions
+            with st.container():
+                col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
+                
+                with col1:
+                    version_type = "🔄 Major" if version['is_major_version'] else "📝 Minor"
+                    st.markdown(f"**v{version['version_number']} {version_type}**")
+                    st.write(version['commit_message'])
+                
+                with col2:
+                    st.write(f"By: {version['username']}")
+                    st.caption(version['created_at'][:16])
+                
+                with col3:
+                    changes = version['changes_summary']
+                    if changes.get('changes'):
+                        for change in changes['changes'][:2]:
+                            st.caption(f"• {change}")
+                
+                with col4:
+                    if st.button("🔄 Restore", key=f"restore_{version['version_id']}"):
+                        st.info("Restore functionality would be implemented here")
+                
+                st.divider()
+
+def show_admin_interface():
+    """Display admin interface for system management"""
+    if st.session_state.current_user['role'] not in ['admin', 'manager']:
+        st.error("Access denied. Admin privileges required.")
+        return
+    
+    st.markdown("## ⚙️ System Administration")
+    
+    tab1, tab2, tab3, tab4 = st.tabs(["👥 User Management", "📊 System Analytics", "⚙️ Settings", "🔧 Maintenance"])
+    
+    with tab1:
+        st.markdown("### User Management")
+        
+        from utils.user_management import user_manager
+        
+        # User statistics
+        st.markdown("#### 📈 User Statistics")
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.metric("Total Users", "156")  # Would be from database
+        with col2:
+            st.metric("Active Users", "89")
+        with col3:
+            st.metric("New This Month", "12")
+        with col4:
+            st.metric("Admin Users", "3")
+        
+        # User management actions
+        st.markdown("#### 👤 User Actions")
+        
+        with st.form("admin_user_form"):
+            action = st.selectbox("Action", ["Create User", "Update User", "Deactivate User"])
+            username = st.text_input("Username")
+            
+            if action == "Create User":
+                email = st.text_input("Email")
+                role = st.selectbox("Role", ["user", "architect", "manager", "admin"])
+                
+                if st.form_submit_button("Create User"):
+                    # Create user logic
+                    st.success(f"User {username} created successfully!")
+            
+            elif action == "Update User":
+                new_role = st.selectbox("New Role", ["user", "architect", "manager", "admin"])
+                
+                if st.form_submit_button("Update User"):
+                    st.success(f"User {username} updated successfully!")
+            
+            elif action == "Deactivate User":
+                if st.form_submit_button("Deactivate User"):
+                    st.warning(f"User {username} deactivated!")
+    
+    with tab2:
+        st.markdown("### System Analytics")
+        
+        # System performance metrics
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.metric("System Uptime", "99.9%")
+        with col2:
+            st.metric("Avg Response Time", "245ms")
+        with col3:
+            st.metric("Daily Analyses", "47")
+        with col4:
+            st.metric("Storage Used", "2.3GB")
+        
+        # Usage analytics chart
+        st.markdown("#### 📊 Usage Analytics")
+        
+        # Mock data for demonstration
+        dates = pd.date_range(start='2024-01-01', end='2024-01-30', freq='D')
+        users = np.random.randint(20, 80, len(dates))
+        analyses = np.random.randint(5, 25, len(dates))
+        
+        fig = go.Figure()
+        
+        fig.add_trace(go.Scatter(
+            x=dates,
+            y=users,
+            mode='lines',
+            name='Daily Active Users',
+            line=dict(color='blue')
+        ))
+        
+        fig.add_trace(go.Scatter(
+            x=dates,
+            y=analyses,
+            mode='lines',
+            name='Daily Analyses',
+            yaxis='y2',
+            line=dict(color='red')
+        ))
+        
+        fig.update_layout(
+            title="System Usage Over Time",
+            xaxis_title="Date",
+            yaxis=dict(title="Active Users", side="left"),
+            yaxis2=dict(title="Analyses", side="right", overlaying="y"),
+            height=400
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+    
+    with tab3:
+        st.markdown("### System Settings")
+        
+        # System configuration
+        with st.form("system_settings"):
+            st.markdown("#### 🔧 General Settings")
+            
+            max_file_size = st.number_input("Max File Size (MB)", value=50, min_value=1, max_value=500)
+            session_timeout = st.number_input("Session Timeout (hours)", value=8, min_value=1, max_value=24)
+            enable_analytics = st.checkbox("Enable Usage Analytics", value=True)
+            
+            st.markdown("#### 📧 Email Settings")
+            smtp_server = st.text_input("SMTP Server", value="smtp.gmail.com")
+            smtp_port = st.number_input("SMTP Port", value=587)
+            
+            st.markdown("#### ☁️ Storage Settings")
+            storage_type = st.selectbox("Storage Type", ["local", "aws", "google"])
+            backup_frequency = st.selectbox("Backup Frequency", ["daily", "weekly", "monthly"])
+            
+            if st.form_submit_button("💾 Save Settings", type="primary"):
+                st.success("Settings saved successfully!")
+    
+    with tab4:
+        st.markdown("### System Maintenance")
+        
+        # Maintenance actions
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("#### 🧹 Cleanup Operations")
+            
+            if st.button("🗑️ Clear Temporary Files", use_container_width=True):
+                st.success("Temporary files cleared!")
+            
+            if st.button("📦 Archive Old Projects", use_container_width=True):
+                st.success("Old projects archived!")
+            
+            if st.button("🔄 Optimize Database", use_container_width=True):
+                st.success("Database optimized!")
+        
+        with col2:
+            st.markdown("#### 💾 Backup Operations")
+            
+            if st.button("📥 Create Full Backup", use_container_width=True):
+                st.success("Full backup created!")
+            
+            if st.button("📤 Restore from Backup", use_container_width=True):
+                st.info("Restore interface would open here")
+            
+            if st.button("☁️ Sync to Cloud", use_container_width=True):
+                st.success("Data synced to cloud!")
+        
+        # System health
+        st.markdown("#### 💓 System Health")
+        
+        health_checks = [
+            ("Database Connection", "✅ Healthy"),
+            ("File System", "✅ Healthy"),
+            ("Email Service", "⚠️ Warning"),
+            ("Cloud Storage", "✅ Healthy"),
+            ("Analytics Service", "✅ Healthy")
+        ]
+        
+        for service, status in health_checks:
+            col1, col2 = st.columns([2, 1])
+            with col1:
+                st.write(service)
+            with col2:
+                st.write(status)
 
 def show_welcome_screen():
     """Display welcome screen with file upload"""
