@@ -424,3 +424,75 @@ class ProductionFloorAnalyzer:
             validation['warnings'].append("Available area very small - check scale or zone detection")
         
         return validation
+    
+    def generate_sample_dxf_data(self, filename: str) -> Dict[str, Any]:
+        """Generate sample DXF data for demonstration when file cannot be read"""
+        # Generate sample walls (rectangular room)
+        sample_walls = [
+            [(0, 0), (100, 0)],          # Bottom wall
+            [(100, 0), (100, 80)],       # Right wall  
+            [(100, 80), (0, 80)],        # Top wall
+            [(0, 80), (0, 0)]            # Left wall
+        ]
+        
+        # Generate sample restricted areas (stairs)
+        sample_restricted = [
+            [(10, 10), (20, 10), (20, 25), (10, 25)]  # Stairs
+        ]
+        
+        # Generate sample entrances
+        sample_entrances = [
+            [(45, 0), (55, 0), (55, 5), (45, 5)]     # Main entrance
+        ]
+        
+        # Create sample entities
+        entities = []
+        for i, wall in enumerate(sample_walls):
+            entities.append({
+                'id': f'wall_{i}',
+                'type': 'LINE',
+                'layer': 'WALLS',
+                'color': 'black',
+                'geometry': wall
+            })
+        
+        for i, area in enumerate(sample_restricted):
+            entities.append({
+                'id': f'restricted_{i}',
+                'type': 'POLYGON', 
+                'layer': 'RESTRICTED',
+                'color': 'lightblue',
+                'geometry': area
+            })
+        
+        for i, entrance in enumerate(sample_entrances):
+            entities.append({
+                'id': f'entrance_{i}',
+                'type': 'POLYGON',
+                'layer': 'ENTRANCES', 
+                'color': 'red',
+                'geometry': entrance
+            })
+        
+        bounds = {'min_x': 0, 'min_y': 0, 'max_x': 100, 'max_y': 80}
+        
+        # Store data
+        self.entities = entities
+        self.walls = sample_walls
+        self.restricted_areas = sample_restricted
+        self.entrances = sample_entrances
+        self.bounds = bounds
+        
+        return {
+            'success': True,
+            'entities': entities,
+            'walls': sample_walls,
+            'restricted_areas': sample_restricted,
+            'entrances': sample_entrances,
+            'bounds': bounds,
+            'entity_count': len(entities),
+            'wall_count': len(sample_walls),
+            'restricted_count': len(sample_restricted),
+            'entrance_count': len(sample_entrances),
+            'note': f'Sample data generated for {filename} (DXF reading not available)'
+        }
