@@ -85,10 +85,23 @@ st.markdown("""
         border: 2px solid #e9ecef;
         box-shadow: 0 8px 32px rgba(0,0,0,0.1);
         transition: transform 0.3s ease;
+        color: #2C3E50;
     }
     .feature-card:hover {
         transform: translateY(-5px);
         box-shadow: 0 12px 48px rgba(0,0,0,0.15);
+    }
+    .feature-card h4 {
+        color: #2E86AB;
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+    .feature-card ul {
+        color: #495057;
+    }
+    .feature-card li {
+        margin-bottom: 0.5rem;
+        color: #495057;
     }
     .legend-item {
         display: flex;
