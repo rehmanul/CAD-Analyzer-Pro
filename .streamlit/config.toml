@@ -3,6 +3,7 @@ maxUploadSize = 10000
 maxMessageSize = 10000
 headless = true
 enableCORS = false
+port = 5000
 
 [client]
 toolbarMode = "minimal"
