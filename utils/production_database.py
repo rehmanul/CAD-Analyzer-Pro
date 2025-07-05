@@ -33,26 +33,34 @@ class ProductionDatabaseManager:
             # Configure SSL settings for Render PostgreSQL
             self.connection_pool = SimpleConnectionPool(
                 minconn=1,
-                maxconn=20,
+                maxconn=5,
                 dsn=self.database_url,
-                sslmode='require'
+                sslmode='require',
+                connect_timeout=10
             )
             print("✅ PostgreSQL connection pool initialized")
         except Exception as e:
             print(f"❌ Database connection failed: {e}")
-            raise
+            print("⚠️ Running in fallback mode without database")
+            self.connection_pool = None
     
     def get_connection(self):
         """Get connection from pool"""
-        return self.connection_pool.getconn()
+        if self.connection_pool:
+            return self.connection_pool.getconn()
+        return None
     
     def return_connection(self, conn):
         """Return connection to pool"""
-        self.connection_pool.putconn(conn)
+        if self.connection_pool and conn:
+            self.connection_pool.putconn(conn)
     
     def init_production_schema(self):
         """Initialize full production database schema"""
         conn = self.get_connection()
+        if not conn:
+            print("⚠️ Skipping database schema initialization - no connection available")
+            return
         try:
             cursor = conn.cursor()
             
