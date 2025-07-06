@@ -17,15 +17,22 @@ from pathlib import Path
 import hashlib
 warnings.filterwarnings('ignore')
 
-# Production system imports
-from utils.production_database import production_db
-from utils.production_floor_analyzer import ProductionFloorAnalyzer
-from utils.production_ilot_system import ProductionIlotPlacer
-from utils.corridor_generator import AdvancedCorridorGenerator
+# Production system imports with error handling
+try:
+    from utils.production_database import production_db
+    from utils.production_floor_analyzer import ProductionFloorAnalyzer
+    from utils.production_ilot_system import ProductionIlotPlacer
+    from utils.corridor_generator import AdvancedCorridorGenerator
+    PRODUCTION_MODULES_AVAILABLE = True
+except ImportError as e:
+    print(f"Production modules not available: {e}")
+    PRODUCTION_MODULES_AVAILABLE = False
 
-# Configure Streamlit to run on correct port
-os.environ['STREAMLIT_SERVER_PORT'] = '5000'
-os.environ['STREAMLIT_SERVER_ADDRESS'] = '0.0.0.0'
+# Configure Streamlit for deployment environment
+# Replit uses port 5000, Streamlit Cloud uses default 8501
+if 'REPLIT_ENVIRONMENT' in os.environ or 'REPL_OWNER' in os.environ:
+    os.environ['STREAMLIT_SERVER_PORT'] = '5000'
+    os.environ['STREAMLIT_SERVER_ADDRESS'] = '0.0.0.0'
 
 # Configure page
 st.set_page_config(
