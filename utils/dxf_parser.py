@@ -678,16 +678,16 @@ class DXFParser:
         """Extract block definitions"""
         blocks = {}
 
-        for block_name, block in doc.blocks.items():
-            if not block_name.startswith('*'):  # Skip anonymous blocks
+        for block in doc.blocks:
+            if not block.name.startswith('*'):  # Skip anonymous blocks
                 block_entities = []
                 for entity in block:
                     parsed_entity = self._parse_entity(entity)
                     if parsed_entity:
                         block_entities.append(parsed_entity)
 
-                blocks[block_name] = {
-                    'name': block_name,
+                blocks[block.name] = {
+                    'name': block.name,
                     'entities': block_entities,
                     'base_point': {
                         'x': block.block.dxf.base_point.x,

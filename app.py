@@ -4034,5 +4034,4 @@ def run_advanced_optimization(method, iterations, objectives, weight):
     }
 
 if __name__ == "__main__":
-    # Run production app
-    exec(open('production_app.py').read())
+    main()
