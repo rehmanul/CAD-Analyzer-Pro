@@ -1,15 +1,16 @@
 import streamlit as st
+import logging
+import time
+import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
 import pandas as pd
-import numpy as np
 import json
 import io
 import tempfile
 import os
 from typing import Dict, List, Tuple, Any, Optional
-import logging
 from datetime import datetime
 import psycopg2
 from psycopg2.pool import SimpleConnectionPool
@@ -22,6 +23,9 @@ from utils.corridor_generator import AdvancedCorridorGenerator
 from utils.visualization import FloorPlanVisualizer
 from utils.report_generator import ReportGenerator
 from utils.production_database import ProductionDatabaseManager
+from utils.ml_space_optimizer import MLSpaceOptimizer
+from utils.spatial_optimizer import SpatialOptimizer
+from utils.advanced_analytics import AdvancedAnalytics
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -149,7 +153,7 @@ def process_uploaded_file(uploaded_file):
         try:
             if file_extension in ['dxf', 'dwg']:
                 parser = AdvancedDXFParser()
-                file_data = parser.parse_file(tmp_file_path)
+                file_data = parser.parse_dxf_content(tmp_file_path)
 
                 if file_data and 'entities' in file_data:
                     # Enhance with geometric analysis
@@ -759,6 +763,7 @@ def show_corridor_generation():
             corridors = generate_corridors(corridor_config)
 
             if corridors:
+                ```python
                 st.session_state.corridors_generated = corridors
 
                 st.markdown("""
@@ -775,18 +780,18 @@ def generate_corridors(config):
     """Generate corridors between îlot rows"""
     try:
         corridor_gen = AdvancedCorridorGenerator()
-        
+
         # Load floor plan data into generator
         ilots = st.session_state.ilots_placed.get('placed_ilots', [])
         zones = st.session_state.zones_analyzed
-        
+
         walls = [z.get('geometry', {}).get('coordinates', []) for z in zones.get('walls', [])]
         restricted_areas = [z.get('geometry', {}).get('coordinates', []) for z in zones.get('restricted_areas', [])]
         entrances = [z.get('geometry', {}).get('coordinates', []) for z in zones.get('entrances', [])]
         bounds = st.session_state.uploaded_file_data.get('bounds', {})
-        
+
         corridor_gen.load_floor_plan_data(ilots, walls, restricted_areas, entrances, bounds)
-        
+
         # Generate complete corridor network
         corridors = corridor_gen.generate_complete_corridor_network(config)
         return corridors
@@ -1141,6 +1146,108 @@ def main():
     st.sidebar.markdown("---")
     st.sidebar.markdown("🏨 **Professional Hotel Floor Plan Analyzer**")
     st.sidebar.markdown("Advanced AI-powered spatial optimization")
+
+def place_hotel_ilots_advanced(config, constraints):
+    """Place îlots using advanced AI algorithms"""
+    if not st.session_state.zones_analyzed:
+        return None
+
+    try:
+        # Use ML space optimizer for most advanced placement
+        ml_optimizer = MLSpaceOptimizer()
+
+        # Prepare îlot requirements for ML
+        total_area = sum(space.get('area', 0) for space in st.session_state.zones_analyzed.get('open_spaces', []))
+
+        ilot_requirements = []
+        size_categories = {
+            'small': {'min': 0.5, 'max': 1.0},
+            'medium': {'min': 1.0, 'max': 3.0}, 
+            'large': {'min': 3.0, 'max': 5.0},
+            'xlarge': {'min': 5.0, 'max': 10.0}
+        }
+
+        # Calculate îlot counts based on percentages
+        utilization = 0.7  # 70% space utilization
+        target_area = total_area * utilization
+
+        for category, percentage in [
+            ('small', config.get('size_0_1_percent', 10)),
+            ('medium', config.get('size_1_3_percent', 25)),
+            ('large', config.get('size_3_5_percent', 30)),
+            ('xlarge', config.get('size_5_10_percent', 35))
+        ]:
+            cat_area = target_area * (percentage / 100)
+            avg_size = (size_categories[category]['min'] + size_categories[category]['max']) / 2
+            count = max(1, int(cat_area / avg_size))
+
+            for i in range(count):
+                area = np.random.uniform(size_categories[category]['min'], size_categories[category]['max'])
+                width = np.sqrt(area)
+                height = area / width
+
+                ilot_requirements.append({
+                    'id': f'{category}_ilot_{i}',
+                    'size_category': category,
+                    'dimensions': {'width': width, 'height': height, 'area': area}
+                })
+
+        # Advanced ML optimization with 100 episodes for maximum quality
+        optimized_ilots = ml_optimizer.optimize_placement(
+            st.session_state.zones_analyzed,
+            ilot_requirements,
+            constraints,
+            episodes=100
+        )
+
+        # Use spatial optimizer for further refinement
+        spatial_optimizer = SpatialOptimizer()
+        final_ilots = spatial_optimizer.optimize_placement(
+            optimized_ilots,
+            st.session_state.zones_analyzed,
+            method='genetic',
+            max_iterations=50
+        )
+
+        # Generate advanced analytics
+        analytics_service = AdvancedAnalytics()
+        performance_analytics = analytics_service.generate_benchmark_report({
+            'analysis_results': st.session_state.zones_analyzed,
+            'ilot_results': final_ilots,
+            'project_id': f'hotel_project_{int(time.time())}'
+        })
+
+        return {
+            'ilots': final_ilots,
+            'analytics': performance_analytics,
+            'optimization_metrics': ml_optimizer.get_optimization_metrics(),
+            'total_placed': len(final_ilots),
+            'algorithm': 'ML + Spatial Optimization'
+        }
+
+    except Exception as e:
+        logger.error(f"Advanced ML îlot placement failed: {str(e)}")
+        # Fallback to production system
+        try:
+            ilot_system = ProductionIlotSystem()
+            placement_config = {
+                'size_distribution': {
+                    'small': config.get('size_0_1_percent', 10) / 100,
+                    'medium': config.get('size_1_3_percent', 25) / 100,
+                    'large': config.get('size_3_5_percent', 30) / 100,
+                    'xlarge': config.get('size_5_10_percent', 35) / 100
+                },
+                'constraints': constraints,
+                'optimization_method': 'hybrid_ai'
+            }
+
+            results = ilot_system.place_ilots_intelligent(
+                st.session_state.zones_analyzed,
+                placement_config
+            )
+            return results
+        except:
+            return None
 
 if __name__ == "__main__":
     main()
