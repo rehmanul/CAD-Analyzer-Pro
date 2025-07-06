@@ -18,7 +18,7 @@ from psycopg2.pool import SimpleConnectionPool
 from utils.advanced_dxf_parser import AdvancedDXFParser
 from utils.geometric_analyzer import GeometricAnalyzer
 from utils.production_ilot_system import ProductionIlotSystem
-from utils.corridor_generator import CorridorGenerator
+from utils.corridor_generator import AdvancedCorridorGenerator
 from utils.visualization import FloorPlanVisualizer
 from utils.report_generator import ReportGenerator
 from utils.production_database import ProductionDatabase
@@ -774,12 +774,21 @@ def show_corridor_generation():
 def generate_corridors(config):
     """Generate corridors between îlot rows"""
     try:
-        corridor_gen = CorridorGenerator()
-        corridors = corridor_gen.generate_corridors(
-            st.session_state.ilots_placed,
-            st.session_state.zones_analyzed,
-            config
-        )
+        corridor_gen = AdvancedCorridorGenerator()
+        
+        # Load floor plan data into generator
+        ilots = st.session_state.ilots_placed.get('placed_ilots', [])
+        zones = st.session_state.zones_analyzed
+        
+        walls = [z.get('geometry', {}).get('coordinates', []) for z in zones.get('walls', [])]
+        restricted_areas = [z.get('geometry', {}).get('coordinates', []) for z in zones.get('restricted_areas', [])]
+        entrances = [z.get('geometry', {}).get('coordinates', []) for z in zones.get('entrances', [])]
+        bounds = st.session_state.uploaded_file_data.get('bounds', {})
+        
+        corridor_gen.load_floor_plan_data(ilots, walls, restricted_areas, entrances, bounds)
+        
+        # Generate complete corridor network
+        corridors = corridor_gen.generate_complete_corridor_network(config)
         return corridors
     except Exception as e:
         st.error(f"Corridor generation failed: {e}")
