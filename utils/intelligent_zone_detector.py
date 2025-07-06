@@ -227,97 +227,97 @@ class IntelligentZoneDetector:
     
 def _classify_zones_with_ai(self, open_spaces: List[Dict[str, Any]], 
                               structural_elements: Dict[str, Any]) -> Dict[str, List[Dict[str, Any]]]:
-        """Use AI algorithms to classify spaces into different zone types"""
-        
-        classified_zones = {
-            'corridors': [],
-            'rooms': [],
-            'open_spaces': [],
-            'utility_spaces': []
-        }
-        
-        for space in open_spaces:
-            props = space['properties']
-            
-            # Feature vector for classification
-            features = [
-                props['area'],
-                props['aspect_ratio'],
-                props['perimeter'],
-                props['convexity'],
-                props['elongation'],
-                space['accessibility']['connectivity_score'],
-                space['accessibility']['entrance_proximity']
-            ]
-            
-            # Rule-based classification with AI enhancement
-            zone_scores = self._calculate_zone_scores(features, props)
-            
-            # Assign to most likely zone type
-            best_zone = max(zone_scores.items(), key=lambda x: x[1])
-            zone_type = best_zone[0]
-            confidence = best_zone[1]
-            
-            zone_info = {
-                'id': space['id'],
-                'type': zone_type,
-                'confidence': confidence,
-                'geometry': space['contour'],
-                'properties': props,
-                'features': features,
-                'center': props['centroid'],
-                'area': props['area']
-            }
-            
-            if zone_type in classified_zones:
-                classified_zones[zone_type].append(zone_info)
-            else:
-                classified_zones['open_spaces'].append(zone_info)
-        
-        # Post-process classifications
-        classified_zones = self._refine_classifications(classified_zones, structural_elements)
-        
-        return classified_zones
+    """Use AI algorithms to classify spaces into different zone types"""
     
-    def _analyze_circulation_patterns(self, classified_zones: Dict[str, List[Dict[str, Any]]]) -> Dict[str, Any]:
-        """Analyze circulation patterns and connectivity"""
+    classified_zones = {
+        'corridors': [],
+        'rooms': [],
+        'open_spaces': [],
+        'utility_spaces': []
+    }
+    
+    for space in open_spaces:
+        props = space['properties']
         
-        corridors = classified_zones.get('corridors', [])
-        rooms = classified_zones.get('rooms', [])
+        # Feature vector for classification
+        features = [
+            props['area'],
+            props['aspect_ratio'],
+            props['perimeter'],
+            props['convexity'],
+            props['elongation'],
+            space['accessibility']['connectivity_score'],
+            space['accessibility']['entrance_proximity']
+        ]
         
-        # Create circulation graph
-        circulation_graph = nx.Graph()
+        # Rule-based classification with AI enhancement
+        zone_scores = self._calculate_zone_scores(features, props)
         
-        # Add nodes
-        for corridor in corridors:
-            circulation_graph.add_node(corridor['id'], type='corridor', **corridor)
+        # Assign to most likely zone type
+        best_zone = max(zone_scores.items(), key=lambda x: x[1])
+        zone_type = best_zone[0]
+        confidence = best_zone[1]
         
-        for room in rooms:
-            circulation_graph.add_node(room['id'], type='room', **room)
-        
-        # Add edges based on adjacency
-        all_zones = corridors + rooms
-        for i, zone1 in enumerate(all_zones):
-            for zone2 in all_zones[i+1:]:
-                if self._are_zones_adjacent(zone1, zone2):
-                    distance = self._calculate_zone_distance(zone1, zone2)
-                    circulation_graph.add_edge(zone1['id'], zone2['id'], weight=distance)
-        
-        # Analyze circulation metrics
-        circulation_metrics = {
-            'connectivity_matrix': nx.adjacency_matrix(circulation_graph),
-            'shortest_paths': dict(nx.all_pairs_shortest_path_length(circulation_graph)),
-            'centrality_scores': nx.betweenness_centrality(circulation_graph),
-            'main_circulation_spine': self._identify_main_circulation(corridors),
-            'dead_ends': self._identify_dead_ends(circulation_graph),
-            'circulation_efficiency': self._calculate_circulation_efficiency(circulation_graph)
+        zone_info = {
+            'id': space['id'],
+            'type': zone_type,
+            'confidence': confidence,
+            'geometry': space['contour'],
+            'properties': props,
+            'features': features,
+            'center': props['centroid'],
+            'area': props['area']
         }
         
-        return {
-            'graph': circulation_graph,
-            'metrics': circulation_metrics,
-            'flow_analysis': self._analyze_pedestrian_flow(classified_zones)
-        }
+        if zone_type in classified_zones:
+            classified_zones[zone_type].append(zone_info)
+        else:
+            classified_zones['open_spaces'].append(zone_info)
+    
+    # Post-process classifications
+    classified_zones = self._refine_classifications(classified_zones, structural_elements)
+    
+    return classified_zones
+
+def _analyze_circulation_patterns(self, classified_zones: Dict[str, List[Dict[str, Any]]]) -> Dict[str, Any]:
+    """Analyze circulation patterns and connectivity"""
+    
+    corridors = classified_zones.get('corridors', [])
+    rooms = classified_zones.get('rooms', [])
+    
+    # Create circulation graph
+    circulation_graph = nx.Graph()
+    
+    # Add nodes
+    for corridor in corridors:
+        circulation_graph.add_node(corridor['id'], type='corridor', **corridor)
+    
+    for room in rooms:
+        circulation_graph.add_node(room['id'], type='room', **room)
+    
+    # Add edges based on adjacency
+    all_zones = corridors + rooms
+    for i, zone1 in enumerate(all_zones):
+        for zone2 in all_zones[i+1:]:
+            if self._are_zones_adjacent(zone1, zone2):
+                distance = self._calculate_zone_distance(zone1, zone2)
+                circulation_graph.add_edge(zone1['id'], zone2['id'], weight=distance)
+    
+    # Analyze circulation metrics
+    circulation_metrics = {
+        'connectivity_matrix': nx.adjacency_matrix(circulation_graph),
+        'shortest_paths': dict(nx.all_pairs_shortest_path_length(circulation_graph)),
+        'centrality_scores': nx.betweenness_centrality(circulation_graph),
+        'main_circulation_spine': self._identify_main_circulation(corridors),
+        'dead_ends': self._identify_dead_ends(circulation_graph),
+        'circulation_efficiency': self._calculate_circulation_efficiency(circulation_graph)
+    }
+    
+    return {
+        'graph': circulation_graph,
+        'metrics': circulation_metrics,
+        'flow_analysis': self._analyze_pedestrian_flow(classified_zones)
+    }
     
     def _detect_entrance_points(self, structural_elements: Dict[str, Any], 
                               circulation_network: Dict[str, Any]) -> List[Dict[str, Any]]:
