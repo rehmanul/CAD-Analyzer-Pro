@@ -1,34 +1,4 @@
 [server]
-maxUploadSize = 5000
-maxMessageSize = 5000
 headless = true
-port = 8501
 address = "0.0.0.0"
-enableStaticServing = true
-enableCORS = false
-enableXsrfProtection = false
-runOnSave = false
-
-[client]
-toolbarMode = "minimal"
-showErrorDetails = false
-
-[browser]
-gatherUsageStats = false
-serverAddress = "0.0.0.0"
-serverPort = 8501
-
-[global]
-developmentMode = false
-suppressDeprecationWarnings = true
-
-[runner]
-magicEnabled = false
-installTracer = false
-fixMatplotlib = false
-
-[theme]
-primaryColor = "#1f77b4"
-backgroundColor = "#ffffff"
-secondaryBackgroundColor = "#f0f2f6"
-textColor = "#262730"
+port = 5000
