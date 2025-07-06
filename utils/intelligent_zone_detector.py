@@ -1050,3 +1050,117 @@ def _analyze_circulation_patterns(self, classified_zones: Dict[str, List[Dict[st
             'position': geometry.get('position', {'x': 0, 'y': 0}),
             'height': geometry.get('height', 1.0)
         }
+    
+    def _group_connected_walls(self, wall_lines: List[Dict[str, Any]]) -> List[List[Dict[str, Any]]]:
+        """Group connected wall segments"""
+        if not wall_lines:
+            return []
+        
+        groups = []
+        used = set()
+        
+        for i, line in enumerate(wall_lines):
+            if i in used:
+                continue
+                
+            group = [line]
+            used.add(i)
+            
+            # Find connected lines
+            for j, other_line in enumerate(wall_lines):
+                if j in used:
+                    continue
+                    
+                # Check if lines are connected (within tolerance)
+                tolerance = 0.1
+                line_end = line['end']
+                other_start = other_line['start']
+                
+                if (abs(line_end[0] - other_start[0]) < tolerance and 
+                    abs(line_end[1] - other_start[1]) < tolerance):
+                    group.append(other_line)
+                    used.add(j)
+            
+            groups.append(group)
+        
+        return groups
+    
+    def _is_load_bearing_wall(self, wall_group: List[Dict[str, Any]]) -> bool:
+        """Determine if a wall group is load-bearing"""
+        total_length = 0
+        for wall in wall_group:
+            start = wall['start']
+            end = wall['end']
+            length = ((end[0] - start[0])**2 + (end[1] - start[1])**2)**0.5
+            total_length += length
+        
+        return total_length > 5.0  # Walls longer than 5 meters are likely load-bearing
+    
+    def _create_fallback_zones(self, floor_plan_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create fallback zones when intelligent detection fails"""
+        entities = floor_plan_data.get('entities', [])
+        bounds = floor_plan_data.get('bounds', {})
+        
+        width = bounds.get('max_x', 100) - bounds.get('min_x', 0)
+        height = bounds.get('max_y', 100) - bounds.get('min_y', 0)
+        
+        # Create simple rectangular zones
+        zones = {
+            'rooms': [
+                {
+                    'id': 'room_1',
+                    'type': 'room',
+                    'bounds': {
+                        'min_x': bounds.get('min_x', 0),
+                        'min_y': bounds.get('min_y', 0),
+                        'max_x': bounds.get('min_x', 0) + width * 0.8,
+                        'max_y': bounds.get('min_y', 0) + height * 0.8
+                    },
+                    'area': width * height * 0.64,
+                    'properties': {
+                        'aspect_ratio': 1.0,
+                        'accessibility': 'high'
+                    }
+                }
+            ],
+            'corridors': [
+                {
+                    'id': 'corridor_1',
+                    'type': 'corridor',
+                    'bounds': {
+                        'min_x': bounds.get('min_x', 0) + width * 0.8,
+                        'min_y': bounds.get('min_y', 0),
+                        'max_x': bounds.get('max_x', 100),
+                        'max_y': bounds.get('max_y', 100)
+                    },
+                    'area': width * height * 0.2,
+                    'properties': {
+                        'width': width * 0.2,
+                        'connectivity': 'high'
+                    }
+                }
+            ],
+            'service_areas': [],
+            'amenities': []
+        }
+        
+        return {
+            'zones': zones,
+            'structural_elements': {
+                'walls': [{'type': 'wall', 'start': (0, 0), 'end': (width, 0)}],
+                'columns': [],
+                'openings': []
+            },
+            'circulation_network': {
+                'main_paths': [],
+                'secondary_paths': [],
+                'emergency_exits': []
+            },
+            'spatial_relationships': {},
+            'recommendations': ['Basic fallback zones created'],
+            'analysis_metadata': {
+                'detection_confidence': 0.5,
+                'zone_count': 2,
+                'coverage_percentage': 84.0
+            }
+        }
