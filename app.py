@@ -3847,7 +3847,10 @@ def show_ai_optimization():
         )
 
         if st.button("🚀 Run AI Optimization", type="primary", use_container_width=True):
-            run_ai_optimization(algorithm, training_episodes, learning_rate, objectives)
+            try:
+                run_ai_optimization(algorithm, training_episodes, learning_rate, objectives)
+            except Exception as e:
+                st.error(f"Error running AI optimization: {e}")
 
     with col2:
         st.markdown("### 📊 AI Performance Metrics")
