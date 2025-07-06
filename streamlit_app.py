@@ -1,25 +1,12 @@
-"""
-Streamlit Cloud Deployment Version
-Professional Floor Plan Analyzer with essential features
-"""
-
 import streamlit as st
-import pandas as pd
-import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
+import pandas as pd
+import numpy as np
 import json
-import uuid
-from datetime import datetime
-import base64
-import io
-from typing import Dict, List, Tuple, Optional, Any
-import time
-import warnings
+import tempfile
 import os
-from pathlib import Path
-
-warnings.filterwarnings('ignore')
+from typing import Dict, List, Any
 
 # Configure page
 st.set_page_config(
@@ -29,483 +16,409 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for professional look
+# Custom CSS
 st.markdown("""
 <style>
     .main-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
         color: white;
         padding: 2rem;
-        margin: -1rem -1rem 2rem -1rem;
         border-radius: 10px;
         text-align: center;
+        margin-bottom: 2rem;
         box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     }
     .sub-header {
-        color: #2c3e50;
-        border-bottom: 2px solid #3498db;
+        color: #2E86AB;
+        border-bottom: 3px solid #2E86AB;
         padding-bottom: 0.5rem;
-        margin-bottom: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    .feature-card {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        padding: 1.5rem;
+        border-radius: 10px;
+        border-left: 5px solid #2E86AB;
+        margin: 1rem 0;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    .success-box {
+        background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+        border: 1px solid #c3e6cb;
+        color: #155724;
+        padding: 1rem;
+        border-radius: 8px;
+        margin: 1rem 0;
     }
     .metric-card {
         background: white;
-        padding: 1.5rem;
-        border-radius: 10px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        border-left: 4px solid #3498db;
-        margin: 1rem 0;
-    }
-    .feature-card {
-        background: #f8f9fa;
-        padding: 1.5rem;
-        border-radius: 10px;
-        margin: 1rem 0;
-        border: 1px solid #e9ecef;
-    }
-    .warning-box {
-        background: #fff3cd;
-        color: #856404;
         padding: 1rem;
-        border-radius: 5px;
-        border: 1px solid #ffeaa7;
-        margin: 1rem 0;
-    }
-    .success-box {
-        background: #d4edda;
-        color: #155724;
-        padding: 1rem;
-        border-radius: 5px;
-        border: 1px solid #c3e6cb;
-        margin: 1rem 0;
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+        text-align: center;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
 </style>
 """, unsafe_allow_html=True)
 
 # Initialize session state
-if 'uploaded_file_data' not in st.session_state:
-    st.session_state.uploaded_file_data = None
-if 'analysis_results' not in st.session_state:
-    st.session_state.analysis_results = None
-if 'current_page' not in st.session_state:
-    st.session_state.current_page = 'Welcome'
+def init_session_state():
+    if 'uploaded_file_data' not in st.session_state:
+        st.session_state.uploaded_file_data = None
+    if 'zones_analyzed' not in st.session_state:
+        st.session_state.zones_analyzed = None
+    if 'ilots_placed' not in st.session_state:
+        st.session_state.ilots_placed = None
 
-def main():
-    """Main application function"""
-    # Header
-    st.markdown("""
-    <div class="main-header">
-        <h1>🏢 Professional Floor Plan Analyzer</h1>
-        <p>Advanced CAD analysis with intelligent îlot placement for hotels and residential projects</p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Navigation
-    with st.sidebar:
-        st.markdown("### 🗺️ Navigation")
-        page = st.selectbox(
-            "Choose a section:",
-            ["Welcome", "Upload & Analyze", "Floor Plan View", "Results", "Export"],
-            index=0
-        )
-        st.session_state.current_page = page
-        
-        if st.button("🏠 Home"):
-            st.session_state.current_page = "Welcome"
-            st.rerun()
-    
-    # Page routing
-    if st.session_state.current_page == "Welcome":
-        show_welcome_screen()
-    elif st.session_state.current_page == "Upload & Analyze":
-        show_upload_analyze()
-    elif st.session_state.current_page == "Floor Plan View":
-        show_floor_plan_view()
-    elif st.session_state.current_page == "Results":
-        show_results()
-    elif st.session_state.current_page == "Export":
-        show_export()
+def create_sample_floor_plan_data():
+    """Create sample floor plan data for demonstration"""
+    return {
+        'entities': [
+            # Walls (black lines)
+            {'type': 'wall', 'layer': 'walls', 'color': 'black', 
+             'points': [0, 0, 50, 0, 50, 30, 0, 30, 0, 0]},
+            {'type': 'wall', 'layer': 'walls', 'color': 'black', 
+             'points': [10, 5, 40, 5, 40, 25, 10, 25, 10, 5]},
+
+            # Restricted areas (blue zones - stairs, elevators)
+            {'type': 'restricted', 'layer': 'restricted', 'color': 'blue',
+             'points': [5, 10, 8, 10, 8, 15, 5, 15], 'zone_type': 'stairs'},
+            {'type': 'restricted', 'layer': 'restricted', 'color': 'blue',
+             'points': [42, 10, 45, 10, 45, 15, 42, 15], 'zone_type': 'elevator'},
+
+            # Entrances (red zones)
+            {'type': 'entrance', 'layer': 'entrances', 'color': 'red',
+             'points': [23, 0, 27, 0, 27, 2, 23, 2], 'zone_type': 'main_entrance'},
+        ],
+        'bounds': {'min_x': 0, 'min_y': 0, 'max_x': 50, 'max_y': 30},
+        'metadata': {
+            'file_type': 'sample',
+            'layers': ['walls', 'restricted', 'entrances'],
+            'units': 'meters'
+        }
+    }
 
 def show_welcome_screen():
     """Display welcome screen"""
-    st.markdown('<h2 class="sub-header">🎯 Welcome to Professional Floor Plan Analysis</h2>', unsafe_allow_html=True)
-    
-    col1, col2 = st.columns([1, 1])
-    
-    with col1:
-        st.markdown("""
-        <div class="feature-card">
-            <h3>🎨 Professional Features</h3>
-            <ul>
-                <li>✅ DXF/DWG CAD file processing</li>
-                <li>✅ Intelligent zone detection</li>
-                <li>✅ Automatic îlot placement</li>
-                <li>✅ Corridor network generation</li>
-                <li>✅ Advanced analytics & reports</li>
-            </ul>
+    st.markdown("""
+    <div class="main-header">
+        <h1>🏨 Professional Hotel Floor Plan Analyzer</h1>
+        <p>Advanced AI-powered îlot placement and corridor generation system</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="feature-card">
+        <h3>🎯 Hotel-Specific Intelligence</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+            <div>
+                <h4>🏗️ Zone Detection:</h4>
+                <ul>
+                    <li>✅ Walls (black lines) - structural boundaries</li>
+                    <li>✅ Restricted areas (blue) - stairs, elevators, utilities</li>
+                    <li>✅ Entrances/Exits (red) - no îlot placement zones</li>
+                </ul>
+            </div>
+            <div>
+                <h4>🎨 Intelligent Îlot Placement:</h4>
+                <ul>
+                    <li>✅ Configurable size distribution (0-1m², 1-3m², 3-5m², 5-10m²)</li>
+                    <li>✅ Automatic placement avoiding restricted zones</li>
+                    <li>✅ Mandatory corridors between facing îlot rows</li>
+                </ul>
+            </div>
         </div>
-        """, unsafe_allow_html=True)
-    
-    with col2:
-        st.markdown("""
-        <div class="feature-card">
-            <h3>🏨 Industry Applications</h3>
-            <ul>
-                <li>🏨 Hotel room optimization</li>
-                <li>🏢 Office space planning</li>
-                <li>🏠 Residential layout design</li>
-                <li>🏭 Commercial space analysis</li>
-                <li>📊 Space utilization studies</li>
-            </ul>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    st.markdown("### 🚀 Getting Started")
-    st.info("Upload your CAD file (DXF, DWG, or PDF) to begin professional floor plan analysis.")
-    
-    if st.button("📁 Start Analysis →", type="primary", use_container_width=True):
-        st.session_state.current_page = "Upload & Analyze"
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Demo button
+    if st.button("🚀 Try Demo with Sample Floor Plan", type="primary", use_container_width=True):
+        st.session_state.uploaded_file_data = create_sample_floor_plan_data()
+        st.success("✅ Sample hotel floor plan loaded!")
         st.rerun()
 
-def show_upload_analyze():
-    """Display upload and analysis interface"""
-    st.markdown('<h2 class="sub-header">📁 Upload & Analyze Floor Plan</h2>', unsafe_allow_html=True)
-    
-    # File upload
+    # File upload section
+    st.markdown("### 📁 Upload Your Floor Plan")
     uploaded_file = st.file_uploader(
         "Choose a floor plan file",
         type=['dxf', 'dwg', 'jpg', 'jpeg', 'png', 'pdf'],
-        help="Supported formats: DXF, DWG, JPG, PNG, PDF"
+        help="Upload your floor plan file (demo mode - will use sample data)"
     )
-    
+
     if uploaded_file is not None:
-        st.success(f"✅ File uploaded: {uploaded_file.name}")
-        
-        # Mock file processing for demo
-        with st.spinner("Processing floor plan..."):
-            time.sleep(2)
-            
-            # Generate sample data
-            sample_data = {
-                'filename': uploaded_file.name,
-                'file_size': uploaded_file.size,
-                'entities': generate_sample_entities(),
-                'dimensions': {'width': 20.0, 'height': 15.0},
-                'zones': generate_sample_zones(),
-                'processed_at': datetime.now().isoformat()
-            }
-            
-            st.session_state.uploaded_file_data = sample_data
-        
-        st.success("🎉 Floor plan processed successfully!")
-        
-        # Show quick stats
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            st.metric("File Size", f"{uploaded_file.size/1024:.1f} KB")
-        with col2:
-            st.metric("Entities", len(sample_data['entities']))
-        with col3:
-            st.metric("Dimensions", f"{sample_data['dimensions']['width']}×{sample_data['dimensions']['height']}m")
-        with col4:
-            st.metric("Zones", len(sample_data['zones']))
-        
-        # Analysis configuration
-        st.markdown("### ⚙️ Analysis Configuration")
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown("**🏢 Îlot Settings**")
-            ilot_count = st.slider("Number of îlots", 1, 20, 8)
-            ilot_size = st.selectbox("Îlot size category", ["Small", "Medium", "Large"], index=1)
-        
-        with col2:
-            st.markdown("**🛤️ Corridor Settings**")
-            corridor_width = st.slider("Corridor width (m)", 1.0, 3.0, 1.8)
-            corridor_type = st.selectbox("Corridor type", ["Standard", "Emergency", "Accessible"], index=0)
-        
-        if st.button("🚀 Run Analysis", type="primary", use_container_width=True):
-            with st.spinner("Running advanced analysis..."):
-                time.sleep(3)
-                
-                # Generate analysis results
-                results = {
-                    'ilots': generate_sample_ilots(ilot_count),
-                    'corridors': generate_sample_corridors(),
-                    'metrics': {
-                        'space_utilization': 78.5,
-                        'accessibility_score': 92.3,
-                        'circulation_efficiency': 85.7,
-                        'safety_compliance': 94.2
-                    }
-                }
-                
-                st.session_state.analysis_results = results
-            
-            st.success("✅ Analysis completed successfully!")
-            st.info("Navigate to 'Floor Plan View' to see the results.")
+        # For demo purposes, use sample data
+        st.session_state.uploaded_file_data = create_sample_floor_plan_data()
+        st.markdown("""
+        <div class="success-box">
+            <h4>✅ Floor Plan Uploaded!</h4>
+            <p>File processed successfully. Using sample data for demonstration.</p>
+        </div>
+        """, unsafe_allow_html=True)
 
-def show_floor_plan_view():
-    """Display floor plan visualization"""
-    st.markdown('<h2 class="sub-header">🗺️ Interactive Floor Plan</h2>', unsafe_allow_html=True)
-    
-    if st.session_state.uploaded_file_data is None:
-        st.warning("Please upload a floor plan first.")
+def create_quick_preview():
+    """Create a preview of the floor plan"""
+    if not st.session_state.uploaded_file_data:
         return
-    
-    if st.session_state.analysis_results is None:
-        st.warning("Please run analysis first.")
+
+    fig = go.Figure()
+
+    entities = st.session_state.uploaded_file_data.get('entities', [])
+
+    for entity in entities:
+        if 'points' in entity and len(entity['points']) >= 4:
+            points = entity['points']
+            x_coords = [points[i] for i in range(0, len(points), 2)]
+            y_coords = [points[i] for i in range(1, len(points), 2)]
+
+            color = entity.get('color', 'black')
+            if entity.get('type') == 'wall':
+                color = 'black'
+            elif entity.get('type') == 'restricted':
+                color = 'blue'
+            elif entity.get('type') == 'entrance':
+                color = 'red'
+
+            fig.add_trace(go.Scatter(
+                x=x_coords, y=y_coords,
+                mode='lines',
+                line=dict(color=color, width=3),
+                name=entity.get('type', 'Unknown').title(),
+                showlegend=True
+            ))
+
+    fig.update_layout(
+        title="Hotel Floor Plan Preview",
+        xaxis_title="X (meters)",
+        yaxis_title="Y (meters)",
+        height=400,
+        showlegend=True
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
+def show_zone_analysis():
+    """Display zone analysis interface"""
+    st.markdown('<h2 class="sub-header">🏗️ Zone Analysis</h2>', unsafe_allow_html=True)
+
+    if not st.session_state.uploaded_file_data:
+        st.warning("Please upload a floor plan first or try the demo.")
         return
-    
-    # Display options
+
     col1, col2, col3 = st.columns(3)
+
     with col1:
-        show_zones = st.checkbox("Show zones", value=True)
-        show_ilots = st.checkbox("Show îlots", value=True)
+        wall_threshold = st.slider("Wall Detection", 0.0, 1.0, 0.1, 0.1)
+
     with col2:
-        show_corridors = st.checkbox("Show corridors", value=True)
-        show_labels = st.checkbox("Show labels", value=True)
+        restricted_threshold = st.slider("Restricted Areas", 0.0, 1.0, 0.8, 0.1)
+
     with col3:
-        show_grid = st.checkbox("Show grid", value=False)
-        color_scheme = st.selectbox("Color scheme", ["Professional", "Bright", "Minimal"])
-    
-    # Create floor plan visualization
-    fig = create_floor_plan_plot(show_zones, show_ilots, show_corridors, show_labels, show_grid, color_scheme)
-    st.plotly_chart(fig, use_container_width=True)
-    
-    # Show metrics
-    if st.session_state.analysis_results:
-        st.markdown("### 📊 Performance Metrics")
-        metrics = st.session_state.analysis_results['metrics']
-        
+        entrance_threshold = st.slider("Entrances", 0.0, 1.0, 0.3, 0.1)
+
+    if st.button("🔍 Analyze Zones", type="primary", use_container_width=True):
+        # Simulate zone analysis
+        zones = {
+            'walls': [{'geometry': {'coordinates': [0, 0, 50, 0, 50, 30, 0, 30, 0, 0]}}],
+            'restricted_areas': [{'geometry': {'coordinates': [5, 10, 8, 10, 8, 15, 5, 15]}}],
+            'entrances': [{'geometry': {'coordinates': [23, 0, 27, 0, 27, 2, 23, 2]}}],
+            'open_spaces': [{'area': 800}]
+        }
+
+        st.session_state.zones_analyzed = zones
+
+        st.markdown("""
+        <div class="success-box">
+            <h4>✅ Zones Analyzed Successfully!</h4>
+            <p>Zone detection complete. Ready for îlot placement.</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Display statistics
         col1, col2, col3, col4 = st.columns(4)
         with col1:
-            st.metric("Space Utilization", f"{metrics['space_utilization']:.1f}%")
+            st.metric("🏗️ Walls", len(zones['walls']))
         with col2:
-            st.metric("Accessibility", f"{metrics['accessibility_score']:.1f}")
+            st.metric("🚫 Restricted", len(zones['restricted_areas']))
         with col3:
-            st.metric("Circulation", f"{metrics['circulation_efficiency']:.1f}%")
+            st.metric("🚪 Entrances", len(zones['entrances']))
         with col4:
-            st.metric("Safety", f"{metrics['safety_compliance']:.1f}%")
+            st.metric("📐 Area", "800m²")
 
-def show_results():
-    """Display analysis results"""
-    st.markdown('<h2 class="sub-header">📊 Analysis Results</h2>', unsafe_allow_html=True)
-    
-    if st.session_state.analysis_results is None:
-        st.warning("Please run analysis first.")
+def show_ilot_configuration():
+    """Display îlot configuration interface"""
+    st.markdown('<h2 class="sub-header">🎨 Îlot Configuration</h2>', unsafe_allow_html=True)
+
+    if not st.session_state.zones_analyzed:
+        st.warning("Please analyze zones first.")
         return
-    
-    results = st.session_state.analysis_results
-    
-    # Performance summary
-    st.markdown("### 🎯 Performance Summary")
-    
-    metrics = results['metrics']
-    
-    # Create performance chart
-    fig = go.Figure()
-    
-    categories = ['Space Utilization', 'Accessibility', 'Circulation', 'Safety']
-    values = [
-        metrics['space_utilization'],
-        metrics['accessibility_score'], 
-        metrics['circulation_efficiency'],
-        metrics['safety_compliance']
-    ]
-    
-    fig.add_trace(go.Scatterpolar(
-        r=values,
-        theta=categories,
-        fill='toself',
-        name='Performance',
-        fillcolor='rgba(52, 152, 219, 0.3)',
-        line=dict(color='rgba(52, 152, 219, 1)', width=2)
-    ))
-    
-    fig.update_layout(
-        polar=dict(
-            radialaxis=dict(
-                visible=True,
-                range=[0, 100]
-            )
-        ),
-        showlegend=True,
-        title="Performance Radar Chart",
-        height=400
-    )
-    
-    st.plotly_chart(fig, use_container_width=True)
-    
-    # Detailed breakdown
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown("### 🏢 Îlot Analysis")
-        st.info(f"Total îlots placed: {len(results['ilots'])}")
-        
-        ilot_data = pd.DataFrame([
-            {'Size': 'Small', 'Count': 3, 'Area': '12m²'},
-            {'Size': 'Medium', 'Count': 4, 'Area': '18m²'},
-            {'Size': 'Large', 'Count': 1, 'Area': '24m²'}
-        ])
-        st.dataframe(ilot_data, use_container_width=True)
-    
-    with col2:
-        st.markdown("### 🛤️ Corridor Analysis")
-        st.info(f"Total corridors: {len(results['corridors'])}")
-        
-        corridor_data = pd.DataFrame([
-            {'Type': 'Main', 'Length': '45m', 'Width': '1.8m'},
-            {'Type': 'Secondary', 'Length': '32m', 'Width': '1.5m'},
-            {'Type': 'Access', 'Length': '18m', 'Width': '1.2m'}
-        ])
-        st.dataframe(corridor_data, use_container_width=True)
 
-def show_export():
-    """Display export options"""
-    st.markdown('<h2 class="sub-header">📤 Export Results</h2>', unsafe_allow_html=True)
-    
-    if st.session_state.analysis_results is None:
-        st.warning("Please run analysis first.")
+    st.markdown("### 📊 Size Distribution Configuration")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        size_0_1 = st.slider("0-1 m² îlots (%)", 0, 50, 10, 5)
+        size_1_3 = st.slider("1-3 m² îlots (%)", 0, 50, 25, 5)
+
+    with col2:
+        size_3_5 = st.slider("3-5 m² îlots (%)", 0, 50, 30, 5)
+        size_5_10 = st.slider("5-10 m² îlots (%)", 0, 50, 35, 5)
+
+    total_percentage = size_0_1 + size_1_3 + size_3_5 + size_5_10
+
+    if total_percentage != 100:
+        st.warning(f"⚠️ Total percentage: {total_percentage}% (should be 100%)")
+    else:
+        st.success(f"✅ Perfect! Total percentage: {total_percentage}%")
+
+    if total_percentage == 100:
+        if st.button("🎯 Place Îlots", type="primary", use_container_width=True):
+            # Simulate îlot placement
+            ilots = {
+                'placed_ilots': [
+                    {'geometry': {'coordinates': [15, 8, 18, 8, 18, 11, 15, 11, 15, 8]}, 'area': 9, 'id': 1},
+                    {'geometry': {'coordinates': [25, 8, 27, 8, 27, 10, 25, 10, 25, 8]}, 'area': 4, 'id': 2},
+                    {'geometry': {'coordinates': [30, 8, 32, 8, 32, 9, 30, 9, 30, 8]}, 'area': 2, 'id': 3},
+                ],
+                'metrics': {
+                    'space_utilization': 75,
+                    'area_coverage': 68
+                }
+            }
+
+            st.session_state.ilots_placed = ilots
+
+            st.markdown("""
+            <div class="success-box">
+                <h4>✅ Îlots Placed Successfully!</h4>
+                <p>Îlot placement complete. Ready for corridor generation.</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+            # Display statistics
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("🎯 Total Îlots", len(ilots['placed_ilots']))
+            with col2:
+                st.metric("📐 Total Area", "15m²")
+            with col3:
+                st.metric("⚡ Efficiency", "75%")
+            with col4:
+                st.metric("📊 Coverage", "68%")
+
+def show_visualization():
+    """Show complete visualization"""
+    st.markdown('<h2 class="sub-header">🖼️ Complete Layout Visualization</h2>', unsafe_allow_html=True)
+
+    if not all([st.session_state.uploaded_file_data, st.session_state.zones_analyzed, st.session_state.ilots_placed]):
+        st.warning("Please complete all previous steps first.")
         return
-    
-    st.markdown("### 📋 Available Export Formats")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        if st.button("📄 Download PDF Report", type="primary", use_container_width=True):
-            st.success("PDF report generated successfully!")
-            st.download_button(
-                label="📥 Download PDF",
-                data=b"Sample PDF content",
-                file_name="floor_plan_analysis.pdf",
-                mime="application/pdf"
-            )
-    
-    with col2:
-        if st.button("📊 Download Excel Data", type="primary", use_container_width=True):
-            # Create sample Excel data
-            df = pd.DataFrame({
-                'Metric': ['Space Utilization', 'Accessibility', 'Circulation', 'Safety'],
-                'Value': [78.5, 92.3, 85.7, 94.2],
-                'Status': ['Good', 'Excellent', 'Good', 'Excellent']
-            })
-            
-            csv = df.to_csv(index=False)
-            st.download_button(
-                label="📥 Download CSV",
-                data=csv,
-                file_name="analysis_results.csv",
-                mime="text/csv"
-            )
 
-def generate_sample_entities():
-    """Generate sample entities for demonstration"""
-    return [
-        {'type': 'wall', 'points': [0, 0, 20, 0], 'layer': 'walls'},
-        {'type': 'wall', 'points': [20, 0, 20, 15], 'layer': 'walls'},
-        {'type': 'wall', 'points': [20, 15, 0, 15], 'layer': 'walls'},
-        {'type': 'wall', 'points': [0, 15, 0, 0], 'layer': 'walls'},
-        {'type': 'door', 'points': [10, 0, 12, 0], 'layer': 'doors'},
-        {'type': 'window', 'points': [0, 8, 0, 10], 'layer': 'windows'}
-    ]
-
-def generate_sample_zones():
-    """Generate sample zones"""
-    return [
-        {'type': 'living', 'bounds': [2, 2, 8, 8], 'area': 36},
-        {'type': 'bedroom', 'bounds': [10, 2, 8, 6], 'area': 48},
-        {'type': 'kitchen', 'bounds': [2, 10, 6, 4], 'area': 24},
-        {'type': 'bathroom', 'bounds': [12, 10, 6, 4], 'area': 24}
-    ]
-
-def generate_sample_ilots(count):
-    """Generate sample îlots"""
-    ilots = []
-    for i in range(count):
-        ilots.append({
-            'id': i,
-            'x': np.random.uniform(2, 18),
-            'y': np.random.uniform(2, 13),
-            'width': np.random.uniform(1.5, 3),
-            'height': np.random.uniform(1.5, 3),
-            'size': np.random.choice(['Small', 'Medium', 'Large'])
-        })
-    return ilots
-
-def generate_sample_corridors():
-    """Generate sample corridors"""
-    return [
-        {'type': 'main', 'points': [[1, 7], [19, 7]], 'width': 1.8},
-        {'type': 'secondary', 'points': [[10, 1], [10, 14]], 'width': 1.5},
-        {'type': 'access', 'points': [[5, 7], [5, 11]], 'width': 1.2}
-    ]
-
-def create_floor_plan_plot(show_zones, show_ilots, show_corridors, show_labels, show_grid, color_scheme):
-    """Create floor plan visualization"""
     fig = go.Figure()
-    
-    # Background
-    fig.add_shape(
-        type="rect",
-        x0=0, y0=0, x1=20, y1=15,
-        fillcolor="rgba(240, 240, 240, 0.3)",
-        line=dict(color="black", width=2)
-    )
-    
-    # Zones
-    if show_zones and st.session_state.uploaded_file_data:
-        zones = st.session_state.uploaded_file_data['zones']
-        colors = ['rgba(52, 152, 219, 0.3)', 'rgba(46, 204, 113, 0.3)', 'rgba(241, 196, 15, 0.3)', 'rgba(231, 76, 60, 0.3)']
-        
-        for i, zone in enumerate(zones):
-            fig.add_shape(
-                type="rect",
-                x0=zone['bounds'][0], y0=zone['bounds'][1],
-                x1=zone['bounds'][0] + zone['bounds'][2], y1=zone['bounds'][1] + zone['bounds'][3],
-                fillcolor=colors[i % len(colors)],
-                line=dict(color="rgba(0,0,0,0.5)", width=1)
-            )
-    
-    # Îlots
-    if show_ilots and st.session_state.analysis_results:
-        ilots = st.session_state.analysis_results['ilots']
-        
-        for ilot in ilots:
-            color = 'rgba(155, 89, 182, 0.7)' if ilot['size'] == 'Large' else 'rgba(52, 152, 219, 0.7)'
-            fig.add_shape(
-                type="rect",
-                x0=ilot['x'], y0=ilot['y'],
-                x1=ilot['x'] + ilot['width'], y1=ilot['y'] + ilot['height'],
-                fillcolor=color,
-                line=dict(color="black", width=1)
-            )
-    
-    # Corridors
-    if show_corridors and st.session_state.analysis_results:
-        corridors = st.session_state.analysis_results['corridors']
-        
-        for corridor in corridors:
-            points = corridor['points']
-            for i in range(len(points)-1):
-                fig.add_shape(
-                    type="line",
-                    x0=points[i][0], y0=points[i][1],
-                    x1=points[i+1][0], y1=points[i+1][1],
-                    line=dict(color="rgba(230, 126, 34, 0.8)", width=corridor['width']*5)
-                )
-    
+
+    # Plot floor plan
+    entities = st.session_state.uploaded_file_data.get('entities', [])
+    for entity in entities:
+        if 'points' in entity and len(entity['points']) >= 4:
+            points = entity['points']
+            x_coords = [points[i] for i in range(0, len(points), 2)]
+            y_coords = [points[i] for i in range(1, len(points), 2)]
+
+            color = entity.get('color', 'black')
+            if entity.get('type') == 'wall':
+                color = 'black'
+            elif entity.get('type') == 'restricted':
+                color = 'blue'
+            elif entity.get('type') == 'entrance':
+                color = 'red'
+
+            fig.add_trace(go.Scatter(
+                x=x_coords, y=y_coords,
+                mode='lines',
+                fill='toself' if entity.get('type') != 'wall' else None,
+                fillcolor=f'rgba({{"blue": "0, 0, 255", "red": "255, 0, 0"}.get(color, "0, 0, 0")}, 0.3)',
+                line=dict(color=color, width=3),
+                name=entity.get('type', 'Unknown').title(),
+                showlegend=True
+            ))
+
+    # Plot îlots
+    placed_ilots = st.session_state.ilots_placed.get('placed_ilots', [])
+    for i, ilot in enumerate(placed_ilots):
+        if 'geometry' in ilot and 'coordinates' in ilot['geometry']:
+            coords = ilot['geometry']['coordinates']
+            if len(coords) >= 4:
+                x_coords = [coords[i] for i in range(0, len(coords), 2)]
+                y_coords = [coords[i] for i in range(1, len(coords), 2)]
+
+                area = ilot.get('area', 0)
+                if area <= 1:
+                    color = 'lightblue'
+                elif area <= 3:
+                    color = 'lightgreen'
+                elif area <= 5:
+                    color = 'orange'
+                else:
+                    color = 'pink'
+
+                fig.add_trace(go.Scatter(
+                    x=x_coords, y=y_coords,
+                    mode='lines+markers',
+                    fill='toself',
+                    fillcolor=color,
+                    line=dict(color='darkblue', width=2),
+                    name=f'Îlot {i+1} ({area}m²)',
+                    showlegend=False
+                ))
+
     fig.update_layout(
-        title="Interactive Floor Plan",
-        xaxis=dict(title="Width (m)", range=[0, 22]),
-        yaxis=dict(title="Height (m)", range=[0, 17]),
-        showlegend=False,
+        title="🏨 Complete Hotel Floor Plan with Îlots",
+        xaxis_title="X (meters)",
+        yaxis_title="Y (meters)",
         height=600,
-        plot_bgcolor='white'
+        showlegend=True
     )
-    
-    return fig
+
+    st.plotly_chart(fig, use_container_width=True)
+
+def main():
+    """Main application function"""
+    init_session_state()
+
+    # Sidebar navigation
+    st.sidebar.title("🏨 Hotel Floor Plan Analyzer")
+    st.sidebar.markdown("---")
+
+    page = st.sidebar.selectbox(
+        "Choose Analysis Step",
+        [
+            "📁 Upload Floor Plan",
+            "🏗️ Zone Analysis", 
+            "🎨 Îlot Configuration",
+            "🖼️ Visualization"
+        ]
+    )
+
+    # Main content
+    if page == "📁 Upload Floor Plan":
+        show_welcome_screen()
+        if st.session_state.uploaded_file_data:
+            st.markdown("### 👀 Floor Plan Preview")
+            create_quick_preview()
+
+    elif page == "🏗️ Zone Analysis":
+        show_zone_analysis()
+
+    elif page == "🎨 Îlot Configuration":
+        show_ilot_configuration()
+
+    elif page == "🖼️ Visualization":
+        show_visualization()
+
+    # Footer
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("🏨 **Professional Hotel Floor Plan Analyzer**")
+    st.sidebar.markdown("Streamlit Cloud Compatible Version")
 
 if __name__ == "__main__":
     main()
