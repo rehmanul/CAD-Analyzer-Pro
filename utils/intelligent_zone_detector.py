@@ -225,8 +225,8 @@ class IntelligentZoneDetector:
         
         return open_spaces
     
-    def _classify_zones_with_ai(self, open_spaces: List[Dict[str, Any]], 
-                              structural_elements: Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
+def _classify_zones_with_ai(self, open_spaces: List[Dict[str, Any]], 
+                              structural_elements: Dict[str, Any]) -> Dict[str, List[Dict[str, Any]]]:
         """Use AI algorithms to classify spaces into different zone types"""
         
         classified_zones = {

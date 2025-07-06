@@ -21,6 +21,7 @@ warnings.filterwarnings('ignore')
 from utils.production_database import production_db
 from utils.production_floor_analyzer import ProductionFloorAnalyzer
 from utils.production_ilot_system import ProductionIlotPlacer
+from utils.corridor_generator import AdvancedCorridorGenerator
 
 # Configure Streamlit to run on correct port
 os.environ['STREAMLIT_SERVER_PORT'] = '5000'
@@ -1376,18 +1377,74 @@ def show_admin_interface():
                 st.write(status)
 
 def show_welcome_screen():
-    """Display welcome screen with file upload"""
+    """Display welcome screen with hotel-themed imagery and file upload"""
+    # Hero section with hotel-themed background
     st.markdown("""
-    <div class="info-box">
-        <h3>🎯 Welcome to the Advanced Floor Plan Analyzer</h3>
-        <p>This professional-grade application analyzes floor plans in multiple formats (DXF, DWG, JPG, PNG, PDF), 
-        automatically detects zones, places îlots intelligently, and generates optimal corridor networks. 
-        Upload your floor plan to experience the power of AI-driven spatial optimization.</p>
+    <div style="
+        background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), 
+                    url('https://images.pexels.com/photos/271618/pexels-photo-271618.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1');
+        background-size: cover;
+        background-position: center;
+        padding: 4rem 2rem;
+        border-radius: 15px;
+        margin-bottom: 2rem;
+        text-align: center;
+        color: white;
+    ">
+        <h1 style="font-size: 3.5rem; margin-bottom: 1rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);">
+            🏨 Hotel Floor Plan Analyzer
+        </h1>
+        <h3 style="font-size: 1.5rem; margin-bottom: 2rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.8);">
+            Professional Îlot Placement & Corridor Generation System
+        </h3>
+        <p style="font-size: 1.2rem; max-width: 800px; margin: 0 auto; text-shadow: 1px 1px 2px rgba(0,0,0,0.8);">
+            Advanced AI-powered analysis for hotel floor plans with intelligent îlot placement, 
+            mandatory corridor generation between facing rows, and complete compliance with safety regulations.
+        </p>
     </div>
     """, unsafe_allow_html=True)
 
-    # File upload section
-    st.markdown("### 📁 Upload Your Floor Plan")
+    # Client requirements highlight
+    st.markdown("""
+    <div class="info-box" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+        <h3>🎯 Client Requirements - 100% Compliance</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+            <div>
+                <h4>📋 Zone Detection:</h4>
+                <ul>
+                    <li>✅ Walls (black lines)</li>
+                    <li>✅ Restricted areas (light blue - stairs, elevators)</li>
+                    <li>✅ Entrances/Exits (red - no îlot placement)</li>
+                </ul>
+            </div>
+            <div>
+                <h4>🏢 Îlot Placement:</h4>
+                <ul>
+                    <li>✅ Configurable size distribution (0-1m², 1-3m², 3-5m², 5-10m²)</li>
+                    <li>✅ Automatic placement avoiding restricted zones</li>
+                    <li>✅ Mandatory corridors between facing îlot rows</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # File upload section with enhanced styling
+    st.markdown("""
+    <div style="
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        padding: 2rem;
+        border-radius: 15px;
+        border: 2px dashed #2E86AB;
+        margin: 2rem 0;
+        text-align: center;
+    ">
+        <h3 style="color: #2E86AB; margin-bottom: 1rem;">📁 Upload Your Hotel Floor Plan</h3>
+        <p style="color: #495057; margin-bottom: 1.5rem;">
+            Supports DXF, DWG, JPG, PNG, PDF formats with intelligent zone detection
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
 
     uploaded_file = st.file_uploader(
         "Choose a floor plan file",
@@ -1396,19 +1453,19 @@ def show_welcome_screen():
     )
 
     if uploaded_file is not None:
-        with st.spinner("🔄 Processing your floor plan..."):
+        with st.spinner("🔄 Processing your hotel floor plan..."):
             file_data = process_uploaded_file(uploaded_file)
             if file_data:
                 st.session_state.uploaded_file_data = file_data
 
                 st.markdown("""
                 <div class="success-box">
-                    <h4>✅ File Successfully Processed!</h4>
-                    <p>Your floor plan has been analyzed and is ready for intelligent processing.</p>
+                    <h4>✅ Hotel Floor Plan Successfully Processed!</h4>
+                    <p>Your floor plan has been analyzed and is ready for intelligent îlot placement and corridor generation.</p>
                 </div>
                 """, unsafe_allow_html=True)
 
-                # Show file information
+                # Show file information with hotel-specific metrics
                 col1, col2, col3, col4 = st.columns(4)
                 with col1:
                     st.metric("📊 File Size", f"{len(uploaded_file.getvalue())/1024:.1f} KB")
@@ -1420,16 +1477,16 @@ def show_welcome_screen():
                     st.metric("🎯 Layers", len(file_data.get('metadata', {}).get('layers', [])))
 
                 # Quick preview
-                st.markdown("### 👀 Floor Plan Preview")
+                st.markdown("### 👀 Hotel Floor Plan Preview")
                 create_preview_plot(file_data)
 
-                if st.button("🚀 Start Advanced Analysis", type="primary", use_container_width=True):
+                if st.button("🚀 Start Hotel Analysis", type="primary", use_container_width=True):
                     st.session_state.current_page = "analysis"
                     st.rerun()
 
-    # Features showcase
+    # Enhanced features showcase with hotel focus
     st.markdown("---")
-    st.markdown("### 🌟 Advanced Features")
+    st.markdown("### 🌟 Advanced Hotel Floor Plan Features")
 
     col1, col2, col3, col4 = st.columns(4)
 
@@ -1439,11 +1496,11 @@ def show_welcome_screen():
             <h4>📁 Multi-Format Support</h4>
             <ul>
                 <li>✅ DXF files (full native support)</li>
-                <li>✅ DWG files (with smart conversion)</li>
+                <li>✅ DWG files (smart conversion)</li>
                 <li>✅ JPG/PNG images (AI computer vision)</li>
                 <li>✅ PDF floor plans (vector extraction)</li>
                 <li>✅ IFC files (BIM integration)</li>
-                <li>✅ Multiple layers & colors detected</li>
+                <li>✅ Hotel-specific layer detection</li>
             </ul>
         </div>
         """, unsafe_allow_html=True)
@@ -1589,10 +1646,11 @@ def generate_realistic_apartment_layout():
         <div class="feature-card">
             <h4>🔍 AI Zone Detection</h4>
             <ul>
-                <li>Automatic wall identification</li>
-                <li>Entrance/exit detection</li>
-                <li>Restricted area mapping</li>
-                <li>Spatial relationship analysis</li>
+                <li>✅ Automatic wall identification (black)</li>
+                <li>✅ Entrance/exit detection (red)</li>
+                <li>✅ Restricted area mapping (light blue)</li>
+                <li>✅ Hotel-specific spatial analysis</li>
+                <li>✅ Safety compliance validation</li>
             </ul>
         </div>
         """, unsafe_allow_html=True)
@@ -1602,10 +1660,11 @@ def generate_realistic_apartment_layout():
         <div class="feature-card">
             <h4>🎯 Smart Îlot Placement</h4>
             <ul>
-                <li>ML-powered optimization</li>
-                <li>Configurable size distributions</li>
-                <li>Constraint-based placement</li>
-                <li>Safety compliance checking</li>
+                <li>✅ Client-specified size distribution</li>
+                <li>✅ 10% (0-1m²), 25% (1-3m²), 30% (3-5m²), 35% (5-10m²)</li>
+                <li>✅ Constraint-based placement</li>
+                <li>✅ Safety compliance checking</li>
+                <li>✅ Wall adjacency allowed</li>
             </ul>
         </div>
         """, unsafe_allow_html=True)
@@ -1613,12 +1672,13 @@ def generate_realistic_apartment_layout():
     with col4:
         st.markdown("""
         <div class="feature-card">
-            <h4>🛤️ Intelligent Corridors</h4>
+            <h4>🛤️ Mandatory Corridors</h4>
             <ul>
-                <li>Automatic corridor generation</li>
-                <li>Facing îlot connections</li>
-                <li>Pathfinding algorithms</li>
-                <li>Accessibility optimization</li>
+                <li>✅ Automatic detection of facing îlot rows</li>
+                <li>✅ Mandatory corridor generation</li>
+                <li>✅ Configurable corridor width</li>
+                <li>✅ No îlot overlap guarantee</li>
+                <li>✅ Accessibility optimization</li>
             </ul>
         </div>
         """, unsafe_allow_html=True)
