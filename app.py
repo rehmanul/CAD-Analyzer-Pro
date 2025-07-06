@@ -763,7 +763,6 @@ def show_corridor_generation():
             corridors = generate_corridors(corridor_config)
 
             if corridors:
-                ```python
                 st.session_state.corridors_generated = corridors
 
                 st.markdown("""
