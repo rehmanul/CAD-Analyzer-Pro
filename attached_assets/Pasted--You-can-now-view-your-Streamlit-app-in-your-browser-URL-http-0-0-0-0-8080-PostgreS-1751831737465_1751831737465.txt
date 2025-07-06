@@ -1,0 +1,36 @@
+
+  You can now view your Streamlit app in your browser.
+
+  URL: http://0.0.0.0:8080
+
+✅ PostgreSQL connection pool initialized
+✅ Production database schema initialized
+2025-07-06 19:54:09.975 File changed in watched directory: /home/runner/workspace/utils/__pycache__/advanced_dxf_parser.cpython-311.pyc.140432372432688
+Exception in thread Thread-1:
+Traceback (most recent call last):
+  File "/nix/store/clx0mcir7qw8zk36zbr4jra789g3knf6-python3-3.11.10/lib/python3.11/threading.py", line 1045, in _bootstrap_inner
+    self.run()
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/watchdog/observers/api.py", line 213, in run
+    self.dispatch_events(self.event_queue)
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/watchdog/observers/api.py", line 391, in dispatch_events
+    handler.dispatch(event)
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/watchdog/events.py", line 217, in dispatch
+    getattr(self, f"on_{event.event_type}")(event)
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/streamlit/watcher/event_based_path_watcher.py", line 422, in on_modified
+    self.handle_path_change_event(event)
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/streamlit/watcher/event_based_path_watcher.py", line 390, in handle_path_change_event
+    modification_time = util.path_modification_time(
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/streamlit/watcher/util.py", line 94, in path_modification_time
+    return _do_with_retries(
+           ^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/streamlit/watcher/util.py", line 175, in _do_with_retries
+    return orig_fn()
+           ^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/streamlit/watcher/util.py", line 95, in <lambda>
+    lambda: os.stat(path).st_mtime,
+            ^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/home/runner/workspace/utils/__pycache__/advanced_dxf_parser.cpython-311.pyc.140432372432688'
+INFO:ezdxf:DXF version upgrade to DXF R2000.
+INFO:ezdxf:creating ACAD_PLOTSTYLENAME dictionary
+INFO:ezdxf:creating ACAD_TABLESTYLE dictionary
