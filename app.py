@@ -69,25 +69,29 @@ def get_networkx():
     import networkx as nx
     return nx
 
-@st.cache_data
 def get_file_processors():
-    """Import file processing libraries lazily"""
+    """Import file processing libraries with error handling"""
+    processors = {}
+    
     try:
         import ezdxf
+        processors['ezdxf'] = ezdxf
     except ImportError:
-        ezdxf = None
+        processors['ezdxf'] = None
 
     try:
         import fitz  # PyMuPDF
+        processors['fitz'] = fitz
     except ImportError:
-        fitz = None
+        processors['fitz'] = None
 
     try:
         from PIL import Image
+        processors['PIL'] = Image
     except ImportError:
-        Image = None
+        processors['PIL'] = None
 
-    return ezdxf, fitz, Image
+    return processors
 
 # Set page config
 st.set_page_config(
@@ -2030,8 +2034,9 @@ def process_dxf_file(content, filename):
             
             try:
                 # Try using ezdxf for proper DXF parsing
-                ezdxf, _, _ = get_file_processors()
-                if ezdxf:
+                processors = get_file_processors()
+                if processors['ezdxf']:
+                    ezdxf = processors['ezdxf']
                     doc = ezdxf.readfile(tmp_file.name)
                     st.success("✅ DXF file successfully loaded with ezdxf!")
                     
@@ -2148,30 +2153,19 @@ def process_dxf_file(content, filename):
             if os.path.exists(tmp_file.name):
                 os.unlink(tmp_file.name)
         
-        # Fallback to basic parsing
-        st.info("🔄 Using fallback DXF parsing...")
-        entities = parse_dxf_content(content)
+        # Use advanced parser as fallback
+        st.info("🔄 Using advanced DXF parsing...")
+        from utils.advanced_dxf_parser import create_advanced_parser
         
-        if entities and len(entities) >= 3:
-            st.success(f"✅ Successfully parsed {len(entities)} entities from DXF!")
+        parser = create_advanced_parser()
+        result = parser.parse_dxf_content(content, filename)
+        
+        if result and len(result.get('entities', [])) > 0:
+            st.success(f"✅ Successfully parsed {len(result['entities'])} entities from DXF!")
+            return result
         else:
-            st.info("📐 Generating architectural layout template...")
-            entities = generate_realistic_apartment_layout()
-            st.success("✅ Architectural layout ready for analysis!")
-
-        return {
-            'type': 'dxf',
-            'entities': entities,
-            'bounds': calculate_bounds(entities),
-            'metadata': {
-                'filename': filename,
-                'size': len(content),
-                'layers': ['0', 'walls', 'doors', 'furniture', 'restricted'],
-                'units': 'meters',
-                'scale': 1.0,
-                'source': 'dxf_fallback_parser'
-            }
-        }
+            st.error("❌ Could not parse DXF file")
+            return None
         
     except Exception as e:
         st.warning(f"DXF processing encountered an issue: {str(e)}")
@@ -2214,8 +2208,9 @@ def process_dwg_file(content, filename):
             
             try:
                 # Try with ezdxf first
-                ezdxf, _, _ = get_file_processors()
-                if ezdxf:
+                processors = get_file_processors()
+                if processors['ezdxf']:
+                    ezdxf = processors['ezdxf']
                     doc = ezdxf.readfile(tmp_file.name)
                     st.success("✅ DWG file successfully read as DXF format!")
                     
@@ -2356,7 +2351,8 @@ def process_image_file(content, filename):
             st.error("Image processing not available on this platform. Please use DXF files instead.")
             return None
             
-        _, _, Image = get_file_processors()
+        processors = get_file_processors()
+        Image = processors['PIL']
 
         # Convert content to numpy array
         nparr = np.frombuffer(content, np.uint8)
@@ -2389,7 +2385,8 @@ def process_image_file(content, filename):
 def process_pdf_file(content, filename):
     """Process PDF file content"""
     try:
-        _, fitz, _ = get_file_processors()
+        processors = get_file_processors()
+        fitz = processors['fitz']
 
         if fitz is None:
             # Generate sample entities for PDF files when PyMuPDF is not available
@@ -2549,148 +2546,21 @@ def extract_entities_from_pdf(doc):
         return generate_sample_entities()
 
 def parse_dxf_content(content):
-    """Parse DXF file content with enhanced entity detection"""
-    import time
+    """Parse DXF file content using advanced parser"""
+    from utils.advanced_dxf_parser import create_advanced_parser
     
-    start_time = time.time()
-    timeout_seconds = 45  # Extended timeout for complex DXF files
-    
-    # Show progress
-    progress_container = st.container()
-    with progress_container:
-        progress_bar = st.progress(0)
-        status_text = st.empty()
-        status_text.text("🔍 Analyzing DXF file structure...")
-
-    entities = []
-
     try:
-        # Try to decode content
-        try:
-            content_str = content.decode('utf-8', errors='ignore')
-        except:
-            content_str = str(content, errors='ignore')
+        parser = create_advanced_parser()
+        result = parser.parse_dxf_content(content, "uploaded_file.dxf")
         
-        lines = content_str.split('\n')
-        total_lines = len(lines)
-        
-        if total_lines == 0:
-            raise ValueError("Empty DXF file content")
+        if result and 'entities' in result:
+            return result['entities']
+        else:
+            st.warning("⚠️ Could not parse DXF content, using architectural sample")
+            return generate_realistic_apartment_layout()
             
-        st.info(f"📄 Processing DXF file with {total_lines:,} lines")
-        
-        # DXF parsing state
-        current_entity = None
-        group_code = None
-        coordinate_count = 0
-        processed_entities = 0
-        max_entities = 15000  # Higher limit for complex DXF files
-        
-        # DXF entity patterns
-        entity_types = ['LINE', 'LWPOLYLINE', 'POLYLINE', 'CIRCLE', 'ARC', 'TEXT', 'MTEXT', 'INSERT', 'POINT']
-        
-        i = 0
-        while i < len(lines):
-            # Timeout check
-            if time.time() - start_time > timeout_seconds:
-                st.warning("⚠️ Processing timeout reached - using extracted results")
-                break
-                
-            line = lines[i].strip()
-            
-            # DXF uses group codes (even lines) and values (odd lines)
-            if i % 2 == 0:  # Group code
-                try:
-                    group_code = int(line)
-                except:
-                    group_code = None
-            else:  # Value
-                value = line
-                
-                # Entity type detection (group code 0)
-                if group_code == 0 and value in entity_types:
-                    # Save previous entity if complete
-                    if current_entity and is_entity_complete(current_entity):
-                        entities.append(current_entity)
-                        processed_entities += 1
-                        
-                        if processed_entities >= max_entities:
-                            st.info(f"✅ Processed maximum {max_entities} entities")
-                            break
-                    
-                    # Start new entity
-                    current_entity = {
-                        'type': value.lower(),
-                        'points': [],
-                        'layer': '0',
-                        'color': 'black'
-                    }
-                
-                # Layer detection (group code 8)
-                elif group_code == 8 and current_entity:
-                    current_entity['layer'] = value
-                    
-                    # Classify entity based on layer name
-                    layer_lower = value.lower()
-                    if any(keyword in layer_lower for keyword in ['wall', 'mur', 'cloison']):
-                        current_entity['entity_type'] = 'wall'
-                        current_entity['color'] = 'black'
-                    elif any(keyword in layer_lower for keyword in ['door', 'porte', 'entrance', 'exit', 'entree']):
-                        current_entity['entity_type'] = 'entrance'
-                        current_entity['color'] = 'red'
-                    elif any(keyword in layer_lower for keyword in ['stair', 'escalier', 'elevator', 'ascenseur']):
-                        current_entity['entity_type'] = 'restricted'
-                        current_entity['color'] = 'lightblue'
-                    else:
-                        current_entity['entity_type'] = 'wall'
-                
-                # Coordinate detection (group codes 10, 20, 30 for X, Y, Z)
-                elif current_entity and group_code in [10, 11, 20, 21, 30, 31, 40, 50]:
-                    try:
-                        coord_value = float(value)
-                        current_entity['points'].append(coord_value)
-                        coordinate_count += 1
-                    except ValueError:
-                        pass
-                
-                # Color detection (group code 62)
-                elif group_code == 62 and current_entity:
-                    color_index = int(value) if value.isdigit() else 7
-                    if color_index == 1:  # Red
-                        current_entity['color'] = 'red'
-                        current_entity['entity_type'] = 'entrance'
-                    elif color_index == 5:  # Blue
-                        current_entity['color'] = 'lightblue'
-                        current_entity['entity_type'] = 'restricted'
-                    else:
-                        current_entity['color'] = 'black'
-                        current_entity['entity_type'] = 'wall'
-            
-            # Update progress periodically
-            if i % 5000 == 0:
-                progress = min(i / total_lines, 0.9)
-                progress_bar.progress(progress)
-                status_text.text(f"Processing {i:,}/{total_lines:,} lines... Found {len(entities)} entities")
-            
-            i += 1
-
-        # Add final entity if complete
-        if current_entity and is_entity_complete(current_entity):
-            entities.append(current_entity)
-
-        progress_bar.progress(1.0)
-        status_text.text(f"✅ Extracted {len(entities)} entities with {coordinate_count} coordinates")
-        
-        # Ensure minimum entities for analysis
-        if len(entities) < 5:
-            st.info("📐 Supplementing with architectural elements...")
-            entities.extend(generate_realistic_apartment_layout())
-
-        return entities
-        
     except Exception as e:
-        st.error(f"❌ Error parsing DXF content: {str(e)}")
-        st.info("🏗️ Using fallback architectural layout...")
+        st.error(f"❌ Error in DXF parsing: {str(e)}")
         return generate_realistic_apartment_layout()
 
 def is_entity_complete(entity):
