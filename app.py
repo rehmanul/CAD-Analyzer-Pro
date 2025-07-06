@@ -470,7 +470,11 @@ def main():
     with st.sidebar:
         st.markdown("## 🧭 Navigation")
 
-        if st.button("🏠 Dashboard", use_container_width=True):
+        if st.button("🏠 Home", use_container_width=True):
+            st.session_state.current_page = "home"
+            st.rerun()
+            
+        if st.button("📊 Dashboard", use_container_width=True):
             st.session_state.current_page = "dashboard"
             st.rerun()
 
@@ -537,7 +541,9 @@ def main():
             """, unsafe_allow_html=True)
 
     # Main content
-    if st.session_state.current_page == "dashboard":
+    if st.session_state.current_page == "home":
+        show_welcome_screen()
+    elif st.session_state.current_page == "dashboard":
         show_dashboard()
     elif st.session_state.current_page == "projects":
         show_projects_manager()
@@ -1723,9 +1729,25 @@ def show_analysis_interface():
         st.markdown("""
         <div class="warning-box">
             <h4>⚠️ No Floor Plan Uploaded</h4>
-            <p>Please upload a DXF file first to begin analysis.</p>
+            <p>Please upload a floor plan file to begin analysis.</p>
         </div>
         """, unsafe_allow_html=True)
+        
+        # Add file upload directly to analysis page
+        st.markdown("### 📁 Upload Floor Plan")
+        uploaded_file = st.file_uploader(
+            "Choose a floor plan file",
+            type=['dxf', 'dwg', 'jpg', 'jpeg', 'png', 'pdf'],
+            help="Supported formats: DXF, DWG, JPG, PNG, PDF"
+        )
+        
+        if uploaded_file is not None:
+            with st.spinner("Processing floor plan..."):
+                file_data = process_uploaded_file(uploaded_file)
+                if file_data:
+                    st.session_state.uploaded_file_data = file_data
+                    st.success("Floor plan uploaded successfully!")
+                    st.rerun()
         return
 
     # Configuration tabs
