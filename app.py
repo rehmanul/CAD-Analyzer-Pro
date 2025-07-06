@@ -21,7 +21,7 @@ from utils.production_ilot_system import ProductionIlotSystem
 from utils.corridor_generator import AdvancedCorridorGenerator
 from utils.visualization import FloorPlanVisualizer
 from utils.report_generator import ReportGenerator
-from utils.production_database import ProductionDatabase
+from utils.production_database import ProductionDatabaseManager
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -40,8 +40,8 @@ def init_database():
             'password': 'PUPB8V0s2b3bvNZUblolz7d6UM9bcBzb'
         }
 
-        db = ProductionDatabase(db_config)
-        db.initialize_schema()
+        db = ProductionDatabaseManager()
+        # Database is already initialized in the constructor
         st.success("✅ PostgreSQL connection pool initialized")
         st.success("✅ Production database schema initialized")
         return db
