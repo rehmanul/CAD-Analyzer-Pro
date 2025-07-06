@@ -2020,141 +2020,11 @@ def process_uploaded_file(uploaded_file):
         return None
 
 def process_dxf_file(content, filename):
-    """Process DXF file content with enhanced parsing"""
+    """Process DXF file content with advanced parsing only"""
     try:
         st.info(f"🔧 Processing DXF file: {filename} ({len(content):,} bytes)")
         
-        # Save content to temporary file for ezdxf
-        import tempfile
-        import os
-        
-        with tempfile.NamedTemporaryFile(suffix='.dxf', delete=False) as tmp_file:
-            tmp_file.write(content)
-            tmp_file.flush()
-            
-            try:
-                # Try using ezdxf for proper DXF parsing
-                processors = get_file_processors()
-                if processors['ezdxf']:
-                    ezdxf = processors['ezdxf']
-                    doc = ezdxf.readfile(tmp_file.name)
-                    st.success("✅ DXF file successfully loaded with ezdxf!")
-                    
-                    entities = []
-                    
-                    # Process model space entities
-                    msp = doc.modelspace()
-                    for entity in msp:
-                        try:
-                            entity_type = entity.dxftype()
-                            
-                            if entity_type == 'LINE':
-                                start = entity.dxf.start
-                                end = entity.dxf.end
-                                entities.append({
-                                    'type': 'line',
-                                    'points': [start.x, start.y, end.x, end.y],
-                                    'layer': entity.dxf.layer,
-                                    'color': 'black',
-                                    'source': 'dxf_line'
-                                })
-                            
-                            elif entity_type in ['POLYLINE', 'LWPOLYLINE']:
-                                points = []
-                                if entity_type == 'LWPOLYLINE':
-                                    for point in entity.get_points():
-                                        points.extend([point[0], point[1]])
-                                else:
-                                    for vertex in entity.vertices:
-                                        points.extend([vertex.dxf.location.x, vertex.dxf.location.y])
-                                
-                                if len(points) >= 4:
-                                    entities.append({
-                                        'type': 'polyline',
-                                        'points': points,
-                                        'layer': entity.dxf.layer,
-                                        'color': 'black',
-                                        'source': 'dxf_polyline'
-                                    })
-                            
-                            elif entity_type == 'CIRCLE':
-                                center = entity.dxf.center
-                                radius = entity.dxf.radius
-                                entities.append({
-                                    'type': 'circle',
-                                    'points': [center.x, center.y, radius],
-                                    'layer': entity.dxf.layer,
-                                    'color': 'black',
-                                    'source': 'dxf_circle'
-                                })
-                                
-                            elif entity_type == 'ARC':
-                                center = entity.dxf.center
-                                radius = entity.dxf.radius
-                                start_angle = entity.dxf.start_angle
-                                end_angle = entity.dxf.end_angle
-                                entities.append({
-                                    'type': 'arc',
-                                    'points': [center.x, center.y, radius, start_angle, end_angle],
-                                    'layer': entity.dxf.layer,
-                                    'color': 'black',
-                                    'source': 'dxf_arc'
-                                })
-                                
-                        except Exception as entity_error:
-                            continue
-                    
-                    # Cleanup
-                    os.unlink(tmp_file.name)
-                    
-                    if entities and len(entities) >= 3:
-                        st.success(f"✅ Successfully extracted {len(entities)} entities from DXF!")
-                        
-                        # Classify entities by layer
-                        classified_entities = []
-                        for entity in entities:
-                            layer = entity.get('layer', '0').lower()
-                            
-                            # Classify based on layer name
-                            if any(keyword in layer for keyword in ['wall', 'mur', 'cloison']):
-                                entity['entity_type'] = 'wall'
-                                entity['color'] = 'black'
-                            elif any(keyword in layer for keyword in ['door', 'porte', 'entrance', 'exit']):
-                                entity['entity_type'] = 'entrance'
-                                entity['color'] = 'red'
-                            elif any(keyword in layer for keyword in ['stair', 'escalier', 'elevator', 'ascenseur', 'restricted']):
-                                entity['entity_type'] = 'restricted'
-                                entity['color'] = 'lightblue'
-                            else:
-                                entity['entity_type'] = 'wall'  # Default to wall
-                                entity['color'] = 'black'
-                            
-                            classified_entities.append(entity)
-                        
-                        return {
-                            'type': 'dxf',
-                            'entities': classified_entities,
-                            'bounds': calculate_bounds(classified_entities),
-                            'metadata': {
-                                'filename': filename,
-                                'size': len(content),
-                                'layers': list(set(e.get('layer', '0') for e in classified_entities)),
-                                'units': 'meters',
-                                'scale': 1.0,
-                                'source': 'dxf_ezdxf_parser',
-                                'entities_extracted': len(classified_entities)
-                            }
-                        }
-                    
-            except Exception as ezdxf_error:
-                st.warning(f"EzDXF parsing failed: {str(ezdxf_error)}")
-            
-            # Cleanup temp file if it still exists
-            if os.path.exists(tmp_file.name):
-                os.unlink(tmp_file.name)
-        
-        # Use advanced parser as fallback
-        st.info("🔄 Using advanced DXF parsing...")
+        # Use advanced parser directly
         from utils.advanced_dxf_parser import create_advanced_parser
         
         parser = create_advanced_parser()
@@ -2164,31 +2034,12 @@ def process_dxf_file(content, filename):
             st.success(f"✅ Successfully parsed {len(result['entities'])} entities from DXF!")
             return result
         else:
-            st.error("❌ Could not parse DXF file")
+            st.error("❌ Could not parse DXF file - no entities found")
             return None
         
     except Exception as e:
-        st.warning(f"DXF processing encountered an issue: {str(e)}")
-        st.info("🏗️ Loading architectural layout template...")
-        
-        # Always provide a working layout
-        entities = generate_realistic_apartment_layout()
-        st.success("✅ Architectural layout ready for analysis!")
-        
-        return {
-            'type': 'dxf',
-            'entities': entities,
-            'bounds': calculate_bounds(entities),
-            'metadata': {
-                'filename': filename,
-                'size': len(content),
-                'layers': ['0', 'walls', 'doors', 'furniture'],
-                'units': 'meters',
-                'scale': 1.0,
-                'source': 'dxf_template',
-                'note': 'Architectural layout template optimized for îlot placement'
-            }
-        }
+        st.error(f"❌ DXF processing failed: {str(e)}")
+        return None
 
 def process_dwg_file(content, filename):
     """Process DWG file content with enhanced parsing for apartment plans"""
