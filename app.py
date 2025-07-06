@@ -28,12 +28,6 @@ except ImportError as e:
     print(f"Production modules not available: {e}")
     PRODUCTION_MODULES_AVAILABLE = False
 
-# Configure Streamlit for deployment environment
-# Replit uses port 5000, Streamlit Cloud uses default 8501
-if 'REPLIT_ENVIRONMENT' in os.environ or 'REPL_OWNER' in os.environ:
-    os.environ['STREAMLIT_SERVER_PORT'] = '5000'
-    os.environ['STREAMLIT_SERVER_ADDRESS'] = '0.0.0.0'
-
 # Configure page
 st.set_page_config(
     page_title="Professional Floor Plan Analyzer - Enhanced",
@@ -93,13 +87,7 @@ def get_file_processors():
 
     return processors
 
-# Set page config
-st.set_page_config(
-    page_title="🏗️ Advanced Floor Plan Analyzer",
-    page_icon="🏗️",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+
 
 # Professional CSS styling
 st.markdown("""

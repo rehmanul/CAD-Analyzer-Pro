@@ -1,5 +1,16 @@
+
 [server]
-headless = true
+port = 8080
 address = "0.0.0.0"
-# Port configuration - defaults to 8501 for Streamlit Cloud
-# Use 5000 for Replit deployment
+headless = true
+enableCORS = false
+enableXsrfProtection = false
+enableWebsocketCompression = false
+
+[browser]
+serverAddress = "0.0.0.0"
+serverPort = 8080
+gatherUsageStats = false
+
+[global]
+developmentMode = false
