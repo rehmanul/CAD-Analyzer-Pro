@@ -1,0 +1,2 @@
+('C:\\Users\\HP\\Desktop\\CAD-Analyzer-Pro\\installer\\build\\CAD_Analyzer_Pro_Enterprise\\PYZ-00.pyz',
+ [])

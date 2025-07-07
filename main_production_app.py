@@ -295,8 +295,11 @@ class ProductionCADAnalyzer:
 
         with col1:
             # Create visualization
-            fig = self.create_analysis_visualization(results)
-            st.plotly_chart(fig, use_container_width=True, height=600)
+            if results and results.get('success'):
+                fig = self.create_analysis_visualization(results)
+                st.plotly_chart(fig, use_container_width=True, height=600, key="analysis_viz")
+            else:
+                st.info("Upload a file to view analysis.")
 
         with col2:
             st.markdown("**Detection Summary:**")
@@ -433,12 +436,15 @@ class ProductionCADAnalyzer:
         
         # Final visualization
         st.subheader("Final Layout")
-        fig = webgl_renderer.create_webgl_visualization(
-            st.session_state.placed_ilots,
-            st.session_state.get('corridors', []),
-            st.session_state.analysis_results.get('bounds', {})
-        )
-        st.plotly_chart(fig, use_container_width=True, height=700)
+        if st.session_state.placed_ilots:
+            fig = webgl_renderer.create_webgl_visualization(
+                st.session_state.placed_ilots,
+                st.session_state.get('corridors', []),
+                st.session_state.analysis_results.get('bounds', {})
+            )
+            st.plotly_chart(fig, use_container_width=True, height=700, key="final_layout_viz")
+        else:
+            st.info("Complete îlot placement to view final layout.")
         
         # Export buttons
         col1, col2, col3 = st.columns(3)
@@ -630,14 +636,15 @@ class ProductionCADAnalyzer:
             config = st.session_state.corridor_config
             
             # Real corridor generation
-            corridors = self.ilot_system.generate_facing_corridors(
-                [self.ilot_system.IlotSpec(
-                    id=ilot['id'], x=ilot['x'], y=ilot['y'],
-                    width=ilot['width'], height=ilot['height'],
-                    area=ilot['area'], size_category=ilot['size_category']
-                ) for ilot in ilots], config
-            )
-            corridors = [self.ilot_system.corridor_to_dict(c) for c in corridors]
+            from utils.production_ilot_system import IlotSpec
+            ilot_specs = [IlotSpec(
+                id=ilot['id'], x=ilot['x'], y=ilot['y'],
+                width=ilot['width'], height=ilot['height'],
+                area=ilot['area'], size_category=ilot['size_category']
+            ) for ilot in ilots]
+            
+            corridor_specs = self.ilot_system.generate_facing_corridors(ilot_specs, config)
+            corridors = [self.ilot_system.corridor_to_dict(c) for c in corridor_specs]
             st.session_state.corridors = corridors
             
             st.success(f"Generated {len(corridors)} corridors")
@@ -719,12 +726,15 @@ class ProductionCADAnalyzer:
                 st.metric("Extra Large (5-10 m²)", dist.get('size_5_10', 0))
         
         # WebGL visualization
-        fig = webgl_renderer.create_webgl_visualization(
-            st.session_state.placed_ilots, 
-            st.session_state.get('corridors', []),
-            st.session_state.analysis_results.get('bounds', {})
-        )
-        st.plotly_chart(fig, use_container_width=True, height=600)
+        if st.session_state.placed_ilots:
+            fig = webgl_renderer.create_webgl_visualization(
+                st.session_state.placed_ilots, 
+                st.session_state.get('corridors', []),
+                st.session_state.analysis_results.get('bounds', {})
+            )
+            st.plotly_chart(fig, use_container_width=True, height=600, key="ilot_viz")
+        else:
+            st.info("No îlots placed yet.")
     
     def _create_fast_ilot_visualization(self):
         """Create fast ilot visualization"""

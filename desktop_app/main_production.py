@@ -74,28 +74,41 @@ class ProductionCADAnalyzer(QMainWindow):
         self.file_upload_tab.setLayout(layout)
 
     def open_file_dialog(self):
-        file_path, _ = QFileDialog.getOpenFileName(
-            self, "Open Floor Plan", "", 
-            "CAD Files (*.dxf *.dwg);;Images (*.png *.jpg *.jpeg)"
-        )
-        if file_path:
-            self.file_info.setText(f"Selected: {file_path}")
-            self.progress_bar.setVisible(True)
-            self.progress_bar.setRange(0, 0)
-            self.result_text.setText("Processing file...")
-            
-            def on_parsing_done(results):
-                self.progress_bar.setVisible(False)
-                if results.get('success'):
-                    self.analysis_results = results
-                    summary = self.format_results_summary(results)
-                    self.result_text.setText(f"✅ File processed successfully!\n\n{summary}")
-                    self.update_analysis_tab(results)
-                else:
-                    self.result_text.setText(f"❌ Error: {results.get('error', 'Unknown error')}")
-                    self.update_analysis_tab(None)
-            
-            threading.Thread(target=lambda: self.backend.parse_file_async(file_path, on_parsing_done)).start()
+        try:
+            file_path, _ = QFileDialog.getOpenFileName(
+                self, "Open Floor Plan", "", 
+                "CAD Files (*.dxf *.dwg);;Images (*.png *.jpg *.jpeg)"
+            )
+            if file_path:
+                self.file_info.setText(f"Selected: {file_path}")
+                self.progress_bar.setVisible(True)
+                self.progress_bar.setRange(0, 0)
+                self.result_text.setText("Processing file...")
+                
+                def on_parsing_done(results):
+                    try:
+                        self.progress_bar.setVisible(False)
+                        if results and results.get('success'):
+                            self.analysis_results = results
+                            summary = self.format_results_summary(results)
+                            self.result_text.setText(f"✅ File processed successfully!\n\n{summary}")
+                            self.update_analysis_tab(results)
+                        else:
+                            error_msg = results.get('error', 'Unknown error') if results else 'Processing failed'
+                            self.result_text.setText(f"❌ Error: {error_msg}")
+                            self.update_analysis_tab(None)
+                    except Exception as e:
+                        self.result_text.setText(f"❌ Display error: {str(e)}")
+                
+                def safe_parse():
+                    try:
+                        self.backend.parse_file_async(file_path, on_parsing_done)
+                    except Exception as e:
+                        on_parsing_done({'success': False, 'error': f'Parse error: {str(e)}'})
+                
+                threading.Thread(target=safe_parse, daemon=True).start()
+        except Exception as e:
+            self.result_text.setText(f"❌ File dialog error: {str(e)}")
 
     def format_results_summary(self, results):
         lines = []
@@ -216,42 +229,59 @@ class ProductionCADAnalyzer(QMainWindow):
         self.ilot_tab.setLayout(layout)
 
     def place_ilots(self):
-        if not self.analysis_results or not self.analysis_results.get('success'):
-            self.ilot_results.setText("❌ No analysis results. Please upload and analyze a floor plan first.")
-            return
-        
-        self.place_ilots_btn.setEnabled(False)
-        self.ilot_progress.setVisible(True)
-        self.ilot_progress.setRange(0, 0)
-        self.ilot_results.setText("Placing îlots...")
-        
-        def on_placement_done(result):
-            self.ilot_progress.setVisible(False)
-            self.place_ilots_btn.setEnabled(True)
+        try:
+            if not self.analysis_results or not self.analysis_results.get('success'):
+                self.ilot_results.setText("❌ No analysis results. Please upload and analyze a floor plan first.")
+                return
             
-            if result.get('success'):
-                ilots = result.get('ilots', [])
-                metrics = result.get('metrics', {})
-                distribution = result.get('distribution', {})
-                
-                results_text = f"✅ Successfully placed {len(ilots)} îlots\n\n"
-                results_text += f"Metrics:\n"
-                results_text += f"- Space Utilization: {metrics.get('space_utilization', 0)*100:.1f}%\n"
-                results_text += f"- Efficiency Score: {metrics.get('efficiency_score', 0)*100:.1f}%\n\n"
-                results_text += f"Distribution:\n"
-                results_text += f"- Small: {distribution.get('size_0_1', 0)} îlots\n"
-                results_text += f"- Medium: {distribution.get('size_1_3', 0)} îlots\n"
-                results_text += f"- Large: {distribution.get('size_3_5', 0)} îlots\n"
-                results_text += f"- XL: {distribution.get('size_5_10', 0)} îlots"
-                
-                self.ilot_results.setText(results_text)
-                
-                if self.ilot_canvas:
-                    self.update_ilot_visualization(ilots)
-            else:
-                self.ilot_results.setText(f"❌ Placement failed: {result.get('error', 'Unknown error')}")
-        
-        self.backend.place_ilots_async(self.analysis_results, None, on_placement_done)
+            self.place_ilots_btn.setEnabled(False)
+            self.ilot_progress.setVisible(True)
+            self.ilot_progress.setRange(0, 0)
+            self.ilot_results.setText("Placing îlots...")
+            
+            def on_placement_done(result):
+                try:
+                    self.ilot_progress.setVisible(False)
+                    self.place_ilots_btn.setEnabled(True)
+                    
+                    if result and result.get('success'):
+                        ilots = result.get('ilots', [])
+                        metrics = result.get('metrics', {})
+                        distribution = result.get('distribution', {})
+                        
+                        results_text = f"✅ Successfully placed {len(ilots)} îlots\n\n"
+                        results_text += f"Metrics:\n"
+                        results_text += f"- Space Utilization: {metrics.get('space_utilization', 0)*100:.1f}%\n"
+                        results_text += f"- Efficiency Score: {metrics.get('efficiency_score', 0)*100:.1f}%\n\n"
+                        results_text += f"Distribution:\n"
+                        results_text += f"- Small: {distribution.get('size_0_1', 0)} îlots\n"
+                        results_text += f"- Medium: {distribution.get('size_1_3', 0)} îlots\n"
+                        results_text += f"- Large: {distribution.get('size_3_5', 0)} îlots\n"
+                        results_text += f"- XL: {distribution.get('size_5_10', 0)} îlots"
+                        
+                        self.ilot_results.setText(results_text)
+                        
+                        if self.ilot_canvas:
+                            self.update_ilot_visualization(ilots)
+                    else:
+                        error_msg = result.get('error', 'Unknown error') if result else 'Placement failed'
+                        self.ilot_results.setText(f"❌ Placement failed: {error_msg}")
+                except Exception as e:
+                    self.ilot_results.setText(f"❌ Display error: {str(e)}")
+                    self.place_ilots_btn.setEnabled(True)
+                    self.ilot_progress.setVisible(False)
+            
+            def safe_placement():
+                try:
+                    self.backend.place_ilots_async(self.analysis_results, None, on_placement_done)
+                except Exception as e:
+                    on_placement_done({'success': False, 'error': f'Placement error: {str(e)}'})
+            
+            threading.Thread(target=safe_placement, daemon=True).start()
+        except Exception as e:
+            self.ilot_results.setText(f"❌ Placement error: {str(e)}")
+            self.place_ilots_btn.setEnabled(True)
+            self.ilot_progress.setVisible(False)
 
     def update_ilot_visualization(self, ilots):
         if not self.ilot_canvas:
