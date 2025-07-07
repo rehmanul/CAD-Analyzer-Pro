@@ -27,6 +27,7 @@ from utils.production_database import production_db
 from utils.production_floor_analyzer import ProductionFloorAnalyzer
 from utils.production_ilot_system import ProductionIlotSystem
 from utils.production_visualizer import ProductionVisualizer
+from streamlit_config import cached_file_processing, cached_ilot_placement, cached_corridor_generation
 
 # Configure Streamlit
 st.set_page_config(
@@ -82,13 +83,15 @@ class ProductionCADAnalyzer:
         self.visualizer = ProductionVisualizer()
         self.current_project_id = None
         
-        # Initialize session state
+        # Initialize session state with caching
         if 'analysis_results' not in st.session_state:
             st.session_state.analysis_results = None
         if 'placed_ilots' not in st.session_state:
             st.session_state.placed_ilots = []
         if 'corridors' not in st.session_state:
             st.session_state.corridors = []
+        if 'processing_cache' not in st.session_state:
+            st.session_state.processing_cache = {}
     
     def run(self):
         """Main application entry point"""
@@ -222,8 +225,8 @@ class ProductionCADAnalyzer:
             
             # Process file
             with st.spinner("Processing floor plan..."):
-                # Fast processing - generate sample data immediately
-                results = self._fast_process_file(uploaded_file.name)
+                file_content = uploaded_file.read()
+                results = cached_file_processing(file_content, uploaded_file.name)
                 
                 if results['success']:
                     st.session_state.analysis_results = results
@@ -481,9 +484,9 @@ class ProductionCADAnalyzer:
                 st.error("No valid bounds found")
                 return
             
-            # Quick îlot generation
+            # Cached îlot generation
             config = st.session_state.size_distribution
-            placed_ilots = self._fast_place_ilots(bounds, config)
+            placed_ilots = cached_ilot_placement(bounds, str(config))
             
             # Store results
             st.session_state.placed_ilots = placed_ilots
@@ -558,8 +561,8 @@ class ProductionCADAnalyzer:
             ilots = st.session_state.placed_ilots
             config = st.session_state.corridor_config
             
-            # Fast corridor generation
-            corridors = self._fast_generate_corridors(ilots, config)
+            # Cached corridor generation
+            corridors = cached_corridor_generation(tuple(str(i) for i in ilots[:10]))
             st.session_state.corridors = corridors
             
             st.success(f"Generated {len(corridors)} corridors")
