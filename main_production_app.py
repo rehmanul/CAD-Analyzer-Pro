@@ -346,14 +346,14 @@ class ProductionCADAnalyzer:
                 self.generate_ilot_placement()
         
         # Display results if available
-        if hasattr(st.session_state, 'placed_ilots') and st.session_state.placed_ilots:
+        if hasattr(st.session_state, 'placed_ilots') and len(st.session_state.placed_ilots) > 0:
             self.display_ilot_results()
     
     def render_corridor_generation_tab(self):
         """Render corridor generation interface"""
         st.header("🛤️ Corridor Generation")
         
-        if not hasattr(st.session_state, 'placed_ilots') or not st.session_state.placed_ilots:
+        if not hasattr(st.session_state, 'placed_ilots') or len(st.session_state.placed_ilots) == 0:
             st.warning("Please complete îlot placement first.")
             return
         
@@ -383,14 +383,14 @@ class ProductionCADAnalyzer:
                 self.generate_corridors()
         
         # Display corridor results
-        if hasattr(st.session_state, 'corridors') and st.session_state.corridors:
+        if hasattr(st.session_state, 'corridors') and len(st.session_state.corridors) > 0:
             self.display_corridor_results()
     
     def render_results_export_tab(self):
         """Render results and export options"""
         st.header("📊 Results & Export")
         
-        if not hasattr(st.session_state, 'placed_ilots') or not st.session_state.placed_ilots:
+        if not hasattr(st.session_state, 'placed_ilots') or len(st.session_state.placed_ilots) == 0:
             st.warning("Please complete îlot placement and corridor generation first.")
             return
         
@@ -495,6 +495,9 @@ class ProductionCADAnalyzer:
                 'size_5_10': len([i for i in placed_ilots if i['size_category'] == 'size_5_10'])
             }
             
+            # Force session state update
+            st.rerun()
+            
             st.success(f"Successfully placed {len(placed_ilots)} îlots")
             
         except Exception as e:
@@ -560,6 +563,9 @@ class ProductionCADAnalyzer:
             st.session_state.corridors = corridors
             
             st.success(f"Generated {len(corridors)} corridors")
+            
+            # Force session state update
+            st.rerun()
             
         except Exception as e:
             st.error(f"Corridor generation failed: {str(e)}")
