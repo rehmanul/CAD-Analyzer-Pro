@@ -220,42 +220,63 @@ class ProductionCADAnalyzer:
                 "filetype": uploaded_file.type,
                 "filesize": uploaded_file.size
             }
-            
             st.success(f"File uploaded: {file_details['filename']} ({file_details['filesize']} bytes)")
-            
-            # Process file
-            with st.spinner("Processing floor plan..."):
-                file_content = uploaded_file.read()
-                filename = uploaded_file.name.lower()
-                
-                if filename.endswith(('.dxf', '.dwg')):
-                    from utils.advanced_dxf_parser import parse_dxf_advanced
-                    results = parse_dxf_advanced(file_content, uploaded_file.name)
-                elif filename.endswith(('.png', '.jpg', '.jpeg')):
-                    results = self.floor_analyzer.process_image_file(file_content, uploaded_file.name)
-                else:
-                    st.error("Unsupported file format")
+
+            # Process file asynchronously for DXF/DWG
+            import asyncio
+            from async_processor import AsyncProcessor
+            file_content = uploaded_file.read()
+            filename = uploaded_file.name.lower()
+
+            if filename.endswith(('.dxf', '.dwg')):
+                processor = AsyncProcessor()
+                progress_bar = st.progress(0)
+                status_text = st.empty()
+
+                def update_progress(progress, message):
+                    progress_bar.progress(progress)
+                    status_text.text(message)
+
+                async def process_file():
+                    results = await processor.process_file_async(file_content, uploaded_file.name, update_progress)
+                    return results
+
+                try:
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    results = loop.run_until_complete(process_file())
+                    progress_bar.empty()
+                    status_text.empty()
+                except Exception as e:
+                    progress_bar.empty()
+                    status_text.empty()
+                    st.error(f"Async processing failed: {str(e)}")
                     return
-                
-                if results['success']:
-                    st.session_state.analysis_results = results
-                    st.session_state.file_processed = True
-                    
-                    # Display processing results
-                    col1, col2, col3, col4 = st.columns(4)
-                    with col1:
-                        st.metric("📏 Entities", results['entity_count'])
-                    with col2:
-                        st.metric("🧱 Walls", results['wall_count'])
-                    with col3:
-                        st.metric("🔵 Restricted", results['restricted_count'])
-                    with col4:
-                        st.metric("🔴 Entrances", results['entrance_count'])
-                    
-                    st.markdown('<div class="success-box">Floor plan processed successfully. Proceed to Analysis tab.</div>', unsafe_allow_html=True)
-                    
-                else:
-                    st.error(f"Processing failed: {results.get('error', 'Unknown error')}")
+            elif filename.endswith(('.png', '.jpg', '.jpeg')):
+                with st.spinner("Processing image file..."):
+                    results = self.floor_analyzer.process_image_file(file_content, uploaded_file.name)
+            else:
+                st.error("Unsupported file format")
+                return
+
+            if results and results.get('success'):
+                st.session_state.analysis_results = results
+                st.session_state.file_processed = True
+
+                # Display processing results
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    st.metric("📏 Entities", results.get('entity_count', 0))
+                with col2:
+                    st.metric("🧱 Walls", results.get('wall_count', 0))
+                with col3:
+                    st.metric("🔵 Restricted", results.get('restricted_count', 0))
+                with col4:
+                    st.metric("🔴 Entrances", results.get('entrance_count', 0))
+
+                st.markdown('<div class="success-box">Floor plan processed successfully. Proceed to Analysis tab.</div>', unsafe_allow_html=True)
+            else:
+                st.error(f"Processing failed: {results.get('error', 'Unknown error') if results else 'Unknown error'}")
     
     def render_analysis_tab(self):
         """Render analysis results"""
@@ -497,70 +518,51 @@ class ProductionCADAnalyzer:
                 self.export_json_data()
     
     def generate_ilot_placement_async(self):
-        """Generate îlot placement with async processing"""
+        """Generate îlot placement with async processing (fully optimized)"""
         analysis_data = st.session_state.analysis_results
         bounds = analysis_data.get('bounds', {})
         config = st.session_state.size_distribution
-        
-        # Skip cache - always generate fresh results
-        pass
-        
-        # Async processing with progress
+
+        import asyncio
+        from async_processor import async_ilot_placement
+
         progress_bar = st.progress(0)
         status_text = st.empty()
-        
+
         def update_progress(progress, message):
             progress_bar.progress(progress)
             status_text.text(message)
-        
-        try:
-            import asyncio
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            
-            # Generate unique results based on file data
-            import time
-            import hashlib
-            
-            # Create unique seed from file bounds and timestamp
-            file_hash = hashlib.md5(str(bounds).encode()).hexdigest()[:8]
-            unique_seed = int(file_hash, 16) + int(time.time())
-            np.random.seed(unique_seed)
-            
-            self.ilot_system.load_floor_plan_data(
-                walls=analysis_data.get('walls', []),
-                restricted_areas=analysis_data.get('restricted_areas', []),
-                entrances=analysis_data.get('entrances', []),
-                zones={},
-                bounds=bounds
-            )
-            
+
+        async def run_async_placement():
+            # Prepare config for async placement
             full_config = {
                 **config,
                 **st.session_state.corridor_config,
                 **st.session_state.advanced_config
             }
-            
-            placement_result = self.ilot_system.process_full_placement(full_config)
-            placed_ilots = placement_result.get('ilots', [])
-            
-            # Store results
-            st.session_state.placed_ilots = placed_ilots
-            st.session_state.placement_metrics = {'space_utilization': 0.7, 'efficiency_score': 0.8}
-            st.session_state.ilot_distribution = {
-                'size_0_1': len([i for i in placed_ilots if i['size_category'] == 'size_0_1']),
-                'size_1_3': len([i for i in placed_ilots if i['size_category'] == 'size_1_3']),
-                'size_3_5': len([i for i in placed_ilots if i['size_category'] == 'size_3_5']),
-                'size_5_10': len([i for i in placed_ilots if i['size_category'] == 'size_5_10'])
-            }
-            
-            # No caching - always fresh results
-            
+            ilots = await async_ilot_placement(bounds, full_config, update_progress)
+            return ilots
+
+        try:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            ilots = loop.run_until_complete(run_async_placement())
             progress_bar.empty()
             status_text.empty()
-            st.success(f"Successfully placed {len(placed_ilots)} îlots")
+
+            # Store results
+            st.session_state.placed_ilots = ilots
+            st.session_state.placement_metrics = {'space_utilization': 0.7, 'efficiency_score': 0.8}
+            st.session_state.ilot_distribution = {
+                'size_0_1': len([i for i in ilots if i['size_category'] == 'size_0_1']),
+                'size_1_3': len([i for i in ilots if i['size_category'] == 'size_1_3']),
+                'size_3_5': len([i for i in ilots if i['size_category'] == 'size_3_5']),
+                'size_5_10': len([i for i in ilots if i['size_category'] == 'size_5_10'])
+            }
+
+            st.success(f"Successfully placed {len(ilots)} îlots")
             st.rerun()
-            
+
         except Exception as e:
             progress_bar.empty()
             status_text.empty()
