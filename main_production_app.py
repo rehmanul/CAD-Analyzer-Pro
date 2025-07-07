@@ -296,8 +296,11 @@ class ProductionCADAnalyzer:
         with col1:
             # Create visualization
             if results and results.get('success'):
-                fig = self.create_analysis_visualization(results)
-                st.plotly_chart(fig, use_container_width=True, height=600, key="analysis_viz")
+                try:
+                    fig = self.create_analysis_visualization(results)
+                    st.plotly_chart(fig, use_container_width=True, height=600, key=f"analysis_viz_{results.get('entity_count', 0)}")
+                except Exception as e:
+                    st.error(f"Analysis visualization error: {str(e)}")
             else:
                 st.info("Upload a file to view analysis.")
 
@@ -437,12 +440,15 @@ class ProductionCADAnalyzer:
         # Final visualization
         st.subheader("Final Layout")
         if st.session_state.placed_ilots:
-            fig = webgl_renderer.create_webgl_visualization(
-                st.session_state.placed_ilots,
-                st.session_state.get('corridors', []),
-                st.session_state.analysis_results.get('bounds', {})
-            )
-            st.plotly_chart(fig, use_container_width=True, height=700, key="final_layout_viz")
+            try:
+                fig = webgl_renderer.create_webgl_visualization(
+                    st.session_state.placed_ilots,
+                    st.session_state.get('corridors', []),
+                    st.session_state.analysis_results.get('bounds', {})
+                )
+                st.plotly_chart(fig, use_container_width=True, height=700, key=f"final_layout_{len(st.session_state.placed_ilots)}")
+            except Exception as e:
+                st.error(f"Visualization error: {str(e)}")
         else:
             st.info("Complete îlot placement to view final layout.")
         
@@ -727,12 +733,15 @@ class ProductionCADAnalyzer:
         
         # WebGL visualization
         if st.session_state.placed_ilots:
-            fig = webgl_renderer.create_webgl_visualization(
-                st.session_state.placed_ilots, 
-                st.session_state.get('corridors', []),
-                st.session_state.analysis_results.get('bounds', {})
-            )
-            st.plotly_chart(fig, use_container_width=True, height=600, key="ilot_viz")
+            try:
+                fig = webgl_renderer.create_webgl_visualization(
+                    st.session_state.placed_ilots, 
+                    st.session_state.get('corridors', []),
+                    st.session_state.analysis_results.get('bounds', {})
+                )
+                st.plotly_chart(fig, use_container_width=True, height=600, key=f"ilot_viz_{len(st.session_state.placed_ilots)}")
+            except Exception as e:
+                st.error(f"Visualization error: {str(e)}")
         else:
             st.info("No îlots placed yet.")
     
