@@ -501,17 +501,8 @@ class ProductionCADAnalyzer:
         bounds = analysis_data.get('bounds', {})
         config = st.session_state.size_distribution
         
-        # Check cache first
-        cache_key = cache_manager.get_cache_key({'bounds': bounds, 'config': config})
-        cached_result = cache_manager.get_cached_result(cache_key)
-        
-        if cached_result:
-            st.session_state.placed_ilots = cached_result['ilots']
-            st.session_state.placement_metrics = cached_result['metrics']
-            st.session_state.ilot_distribution = cached_result['distribution']
-            st.success(f"Loaded {len(cached_result['ilots'])} îlots from cache")
-            st.rerun()
-            return
+        # Skip cache - always generate fresh results
+        pass
         
         # Async processing with progress
         progress_bar = st.progress(0)
@@ -526,7 +517,15 @@ class ProductionCADAnalyzer:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             
-            # Use production system with real data
+            # Generate unique results based on file data
+            import time
+            import hashlib
+            
+            # Create unique seed from file bounds and timestamp
+            file_hash = hashlib.md5(str(bounds).encode()).hexdigest()[:8]
+            unique_seed = int(file_hash, 16) + int(time.time())
+            np.random.seed(unique_seed)
+            
             self.ilot_system.load_floor_plan_data(
                 walls=analysis_data.get('walls', []),
                 restricted_areas=analysis_data.get('restricted_areas', []),
@@ -554,13 +553,7 @@ class ProductionCADAnalyzer:
                 'size_5_10': len([i for i in placed_ilots if i['size_category'] == 'size_5_10'])
             }
             
-            # Cache results
-            result_data = {
-                'ilots': placed_ilots,
-                'metrics': st.session_state.placement_metrics,
-                'distribution': st.session_state.ilot_distribution
-            }
-            cache_manager.store_cached_result(cache_key, result_data)
+            # No caching - always fresh results
             
             progress_bar.empty()
             status_text.empty()
