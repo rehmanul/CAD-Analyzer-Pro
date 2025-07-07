@@ -276,44 +276,53 @@ class ProductionCADAnalyzer:
             return
         
         results = st.session_state.analysis_results
-        
+
+        # Print all unique layer names for debugging
+        if results and 'entities' in results:
+            layers = set()
+            for entity in results['entities']:
+                layer = entity.get('layer')
+                if layer:
+                    layers.add(layer)
+            st.expander('Debug: Unique DXF Layers').write(sorted(layers))
+
         # Zone validation
         validation = self.floor_analyzer.validate_zones()
-        
+
         st.subheader("Zone Detection Results")
-        
+
         col1, col2 = st.columns([2, 1])
-        
+
         with col1:
             # Create visualization
             fig = self.create_analysis_visualization(results)
             st.plotly_chart(fig, use_container_width=True, height=600)
-        
+
         with col2:
             st.markdown("**Detection Summary:**")
-            
+
             if validation['walls_detected']:
                 st.success("Walls detected")
             else:
                 st.error("No walls detected")
-            
+
             if validation['restricted_areas_detected']:
                 st.success("Restricted areas detected")
             else:
                 st.warning("No restricted areas detected")
-            
+
             if validation['entrances_detected']:
                 st.success("Entrances detected")
             else:
                 st.warning("No entrances detected")
-            
+
             st.metric("Available Area", f"{validation['total_area']:.1f} m²")
-            
+
             if validation['warnings']:
                 st.markdown("**Warnings:**")
                 for warning in validation['warnings']:
                     st.warning(warning)
-        
+
         # Bounds information
         bounds = results.get('bounds', {})
         if bounds:
