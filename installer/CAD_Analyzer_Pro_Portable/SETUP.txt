@@ -1,0 +1,24 @@
+🏨 CAD Analyzer Pro - Portable Version Setup
+
+REQUIREMENTS:
+- Python 3.8+ installed on system
+- Internet connection for first-time setup
+
+SETUP STEPS:
+1. Install Python dependencies:
+   pip install -r requirements.txt
+
+2. Run the application:
+   Double-click run_cad_analyzer.bat
+   OR
+   python main_production.py
+
+FEATURES:
+✅ Real DXF/DWG processing
+✅ Îlot placement with size distribution  
+✅ Corridor generation
+✅ Professional visualization
+✅ Export capabilities
+
+For executable version without Python requirement,
+use the installer package instead.

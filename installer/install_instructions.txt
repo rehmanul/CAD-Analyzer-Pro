@@ -1,0 +1,30 @@
+🏨 CAD Analyzer Pro - Installation Instructions
+
+SYSTEM REQUIREMENTS:
+- Windows 10/11 (64-bit)
+- 4GB RAM minimum
+- 500MB free disk space
+
+INSTALLATION:
+1. Extract all files to desired location (e.g., C:\Program Files\CAD Analyzer Pro)
+2. Double-click CAD_Analyzer_Pro.exe to run
+3. No additional installation required - all dependencies included
+
+USAGE:
+1. Upload DXF/DWG files via File Upload tab
+2. View analysis results in Analysis tab
+3. Generate îlot placement in Îlot Placement tab
+4. Create corridors in Corridor Generation tab
+5. Export results in Results & Export tab
+
+FEATURES:
+✅ Real DXF/DWG file processing
+✅ Advanced îlot placement with size distribution
+✅ Mandatory corridor generation
+✅ Professional visualization
+✅ JSON and image export
+
+SUPPORT:
+For technical support or questions, contact the development team.
+
+© 2024 CAD Analyzer Pro - Enterprise Edition
