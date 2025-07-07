@@ -34,17 +34,22 @@ class ProductionFloorAnalyzer:
         """Process DXF file with production-level parsing"""
         try:
             # Save content to temporary file
-            temp_path = f"/tmp/{filename}"
+            import tempfile
+            import os
+            temp_path = os.path.join(tempfile.gettempdir(), filename)
             with open(temp_path, 'wb') as f:
                 f.write(file_content)
             
             # Load DXF document
             try:
-                with open(temp_path, 'r') as f:
-                    doc = ezdxf.read(f)
+                doc = ezdxf.readfile(temp_path)
             except Exception as e:
-                # Generate sample data for demonstration
-                return self.generate_sample_dxf_data(filename)
+                try:
+                    # Try reading as bytes
+                    import io
+                    doc = ezdxf.read(io.BytesIO(file_content))
+                except Exception as e2:
+                    return {'success': False, 'error': f'DXF read failed: {str(e2)}'}
             
             # Extract entities by layer and type
             entities = []

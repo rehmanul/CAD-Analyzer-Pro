@@ -226,7 +226,15 @@ class ProductionCADAnalyzer:
             # Process file
             with st.spinner("Processing floor plan..."):
                 file_content = uploaded_file.read()
-                results = cached_file_processing(file_content, uploaded_file.name)
+                filename = uploaded_file.name.lower()
+                
+                if filename.endswith(('.dxf', '.dwg')):
+                    results = self.floor_analyzer.process_dxf_file(file_content, uploaded_file.name)
+                elif filename.endswith(('.png', '.jpg', '.jpeg')):
+                    results = self.floor_analyzer.process_image_file(file_content, uploaded_file.name)
+                else:
+                    st.error("Unsupported file format")
+                    return
                 
                 if results['success']:
                     st.session_state.analysis_results = results
@@ -484,9 +492,9 @@ class ProductionCADAnalyzer:
                 st.error("No valid bounds found")
                 return
             
-            # Cached îlot generation
+            # Real îlot generation
             config = st.session_state.size_distribution
-            placed_ilots = cached_ilot_placement(bounds, str(config))
+            placed_ilots = self._fast_place_ilots(bounds, config)
             
             # Store results
             st.session_state.placed_ilots = placed_ilots
@@ -561,8 +569,8 @@ class ProductionCADAnalyzer:
             ilots = st.session_state.placed_ilots
             config = st.session_state.corridor_config
             
-            # Cached corridor generation
-            corridors = cached_corridor_generation(tuple(str(i) for i in ilots[:10]))
+            # Real corridor generation
+            corridors = self._fast_generate_corridors(ilots, config)
             st.session_state.corridors = corridors
             
             st.success(f"Generated {len(corridors)} corridors")
