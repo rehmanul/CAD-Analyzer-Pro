@@ -27,7 +27,9 @@ from utils.production_database import production_db
 from utils.production_floor_analyzer import ProductionFloorAnalyzer
 from utils.production_ilot_system import ProductionIlotSystem
 from utils.production_visualizer import ProductionVisualizer
-from streamlit_config import cached_file_processing, cached_ilot_placement, cached_corridor_generation
+from async_processor import AsyncProcessor, async_ilot_placement
+from cache_manager import cache_manager
+from webgl_renderer import webgl_renderer
 
 # Configure Streamlit
 st.set_page_config(
@@ -81,6 +83,7 @@ class ProductionCADAnalyzer:
         self.floor_analyzer = ProductionFloorAnalyzer()
         self.ilot_system = ProductionIlotSystem()
         self.visualizer = ProductionVisualizer()
+        self.async_processor = AsyncProcessor()
         self.current_project_id = None
         
         # Initialize session state with caching
@@ -353,8 +356,7 @@ class ProductionCADAnalyzer:
         
         # Placement button
         if st.button("Generate Îlot Placement", type="primary"):
-            with st.spinner("Placing îlots..."):
-                self.generate_ilot_placement()
+            self.generate_ilot_placement_async()
         
         # Display results if available
         if hasattr(st.session_state, 'placed_ilots') and len(st.session_state.placed_ilots) > 0:
@@ -481,20 +483,40 @@ class ProductionCADAnalyzer:
             if st.button("📊 Export Data (JSON)"):
                 self.export_json_data()
     
-    def generate_ilot_placement(self):
-        """Generate îlot placement using fast algorithm"""
+    def generate_ilot_placement_async(self):
+        """Generate îlot placement with async processing"""
+        analysis_data = st.session_state.analysis_results
+        bounds = analysis_data.get('bounds', {})
+        config = st.session_state.size_distribution
+        
+        # Check cache first
+        cache_key = cache_manager.get_cache_key({'bounds': bounds, 'config': config})
+        cached_result = cache_manager.get_cached_result(cache_key)
+        
+        if cached_result:
+            st.session_state.placed_ilots = cached_result['ilots']
+            st.session_state.placement_metrics = cached_result['metrics']
+            st.session_state.ilot_distribution = cached_result['distribution']
+            st.success(f"Loaded {len(cached_result['ilots'])} îlots from cache")
+            st.rerun()
+            return
+        
+        # Async processing with progress
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+        
+        def update_progress(progress, message):
+            progress_bar.progress(progress)
+            status_text.text(message)
+        
         try:
-            # Fast placement algorithm
-            analysis_data = st.session_state.analysis_results
-            bounds = analysis_data.get('bounds', {})
+            import asyncio
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
             
-            if not bounds:
-                st.error("No valid bounds found")
-                return
-            
-            # Real îlot generation
-            config = st.session_state.size_distribution
-            placed_ilots = self._fast_place_ilots(bounds, config)
+            placed_ilots = loop.run_until_complete(
+                async_ilot_placement(bounds, config, update_progress)
+            )
             
             # Store results
             st.session_state.placed_ilots = placed_ilots
@@ -506,12 +528,22 @@ class ProductionCADAnalyzer:
                 'size_5_10': len([i for i in placed_ilots if i['size_category'] == 'size_5_10'])
             }
             
-            # Force session state update
+            # Cache results
+            result_data = {
+                'ilots': placed_ilots,
+                'metrics': st.session_state.placement_metrics,
+                'distribution': st.session_state.ilot_distribution
+            }
+            cache_manager.store_cached_result(cache_key, result_data)
+            
+            progress_bar.empty()
+            status_text.empty()
+            st.success(f"Successfully placed {len(placed_ilots)} îlots")
             st.rerun()
             
-            st.success(f"Successfully placed {len(placed_ilots)} îlots")
-            
         except Exception as e:
+            progress_bar.empty()
+            status_text.empty()
             st.error(f"Îlot placement failed: {str(e)}")
     
     def _fast_place_ilots(self, bounds, config):
@@ -653,8 +685,12 @@ class ProductionCADAnalyzer:
             with col4:
                 st.metric("Extra Large (5-10 m²)", dist.get('size_5_10', 0))
         
-        # Fast visualization
-        fig = self._create_fast_ilot_visualization()
+        # WebGL visualization
+        fig = webgl_renderer.create_webgl_visualization(
+            st.session_state.placed_ilots, 
+            st.session_state.get('corridors', []),
+            st.session_state.analysis_results.get('bounds', {})
+        )
         st.plotly_chart(fig, use_container_width=True, height=600)
     
     def _create_fast_ilot_visualization(self):
