@@ -229,7 +229,6 @@ class ProductionCADAnalyzer:
             filename = uploaded_file.name.lower()
 
             if filename.endswith(('.dxf', '.dwg')):
-                processor = AsyncProcessor()
                 progress_bar = st.progress(0)
                 status_text = st.empty()
 
@@ -237,21 +236,22 @@ class ProductionCADAnalyzer:
                     progress_bar.progress(progress)
                     status_text.text(message)
 
-                async def process_file():
-                    results = await processor.process_file_async(file_content, uploaded_file.name, update_progress)
-                    return results
+                import concurrent.futures
+                from utils.advanced_dxf_parser import parse_dxf_advanced
 
-                try:
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
-                    results = loop.run_until_complete(process_file())
-                    progress_bar.empty()
-                    status_text.empty()
-                except Exception as e:
-                    progress_bar.empty()
-                    status_text.empty()
-                    st.error(f"Async processing failed: {str(e)}")
-                    return
+                def parse_file():
+                    update_progress(0.1, "Parsing CAD file...")
+                    result = parse_dxf_advanced(file_content, uploaded_file.name)
+                    update_progress(1.0, "Parsing complete.")
+                    return result
+
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                    future = executor.submit(parse_file)
+                    while not future.done():
+                        time.sleep(0.05)
+                    results = future.result()
+                progress_bar.empty()
+                status_text.empty()
             elif filename.endswith(('.png', '.jpg', '.jpeg')):
                 with st.spinner("Processing image file..."):
                     results = self.floor_analyzer.process_image_file(file_content, uploaded_file.name)
