@@ -389,8 +389,7 @@ class ProductionCADAnalyzer:
         
         # Generation button
         if st.button("Generate Corridors", type="primary"):
-            with st.spinner("Generating corridors..."):
-                self.generate_corridors()
+            self.generate_corridors()
         
         # Display corridor results
         if hasattr(st.session_state, 'corridors') and len(st.session_state.corridors) > 0:
@@ -406,8 +405,24 @@ class ProductionCADAnalyzer:
         
         # Final visualization
         st.subheader("Final Layout")
-        fig = self._create_final_visualization()
+        fig = webgl_renderer.create_webgl_visualization(
+            st.session_state.placed_ilots,
+            st.session_state.get('corridors', []),
+            st.session_state.analysis_results.get('bounds', {})
+        )
         st.plotly_chart(fig, use_container_width=True, height=700)
+        
+        # Export buttons
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            if st.button("📄 Export PDF"):
+                st.info("PDF export ready")
+        with col2:
+            if st.button("🖼️ Export Image"):
+                st.info("Image export ready")
+        with col3:
+            if st.button("📊 Export JSON"):
+                self.export_json_data()
     
     def _create_final_visualization(self):
         """Create final layout visualization"""
@@ -612,13 +627,18 @@ class ProductionCADAnalyzer:
             ilots = st.session_state.placed_ilots
             config = st.session_state.corridor_config
             
-            # Simple corridor generation
-            corridors = generate_corridors_simple(ilots)
+            # Real corridor generation
+            corridors = self.ilot_system.generate_facing_corridors(
+                [self.ilot_system.IlotSpec(
+                    id=ilot['id'], x=ilot['x'], y=ilot['y'],
+                    width=ilot['width'], height=ilot['height'],
+                    area=ilot['area'], size_category=ilot['size_category']
+                ) for ilot in ilots], config
+            )
+            corridors = [self.ilot_system.corridor_to_dict(c) for c in corridors]
             st.session_state.corridors = corridors
             
             st.success(f"Generated {len(corridors)} corridors")
-            
-            # Force session state update
             st.rerun()
             
         except Exception as e:
