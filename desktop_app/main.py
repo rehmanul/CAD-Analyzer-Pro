@@ -33,7 +33,9 @@ class CADAnalyzerMainWindow(QMainWindow):
 
         self.init_file_upload_tab()
         self.init_analysis_tab()
-        # TODO: Implement other tabs
+        self.init_ilot_placement_tab()
+        self.init_corridor_generation_tab()
+        self.init_results_export_tab()
 
     def init_file_upload_tab(self):
         layout = QVBoxLayout()
