@@ -514,9 +514,23 @@ class ProductionCADAnalyzer:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             
-            placed_ilots = loop.run_until_complete(
-                async_ilot_placement(bounds, config, update_progress)
+            # Use real production system
+            self.ilot_system.load_floor_plan_data(
+                walls=analysis_data.get('walls', []),
+                restricted_areas=analysis_data.get('restricted_areas', []),
+                entrances=analysis_data.get('entrances', []),
+                zones={},
+                bounds=bounds
             )
+            
+            full_config = {
+                **config,
+                **st.session_state.corridor_config,
+                **st.session_state.advanced_config
+            }
+            
+            placement_result = self.ilot_system.process_full_placement(full_config)
+            placed_ilots = placement_result['ilots']
             
             # Store results
             st.session_state.placed_ilots = placed_ilots
