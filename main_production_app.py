@@ -365,10 +365,18 @@ class ProductionCADAnalyzer:
         # Placement button
         if st.button("Generate Îlot Placement", type="primary"):
             self.generate_ilot_placement_async()
-        
+
+        # Debug: Show analysis results and ilot state
+        if st.session_state.get('analysis_results'):
+            st.expander('Debug: Analysis Results').write(st.session_state['analysis_results'])
+        if st.session_state.get('placed_ilots') is not None:
+            st.expander('Debug: Placed Ilots').write(st.session_state['placed_ilots'])
+
         # Display results if available
         if hasattr(st.session_state, 'placed_ilots') and len(st.session_state.placed_ilots) > 0:
             self.display_ilot_results()
+        elif hasattr(st.session_state, 'placed_ilots') and st.session_state.placed_ilots == []:
+            st.warning("No îlots were generated. Please check your floor plan and configuration.")
     
     def render_corridor_generation_tab(self):
         """Render corridor generation interface"""
