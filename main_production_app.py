@@ -229,29 +229,18 @@ class ProductionCADAnalyzer:
             filename = uploaded_file.name.lower()
 
             if filename.endswith(('.dxf', '.dwg')):
-                progress_bar = st.progress(0)
-                status_text = st.empty()
-
-                def update_progress(progress, message):
-                    progress_bar.progress(progress)
-                    status_text.text(message)
-
                 import concurrent.futures
                 from utils.advanced_dxf_parser import parse_dxf_advanced
 
                 def parse_file():
-                    update_progress(0.1, "Parsing CAD file...")
-                    result = parse_dxf_advanced(file_content, uploaded_file.name)
-                    update_progress(1.0, "Parsing complete.")
-                    return result
+                    return parse_dxf_advanced(file_content, uploaded_file.name)
 
-                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                    future = executor.submit(parse_file)
-                    while not future.done():
-                        time.sleep(0.05)
-                    results = future.result()
-                progress_bar.empty()
-                status_text.empty()
+                with st.spinner("Parsing CAD file..."):
+                    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                        future = executor.submit(parse_file)
+                        while not future.done():
+                            time.sleep(0.05)
+                        results = future.result()
             elif filename.endswith(('.png', '.jpg', '.jpeg')):
                 with st.spinner("Processing image file..."):
                     results = self.floor_analyzer.process_image_file(file_content, uploaded_file.name)
