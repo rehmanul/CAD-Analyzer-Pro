@@ -229,7 +229,8 @@ class ProductionCADAnalyzer:
                 filename = uploaded_file.name.lower()
                 
                 if filename.endswith(('.dxf', '.dwg')):
-                    results = self.floor_analyzer.process_dxf_file(file_content, uploaded_file.name)
+                    from utils.advanced_dxf_parser import parse_dxf_advanced
+                    results = parse_dxf_advanced(file_content, uploaded_file.name)
                 elif filename.endswith(('.png', '.jpg', '.jpeg')):
                     results = self.floor_analyzer.process_image_file(file_content, uploaded_file.name)
                 else:

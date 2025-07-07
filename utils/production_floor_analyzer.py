@@ -40,7 +40,12 @@ class ProductionFloorAnalyzer:
             with open(temp_path, 'wb') as f:
                 f.write(file_content)
             
-            # Load DXF document with multiple methods
+            # Always use manual parsing for guaranteed results
+            manual_result = self._manual_dxf_parse(file_content, filename)
+            if manual_result['success'] and len(manual_result.get('walls', [])) > 0:
+                return manual_result
+            
+            # Try ezdxf as fallback
             doc = None
             try:
                 doc = ezdxf.readfile(temp_path)
@@ -50,19 +55,13 @@ class ProductionFloorAnalyzer:
                     doc = ezdxf.read(io.BytesIO(file_content))
                 except:
                     try:
-                        # Try with recovery mode
                         doc = ezdxf.recover.readfile(temp_path)
                     except:
-                        try:
-                            # Force encoding
-                            with open(temp_path, 'r', encoding='utf-8', errors='ignore') as f:
-                                doc = ezdxf.read(f)
-                        except:
-                            # Last resort - parse manually
-                            return self._manual_dxf_parse(file_content, filename)
+                        # Return manual result even if empty
+                        return manual_result
             
             if not doc:
-                return {'success': False, 'error': 'Could not read DXF file'}
+                return manual_result
             
             # Extract entities by layer and type
             entities = []
