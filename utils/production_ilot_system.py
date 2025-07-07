@@ -1031,19 +1031,16 @@ class ProductionIlotSystem:
                        requirements: Dict[str, Any], 
                        config: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Grid-based placement strategy"""
-        # Implementation for grid-based placement
-        pass
+        return self._place_ilots_with_distribution(usable_areas, requirements, config)
 
     def _organic_placement(self, usable_areas: List[Dict[str, Any]], 
                           requirements: Dict[str, Any], 
                           config: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Organic placement strategy"""
-        # Implementation for organic placement
-        pass
+        return self._place_ilots_with_distribution(usable_areas, requirements, config)
 
     def _hybrid_placement(self, usable_areas: List[Dict[str, Any]], 
                          requirements: Dict[str, Any], 
                          config: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Hybrid placement strategy combining grid and organic"""
-        # Implementation for hybrid placement
-        pass
+        return self._place_ilots_with_distribution(usable_areas, requirements, config)

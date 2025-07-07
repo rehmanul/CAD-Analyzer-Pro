@@ -27,8 +27,6 @@ from utils.production_database import production_db
 from utils.production_floor_analyzer import ProductionFloorAnalyzer
 from utils.production_ilot_system import ProductionIlotSystem
 from utils.production_visualizer import ProductionVisualizer
-from async_processor import AsyncProcessor, async_ilot_placement
-from cache_manager import cache_manager
 from webgl_renderer import webgl_renderer
 
 # Configure Streamlit
@@ -83,7 +81,6 @@ class ProductionCADAnalyzer:
         self.floor_analyzer = ProductionFloorAnalyzer()
         self.ilot_system = ProductionIlotSystem()
         self.visualizer = ProductionVisualizer()
-        self.async_processor = AsyncProcessor()
         self.current_project_id = None
         
         # Initialize session state with caching
@@ -514,7 +511,7 @@ class ProductionCADAnalyzer:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             
-            # Use real production system
+            # Use production system with real data
             self.ilot_system.load_floor_plan_data(
                 walls=analysis_data.get('walls', []),
                 restricted_areas=analysis_data.get('restricted_areas', []),
@@ -530,7 +527,7 @@ class ProductionCADAnalyzer:
             }
             
             placement_result = self.ilot_system.process_full_placement(full_config)
-            placed_ilots = placement_result['ilots']
+            placed_ilots = placement_result.get('ilots', [])
             
             # Store results
             st.session_state.placed_ilots = placed_ilots
@@ -615,8 +612,8 @@ class ProductionCADAnalyzer:
             ilots = st.session_state.placed_ilots
             config = st.session_state.corridor_config
             
-            # Real corridor generation
-            corridors = self._fast_generate_corridors(ilots, config)
+            # Simple corridor generation
+            corridors = generate_corridors_simple(ilots)
             st.session_state.corridors = corridors
             
             st.success(f"Generated {len(corridors)} corridors")
