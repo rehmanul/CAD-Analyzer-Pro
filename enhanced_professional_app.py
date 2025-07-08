@@ -163,9 +163,6 @@ class EnhancedCADAnalyzer:
     def render_enhanced_sidebar(self):
         """Clean sidebar with essential controls"""
         
-        # Project selector
-        project_name = st.text_input("Project Name", value="New Floor Plan")
-        
         # Analysis configuration
         with st.expander("Îlot Settings", expanded=False):
             col1, col2 = st.columns(2)
@@ -181,14 +178,25 @@ class EnhancedCADAnalyzer:
             show_measurements = st.checkbox("Measurements", True)
             show_room_labels = st.checkbox("Room Labels", True)
             show_corridors = st.checkbox("Corridors", True)
+        
+        # About section at the end
+        with st.expander("About", expanded=False):
+            st.markdown("""
+            **Supported File Formats:**
+            - DXF files - Native CAD format with layer detection
+            - DWG files - AutoCAD format processing  
+            - Image files (PNG, JPG) - Color-based zone detection
+            
+            **Zone Detection System:**
+            - Walls: Structural elements (black lines or WALL layers)
+            - Restricted Areas: Service zones (stairs, elevators, utilities)
+            - Entrances/Exits: Access points with clearance requirements
+            """)
     
     def render_main_interface(self):
-        """Enhanced main interface"""
+        """Clean main interface"""
         
-        # Status indicator
-        self.show_status_indicator()
-        
-        # File upload prominently placed
+        # File upload prominently placed (when no file uploaded)
         if not st.session_state.analysis_results:
             st.markdown("### Upload Floor Plan")
             uploaded_file = st.file_uploader(
@@ -201,8 +209,12 @@ class EnhancedCADAnalyzer:
                 self.process_uploaded_file(uploaded_file)
                 st.rerun()
         
-        # Main content tabs (only show after file upload)
+        # Status indicator and tabs (only show after file upload)
         if st.session_state.analysis_results:
+            # Status indicator
+            self.show_status_indicator()
+            
+            # Main content tabs
             tab1, tab2, tab3 = st.tabs([
                 "Analysis", "Îlot Placement", "Export"
             ])

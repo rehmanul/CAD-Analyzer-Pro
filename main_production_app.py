@@ -234,18 +234,6 @@ class ProductionCADAnalyzer:
         """Render file upload interface"""
         st.header("📁 Upload Floor Plan")
 
-        st.markdown("""
-        **Supported File Formats:**
-        - **DXF files** - Native CAD format with layer detection
-        - **DWG files** - AutoCAD format processing
-        - **Image files** (PNG, JPG) - Color-based zone detection
-
-        **Zone Detection System:**
-        - **Walls**: Structural elements (black lines or WALL layers)
-        - **Restricted Areas**: Service zones (stairs, elevators, utilities)
-        - **Entrances/Exits**: Access points with clearance requirements
-        """)
-
         uploaded_file = st.file_uploader(
             "Choose your floor plan file",
             type=['dxf', 'dwg', 'png', 'jpg', 'jpeg'],
