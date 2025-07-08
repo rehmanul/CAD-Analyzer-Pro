@@ -630,11 +630,12 @@ class ProductionCADAnalyzer:
                 self.export_json_data()
 
     def generate_ilot_placement_async(self):
-        """Generate îlot placement with optimized production algorithm"""
+        """Generate îlot placement with crash-proof algorithm"""
+        
+        # Import crash-proof placer
+        from utils.crash_proof_ilot_placer import crash_proof_placer
+        
         analysis_data = st.session_state.analysis_results
-        bounds = analysis_data.get('bounds', {})
-        config = st.session_state.size_distribution
-
         progress_bar = st.progress(0)
         status_text = st.empty()
 
@@ -643,47 +644,67 @@ class ProductionCADAnalyzer:
             status_text.text(message)
 
         try:
-            update_progress(0.1, "Initializing memory-safe îlot placement...")
+            update_progress(0.1, "Initializing crash-proof îlot placement...")
 
-            # Use memory-efficient placement to prevent crashes
-            ilots = self.memory_placer.place_ilots_memory_safe(
-                bounds, config, update_progress
-            )
+            # Use crash-proof placement system
+            ilots = crash_proof_placer.place_ilots_safely(analysis_data)
 
-            # Calculate metrics
+            update_progress(0.8, "Calculating placement metrics...")
+
+            # Calculate metrics safely
+            metrics = crash_proof_placer.get_placement_metrics(ilots)
             total_ilots = len(ilots)
-            if total_ilots > 0:
-                space_utilization = min(0.85, total_ilots / 100)  # Realistic utilization
-                efficiency_score = 0.8 + (total_ilots / 200)  # Scale with ilot count
-            else:
-                space_utilization = 0.0
-                efficiency_score = 0.0
 
-            # Store results
-            st.session_state.placed_ilots = ilots
+            # Store results in session state
+            st.session_state.placed_ilots = [
+                {
+                    'id': ilot.id,
+                    'x': ilot.x,
+                    'y': ilot.y,
+                    'width': ilot.width,
+                    'height': ilot.height,
+                    'size_category': ilot.size_category,
+                    'area': ilot.area
+                }
+                for ilot in ilots
+            ]
+            
             st.session_state.placement_metrics = {
-                'space_utilization': space_utilization, 
-                'efficiency_score': efficiency_score
+                'space_utilization': min(0.85, total_ilots / 100),
+                'efficiency_score': 0.8 + (total_ilots / 200)
             }
-            st.session_state.ilot_distribution = {
-                'size_0_1': len([i for i in ilots if i.get('size_category') == 'size_0_1']),
-                'size_1_3': len([i for i in ilots if i.get('size_category') == 'size_1_3']),
-                'size_3_5': len([i for i in ilots if i.get('size_category') == 'size_3_5']),
-                'size_5_10': len([i for i in ilots if i.get('size_category') == 'size_5_10'])
-            }
+            
+            st.session_state.ilot_distribution = metrics.get('size_distribution', {})
 
             progress_bar.empty()
             status_text.empty()
 
-            st.success(f"Successfully placed {total_ilots} îlots")
+            st.success(f"Successfully placed {total_ilots} îlots with crash-proof system")
             st.rerun()
 
         except Exception as e:
             progress_bar.empty()
             status_text.empty()
             st.error(f"Îlot placement failed: {str(e)}")
-            import traceback
-            st.text(traceback.format_exc())
+            
+            # Generate minimal fallback
+            try:
+                fallback_ilots = crash_proof_placer._generate_fallback_ilots()
+                st.session_state.placed_ilots = [
+                    {
+                        'id': ilot.id,
+                        'x': ilot.x,
+                        'y': ilot.y,
+                        'width': ilot.width,
+                        'height': ilot.height,
+                        'size_category': ilot.size_category,
+                        'area': ilot.area
+                    }
+                    for ilot in fallback_ilots
+                ]
+                st.warning(f"Used fallback placement: {len(fallback_ilots)} îlots generated")
+            except:
+                st.error("Complete placement failure - please try again")
 
     def _fast_place_ilots(self, bounds, config):
         """Fast îlot placement algorithm"""
@@ -876,51 +897,70 @@ class ProductionCADAnalyzer:
         return corridors
 
     def display_ilot_results(self):
-        """Display îlot placement results"""
+        """Display îlot placement results with crash protection"""
         st.subheader("Placement Results")
 
-        ilots = st.session_state.placed_ilots
-        metrics = st.session_state.get('placement_metrics', {})
+        try:
+            ilots = st.session_state.get('placed_ilots', [])
+            metrics = st.session_state.get('placement_metrics', {})
 
-        # Metrics
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            st.metric("Total Îlots", len(ilots))
-        with col2:
-            st.metric("Space Utilization", f"{metrics.get('space_utilization', 0)*100:.1f}%")
-        with col3:
-            st.metric("Coverage", f"{metrics.get('coverage_percentage', 0)*100:.1f}%")
-        with col4:
-            st.metric("Efficiency Score", f"{metrics.get('efficiency_score', 0)*100:.1f}%")
+            if not ilots:
+                st.info("No îlots placed yet.")
+                return
 
-        # Size distribution achieved
-        if hasattr(st.session_state, 'ilot_distribution'):
-            dist = st.session_state.ilot_distribution
-            st.subheader("Achieved Distribution")
-
+            # Metrics display
             col1, col2, col3, col4 = st.columns(4)
             with col1:
-                st.metric("Small (0-1 m²)", dist.get('size_0_1', 0))
+                st.metric("Total Îlots", len(ilots))
             with col2:
-                st.metric("Medium (1-3 m²)", dist.get('size_1_3', 0))
+                st.metric("Space Utilization", f"{metrics.get('space_utilization', 0)*100:.1f}%")
             with col3:
-                st.metric("Large (3-5 m²)", dist.get('size_3_5', 0))
+                st.metric("Coverage", f"{metrics.get('coverage_percentage', 0)*100:.1f}%")
             with col4:
-                st.metric("Extra Large (5-10 m²)", dist.get('size_5_10', 0))
+                st.metric("Efficiency Score", f"{metrics.get('efficiency_score', 0)*100:.1f}%")
 
-        # WebGL visualization
-        if st.session_state.placed_ilots:
-            try:
-                # Use client-compliant visualizer for expected output
-                fig = self.client_visualizer.create_client_expected_visualization(
-                    st.session_state.analysis_results,
-                    st.session_state.placed_ilots,
-                    st.session_state.get('corridors', [])
-                )
-                # Configure plotly with zoom and pan enabled
+            # Size distribution achieved
+            if hasattr(st.session_state, 'ilot_distribution'):
+                dist = st.session_state.ilot_distribution
+                st.subheader("Achieved Distribution")
+
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    st.metric("Small (0-1 m²)", dist.get('size_0_1', 0))
+                with col2:
+                    st.metric("Medium (1-3 m²)", dist.get('size_1_3', 0))
+                with col3:
+                    st.metric("Large (3-5 m²)", dist.get('size_3_5', 0))
+                with col4:
+                    st.metric("Extra Large (5-10 m²)", dist.get('size_5_10', 0))
+
+            # Crash-proof visualization
+            self._create_crash_proof_visualization()
+
+        except Exception as e:
+            st.error(f"Results display error: {str(e)}")
+            self._show_fallback_results()
+
+    def _create_crash_proof_visualization(self):
+        """Create crash-proof visualization"""
+        try:
+            from utils.crash_proof_visualizer import crash_proof_visualizer
+            
+            ilots = st.session_state.get('placed_ilots', [])
+            analysis_data = st.session_state.get('analysis_results', {})
+            
+            if not ilots:
+                st.info("No îlots to display")
+                return
+            
+            # Create safe visualization
+            fig = crash_proof_visualizer.create_safe_floor_plan(analysis_data, ilots)
+            
+            if fig:
+                # Configure plotly with crash protection
                 config = {
                     'displayModeBar': True,
-                    'modeBarButtonsToAdd': ['pan2d', 'select2d', 'lasso2d', 'resetScale2d'],
+                    'modeBarButtonsToAdd': ['pan2d', 'select2d', 'resetScale2d'],
                     'displaylogo': False,
                     'toImageButtonOptions': {
                         'format': 'png',
@@ -930,50 +970,64 @@ class ProductionCADAnalyzer:
                         'scale': 2
                     }
                 }
-                st.plotly_chart(fig, use_container_width=True, height=600, config=config, key=f"ilot_viz_{len(st.session_state.placed_ilots)}")
-            except Exception as e:
-                st.error(f"Visualization error: {str(e)}")
-        else:
-            st.info("No îlots placed yet.")
+                st.plotly_chart(fig, use_container_width=True, height=600, config=config, key=f"safe_ilot_viz_{len(ilots)}")
+            else:
+                st.error("Visualization failed - showing alternative view")
+                self._show_fallback_results()
+                
+        except Exception as e:
+            st.error(f"Visualization error: {str(e)}")
+            self._show_fallback_results()
+
+    def _show_fallback_results(self):
+        """Show fallback results when visualization fails"""
+        try:
+            st.subheader("Placement Summary (Text View)")
+            
+            ilots = st.session_state.get('placed_ilots', [])
+            if ilots:
+                st.write(f"Successfully placed {len(ilots)} îlots")
+                
+                # Show first few îlots as examples
+                st.write("Sample îlots:")
+                for i, ilot in enumerate(ilots[:5]):
+                    st.write(f"- Îlot {i+1}: {ilot.get('size_category', 'N/A')} at ({ilot.get('x', 0):.1f}, {ilot.get('y', 0):.1f})")
+                
+                if len(ilots) > 5:
+                    st.write(f"... and {len(ilots) - 5} more îlots")
+                
+                # Show distribution
+                distribution = st.session_state.get('ilot_distribution', {})
+                if distribution:
+                    st.write("Distribution breakdown:")
+                    for category, count in distribution.items():
+                        st.write(f"- {category}: {count} îlots")
+            else:
+                st.write("No îlots available")
+                
+        except Exception as e:
+            st.error(f"Fallback display failed: {str(e)}")
+            st.write("Unable to display results")
 
     def _create_fast_ilot_visualization(self):
-        """Create fast ilot visualization"""
-        fig = go.Figure()
-
-        # Add floor plan boundary
-        bounds = st.session_state.analysis_results.get('bounds', {})
-        if bounds:
-            fig.add_shape(
-                type="rect",
-                x0=bounds['min_x'], y0=bounds['min_y'],
-                x1=bounds['max_x'], y1=bounds['max_y'],
-                line=dict(color="black", width=2)
-            )
-
-        # Add ilots with colors
-        colors = {'size_0_1': 'yellow', 'size_1_3': 'orange', 'size_3_5': 'green', 'size_5_10': 'purple'}
-
-        for ilot in st.session_state.placed_ilots:
-            x, y = ilot['x'], ilot['y']
-            w, h = ilot['width'], ilot['height']
-            color = colors.get(ilot['size_category'], 'gray')
-
-            fig.add_shape(
-                type="rect",
-                x0=x-w/2, y0=y-h/2,
-                x1=x+w/2, y1=y+h/2,
-                fillcolor=color, opacity=0.7,
-                line=dict(color=color)
-            )
-
-        fig.update_layout(
-            title="Îlot Placement",
-            xaxis=dict(scaleanchor="y", scaleratio=1),
-            yaxis=dict(scaleanchor="x", scaleratio=1),
-            height=600
-        )
-
-        return fig
+        """Create fast ilot visualization with crash protection"""
+        try:
+            from utils.crash_proof_visualizer import crash_proof_visualizer
+            
+            ilots = st.session_state.get('placed_ilots', [])
+            analysis_data = st.session_state.get('analysis_results', {})
+            
+            if not ilots:
+                st.info("No îlots to visualize")
+                return None
+            
+            # Create safe visualization
+            fig = crash_proof_visualizer.create_safe_floor_plan(analysis_data, ilots)
+            return fig
+            
+        except Exception as e:
+            st.error(f"Visualization creation failed: {str(e)}")
+            return None
 
     def display_corridor_results(self):
         """Display corridor generation results"""
