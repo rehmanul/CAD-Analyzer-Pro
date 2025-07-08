@@ -51,7 +51,27 @@ def main():
     if missing_deps:
         st.error(f"Missing critical dependencies: {missing_deps}")
         st.info("Please install the required packages and restart the application.")
+        
+        # Show debug information
+        st.subheader("Debug Information")
+        st.write(f"Python path: {sys.path}")
+        st.write(f"Current directory: {os.getcwd()}")
+        st.write(f"Files in current directory: {os.listdir('.')}")
+
+        # Show requirements.txt content
+        try:
+            with open('requirements.txt', 'r') as f:
+                st.subheader("Requirements.txt content:")
+                st.code(f.read())
+        except:
+            st.error("Could not read requirements.txt")
+        
         return
+
+    # Show warning for non-critical dependencies like psutil
+    if missing_deps and "psutil" in missing_deps:
+        st.warning("⚠️ psutil not available - memory monitoring disabled")
+        st.info("The app will continue without memory monitoring features.")
 
     # Import and run the main production app
     try:
@@ -69,33 +89,6 @@ def main():
         except ImportError:
             st.error("Unable to load application modules. Please check the installation.")
             return
-
-    if missing_deps:
-        st.error(f"Missing critical dependencies: {', '.join(missing_deps)}")
-        st.error("Please ensure all required packages are installed.")
-
-        st.subheader("Debug Information")
-        st.write(f"Python path: {sys.path}")
-        st.write(f"Current directory: {os.getcwd()}")
-        st.write(f"Files in current directory: {os.listdir('.')}")
-
-        # Show requirements.txt content
-        try:
-            with open('requirements.txt', 'r') as f:
-                st.subheader("Requirements.txt content:")
-                st.code(f.read())
-        except:
-            st.error("Could not read requirements.txt")
-
-        st.stop()
-        return
-
-        # Show warning for non-critical dependencies like psutil
-        if "psutil" in missing_deps:
-            st.warning("⚠️ psutil not available - memory monitoring disabled")
-            st.info("The app will continue without memory monitoring features.")
-
-
 
     except Exception as e:
         st.error(f"Application error: {str(e)}")
