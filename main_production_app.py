@@ -27,6 +27,7 @@ from utils.production_database import production_db
 from utils.production_floor_analyzer import ProductionFloorAnalyzer
 from utils.production_ilot_system import ProductionIlotSystem
 from utils.production_visualizer import ProductionVisualizer
+from utils.client_compliant_visualizer import ClientCompliantVisualizer
 from webgl_renderer import WebGLRenderer
 
 # Streamlit configuration will be set in run() method
@@ -40,6 +41,7 @@ class ProductionCADAnalyzer:
         self.floor_analyzer = ProductionFloorAnalyzer()
         self.ilot_system = ProductionIlotSystem()
         self.visualizer = ProductionVisualizer()
+        self.client_visualizer = ClientCompliantVisualizer()
         self.current_project_id = None
         
         # Initialize session state with caching
@@ -460,13 +462,24 @@ class ProductionCADAnalyzer:
         st.subheader("Final Layout")
         if st.session_state.placed_ilots:
             try:
-                renderer = WebGLRenderer()
-                fig = renderer.create_webgl_visualization(
+                # Use client-compliant visualizer for expected output
+                fig = self.client_visualizer.create_client_expected_visualization(
+                    st.session_state.analysis_results,
                     st.session_state.placed_ilots,
-                    st.session_state.get('corridors', []),
-                    st.session_state.analysis_results.get('bounds', {})
+                    st.session_state.get('corridors', [])
                 )
                 st.plotly_chart(fig, use_container_width=True, height=700, key=f"final_layout_{len(st.session_state.placed_ilots)}")
+                
+                # Display compliance metrics
+                metrics = self.client_visualizer.get_ilot_placement_summary(st.session_state.placed_ilots)
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("Coverage", f"{metrics['coverage_percentage']:.1f}%")
+                with col2:
+                    st.metric("Efficiency", f"{metrics['efficiency_score']:.1f}%")
+                with col3:
+                    st.metric("Compliance", f"{metrics['compliance_score']:.1f}%")
+                    
             except Exception as e:
                 st.error(f"Visualization error: {str(e)}")
         else:
@@ -839,11 +852,11 @@ class ProductionCADAnalyzer:
         # WebGL visualization
         if st.session_state.placed_ilots:
             try:
-                renderer = WebGLRenderer()
-                fig = renderer.create_webgl_visualization(
-                    st.session_state.placed_ilots, 
-                    st.session_state.get('corridors', []),
-                    st.session_state.analysis_results.get('bounds', {})
+                # Use client-compliant visualizer for expected output
+                fig = self.client_visualizer.create_client_expected_visualization(
+                    st.session_state.analysis_results,
+                    st.session_state.placed_ilots,
+                    st.session_state.get('corridors', [])
                 )
                 st.plotly_chart(fig, use_container_width=True, height=600, key=f"ilot_viz_{len(st.session_state.placed_ilots)}")
             except Exception as e:
