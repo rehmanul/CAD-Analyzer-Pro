@@ -35,46 +35,52 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# CSS Styling
+# CSS Styling - Dark theme compatible
 st.markdown("""
 <style>
-    .main-header {
-        background: linear-gradient(90deg, #2C3E50 0%, #3498DB 100%);
-        padding: 1rem;
-        border-radius: 10px;
-        color: white;
-        text-align: center;
-        margin-bottom: 2rem;
-    }
     .section-header {
-        background: #ECF0F1;
-        padding: 0.5rem;
-        border-radius: 5px;
-        border-left: 4px solid #3498DB;
-        margin: 1rem 0;
-    }
-    .metric-card {
-        background: white;
+        background: linear-gradient(90deg, #1e40af 0%, #3b82f6 100%);
         padding: 1rem;
         border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        border-left: 4px solid #3498DB;
+        border-left: 4px solid #60a5fa;
+        margin: 1rem 0;
+        color: white;
+        font-weight: bold;
+    }
+    .metric-card {
+        background: rgba(59, 130, 246, 0.1);
+        padding: 1rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        border-left: 4px solid #3b82f6;
+        backdrop-filter: blur(10px);
     }
     .success-message {
-        background: #D5F4E6;
-        border: 1px solid #27AE60;
-        color: #27AE60;
-        padding: 0.75rem;
-        border-radius: 5px;
+        background: rgba(34, 197, 94, 0.2);
+        border: 2px solid #22c55e;
+        color: #22c55e;
+        padding: 1rem;
+        border-radius: 8px;
         margin: 1rem 0;
+        font-weight: bold;
     }
     .warning-message {
-        background: #FCF3CF;
-        border: 1px solid #F39C12;
-        color: #D68910;
-        padding: 0.75rem;
-        border-radius: 5px;
+        background: rgba(251, 146, 60, 0.2);
+        border: 2px solid #fb923c;
+        color: #fb923c;
+        padding: 1rem;
+        border-radius: 8px;
         margin: 1rem 0;
+        font-weight: bold;
+    }
+    /* Enhanced sidebar styling */
+    .sidebar .sidebar-content {
+        background: rgba(30, 58, 138, 0.1);
+        backdrop-filter: blur(10px);
+    }
+    /* Better contrast for text */
+    h1, h2, h3, p {
+        color: inherit !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -98,11 +104,55 @@ class CADAnalyzerApp:
 
     def run(self):
         """Run the main application"""
-        # Main header
+        # Sidebar with settings
+        with st.sidebar:
+            st.markdown("## 🎛️ Settings & Controls")
+            
+            # Îlot Size Distribution Settings
+            st.markdown("### 📊 Îlot Size Distribution")
+            st.markdown("**Client Requirements:**")
+            size_0_1_pct = st.slider("0-1 m² (Small - Yellow)", 5, 20, 10, key="size_0_1")
+            size_1_3_pct = st.slider("1-3 m² (Medium - Orange)", 15, 35, 25, key="size_1_3") 
+            size_3_5_pct = st.slider("3-5 m² (Large - Green)", 20, 40, 30, key="size_3_5")
+            size_5_10_pct = st.slider("5-10 m² (XL - Purple)", 25, 50, 35, key="size_5_10")
+            
+            total_pct = size_0_1_pct + size_1_3_pct + size_3_5_pct + size_5_10_pct
+            if total_pct != 100:
+                st.error(f"Total must be 100%. Current: {total_pct}%")
+            
+            st.markdown("### 🛤️ Spacing Settings")
+            min_spacing = st.slider("Minimum Spacing (m)", 0.5, 3.0, 1.0, key="min_spacing")
+            wall_clearance = st.slider("Wall Clearance (m)", 0.3, 2.0, 0.5, key="wall_clearance")
+            corridor_width = st.slider("Corridor Width (m)", 1.0, 3.0, 1.5, key="corridor_width")
+            
+            st.markdown("### 🎯 Optimization")
+            utilization_target = st.slider("Space Utilization (%)", 50, 90, 70, key="utilization")
+            
+            # Store settings in session state
+            st.session_state.ilot_config = {
+                'size_0_1_percent': size_0_1_pct,
+                'size_1_3_percent': size_1_3_pct, 
+                'size_3_5_percent': size_3_5_pct,
+                'size_5_10_percent': size_5_10_pct,
+                'min_spacing': min_spacing,
+                'wall_clearance': wall_clearance,
+                'corridor_width': corridor_width,
+                'utilization_target': utilization_target / 100
+            }
+
+        # Main header with better visibility
         st.markdown("""
-        <div class="main-header">
-            <h1>🏨 CAD Analyzer Pro</h1>
-            <p>Professional Hotel Floor Plan Analysis with Îlot Placement & Corridor Generation</p>
+        <div style="background: linear-gradient(90deg, #1e3a8a 0%, #3b82f6 100%); 
+                    padding: 2rem; 
+                    border-radius: 15px; 
+                    color: white; 
+                    text-align: center; 
+                    margin-bottom: 2rem;
+                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+            <h1 style="margin: 0; font-size: 2.5em;">🏨 CAD Analyzer Pro</h1>
+            <p style="margin: 0.5rem 0 0 0; font-size: 1.2em; opacity: 0.9;">
+                Professional Hotel Floor Plan Analysis with Îlot Placement & Corridor Generation
+            </p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -279,46 +329,33 @@ class CADAnalyzerApp:
         - 5-10 m²: Extra Large îlots (Purple)
         """)
 
-        # Configuration
-        st.subheader("Size Distribution Configuration")
+        # Configuration from sidebar
+        if 'ilot_config' not in st.session_state:
+            st.warning("⚠️ Please configure îlot settings in the sidebar first!")
+            return
         
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            size_0_1_percent = st.slider("0-1 m² (%)", 0, 100, 10)
-        with col2:
-            size_1_3_percent = st.slider("1-3 m² (%)", 0, 100, 25)
-        with col3:
-            size_3_5_percent = st.slider("3-5 m² (%)", 0, 100, 30)
-        with col4:
-            size_5_10_percent = st.slider("5-10 m² (%)", 0, 100, 35)
-
-        total_percent = size_0_1_percent + size_1_3_percent + size_3_5_percent + size_5_10_percent
+        config = st.session_state.ilot_config
+        total_percent = config['size_0_1_percent'] + config['size_1_3_percent'] + config['size_3_5_percent'] + config['size_5_10_percent']
         
         if total_percent != 100:
-            st.error(f"Total percentage must equal 100%. Current total: {total_percent}%")
+            st.error(f"⚠️ Size percentages must total 100%. Current: {total_percent}%. Please adjust in sidebar.")
             return
-
-        # Spacing configuration
-        st.subheader("Spacing Configuration")
-        col1, col2, col3 = st.columns(3)
+        
+        # Show current configuration
+        st.markdown("### 📋 Current Configuration")
+        col1, col2, col3, col4 = st.columns(4)
         with col1:
-            min_spacing = st.slider("Minimum Spacing (m)", 0.5, 3.0, 1.0)
+            st.metric("Small îlots", f"{config['size_0_1_percent']}%")
         with col2:
-            wall_clearance = st.slider("Wall Clearance (m)", 0.5, 2.0, 0.5)
+            st.metric("Medium îlots", f"{config['size_1_3_percent']}%")
         with col3:
-            utilization_target = st.slider("Space Utilization (%)", 50, 90, 70)
+            st.metric("Large îlots", f"{config['size_3_5_percent']}%")
+        with col4:
+            st.metric("XL îlots", f"{config['size_5_10_percent']}%")
 
         # Placement button
-        if st.button("Place Îlots", type="primary"):
-            self.place_ilots({
-                'size_0_1_percent': size_0_1_percent,
-                'size_1_3_percent': size_1_3_percent,
-                'size_3_5_percent': size_3_5_percent,
-                'size_5_10_percent': size_5_10_percent,
-                'min_spacing': min_spacing,
-                'wall_clearance': wall_clearance,
-                'utilization_target': utilization_target / 100
-            })
+        if st.button("🚀 Place Îlots", type="primary", use_container_width=True):
+            self.place_ilots(config)
 
         # Display placement results
         if st.session_state.placed_ilots:
@@ -407,24 +444,30 @@ class CADAnalyzerApp:
         - Access corridors for isolated îlots
         """)
 
-        # Configuration
-        st.subheader("Corridor Configuration")
+        # Configuration from sidebar
+        if 'ilot_config' not in st.session_state:
+            st.warning("⚠️ Please configure settings in the sidebar first!")
+            return
+            
+        config = st.session_state.ilot_config
         
+        # Show current corridor settings
+        st.markdown("### 📋 Current Corridor Configuration")
         col1, col2, col3 = st.columns(3)
         with col1:
-            corridor_width = st.slider("Corridor Width (m)", 1.0, 3.0, 1.5)
+            st.metric("Corridor Width", f"{config['corridor_width']:.1f} m")
         with col2:
-            main_width = st.slider("Main Corridor Width (m)", 1.5, 4.0, 2.5)
+            st.metric("Main Width", f"{config['corridor_width'] * 1.5:.1f} m")
         with col3:
-            generate_facing = st.checkbox("Force Between Facing Rows", value=True)
+            generate_facing = st.checkbox("Force Between Facing Rows", value=True, key="force_facing")
 
         # Generation button
-        if st.button("Generate Corridors", type="primary"):
+        if st.button("🛤️ Generate Corridors", type="primary", use_container_width=True):
             self.generate_corridors({
-                'corridor_width': corridor_width,
-                'main_width': main_width,
-                'secondary_width': corridor_width,
-                'access_width': corridor_width,
+                'corridor_width': config['corridor_width'],
+                'main_width': config['corridor_width'] * 1.5,
+                'secondary_width': config['corridor_width'],
+                'access_width': config['corridor_width'],
                 'force_between_facing': generate_facing,
                 'generate_main': True,
                 'generate_secondary': True
