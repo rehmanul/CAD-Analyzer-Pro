@@ -319,9 +319,11 @@ class ClientExpectedVisualizer:
             area = ilot.get('area', 0)
             color = self._get_ilot_color_by_area(area)
             
-            # Add îlot rectangle
-            x, y = ilot['position']
-            width, height = ilot['size']
+            # Add îlot rectangle with flexible data handling
+            position = ilot.get('position', [ilot.get('x', 0), ilot.get('y', 0)])
+            x, y = position
+            width = ilot.get('width', 3.0)
+            height = ilot.get('height', 2.0)
             
             fig.add_shape(
                 type="rect",
