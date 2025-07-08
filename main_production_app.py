@@ -27,52 +27,11 @@ from utils.production_database import production_db
 from utils.production_floor_analyzer import ProductionFloorAnalyzer
 from utils.production_ilot_system import ProductionIlotSystem
 from utils.production_visualizer import ProductionVisualizer
-from webgl_renderer import webgl_renderer
+from webgl_renderer import WebGLRenderer
 
-# Configure Streamlit
-st.set_page_config(
-    page_title="🏨 CAD Analyzer Pro - Enterprise Edition",
-    page_icon="🏨",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+# Streamlit configuration will be set in run() method
 
-# Custom CSS for professional appearance
-st.markdown("""
-<style>
-    .main-header {
-        background: linear-gradient(90deg, #1e3c72 0%, #2a5298 100%);
-        padding: 1rem;
-        border-radius: 10px;
-        color: white;
-        text-align: center;
-        margin-bottom: 2rem;
-    }
-    .metric-card {
-        background: #f8f9fa;
-        padding: 1rem;
-        border-radius: 8px;
-        border-left: 4px solid #007bff;
-        margin: 0.5rem 0;
-    }
-    .success-box {
-        background: #d4edda;
-        border: 1px solid #c3e6cb;
-        color: #155724;
-        padding: 1rem;
-        border-radius: 5px;
-        margin: 1rem 0;
-    }
-    .warning-box {
-        background: #fff3cd;
-        border: 1px solid #ffeaa7;
-        color: #856404;
-        padding: 1rem;
-        border-radius: 5px;
-        margin: 1rem 0;
-    }
-</style>
-""", unsafe_allow_html=True)
+# CSS and page config will be set in run() method
 
 class ProductionCADAnalyzer:
     """Main production application class"""
@@ -95,6 +54,51 @@ class ProductionCADAnalyzer:
     
     def run(self):
         """Main application entry point"""
+        
+        # Configure Streamlit
+        st.set_page_config(
+            page_title="🏨 CAD Analyzer Pro - Enterprise Edition",
+            page_icon="🏨",
+            layout="wide",
+            initial_sidebar_state="expanded"
+        )
+        
+        # Custom CSS for professional appearance
+        st.markdown("""
+        <style>
+            .main-header {
+                background: linear-gradient(90deg, #1e3c72 0%, #2a5298 100%);
+                padding: 1rem;
+                border-radius: 10px;
+                color: white;
+                text-align: center;
+                margin-bottom: 2rem;
+            }
+            .metric-card {
+                background: #f8f9fa;
+                padding: 1rem;
+                border-radius: 8px;
+                border-left: 4px solid #007bff;
+                margin: 0.5rem 0;
+            }
+            .success-box {
+                background: #d4edda;
+                border: 1px solid #c3e6cb;
+                color: #155724;
+                padding: 1rem;
+                border-radius: 5px;
+                margin: 1rem 0;
+            }
+            .warning-box {
+                background: #fff3cd;
+                border: 1px solid #ffeaa7;
+                color: #856404;
+                padding: 1rem;
+                border-radius: 5px;
+                margin: 1rem 0;
+            }
+        </style>
+        """, unsafe_allow_html=True)
         
         # Header
         st.markdown("""
@@ -456,7 +460,8 @@ class ProductionCADAnalyzer:
         st.subheader("Final Layout")
         if st.session_state.placed_ilots:
             try:
-                fig = webgl_renderer.create_webgl_visualization(
+                renderer = WebGLRenderer()
+                fig = renderer.create_webgl_visualization(
                     st.session_state.placed_ilots,
                     st.session_state.get('corridors', []),
                     st.session_state.analysis_results.get('bounds', {})
@@ -834,7 +839,8 @@ class ProductionCADAnalyzer:
         # WebGL visualization
         if st.session_state.placed_ilots:
             try:
-                fig = webgl_renderer.create_webgl_visualization(
+                renderer = WebGLRenderer()
+                fig = renderer.create_webgl_visualization(
                     st.session_state.placed_ilots, 
                     st.session_state.get('corridors', []),
                     st.session_state.analysis_results.get('bounds', {})
