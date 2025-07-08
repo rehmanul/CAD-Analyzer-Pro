@@ -71,7 +71,7 @@ class ClientCompliantVisualizer:
         # Add room labels and measurements
         self._add_room_labels(fig, bounds)
         
-        # Configure layout to match client expectations
+        # Configure layout to match client expectations with proper zoom functionality
         fig.update_layout(
             title="Hotel Floor Plan - Îlot Placement Analysis",
             xaxis=dict(
@@ -81,14 +81,16 @@ class ClientCompliantVisualizer:
                 linecolor='black',
                 range=[bounds['min_x'] - 5, bounds['max_x'] + 5],
                 scaleanchor="y",
-                scaleratio=1
+                scaleratio=1,
+                fixedrange=False  # Enable zoom on x-axis
             ),
             yaxis=dict(
                 showgrid=True,
                 gridcolor='lightgray',
                 showline=True,
                 linecolor='black',
-                range=[bounds['min_y'] - 5, bounds['max_y'] + 5]
+                range=[bounds['min_y'] - 5, bounds['max_y'] + 5],
+                fixedrange=False  # Enable zoom on y-axis
             ),
             plot_bgcolor='white',
             paper_bgcolor='white',
@@ -100,8 +102,27 @@ class ClientCompliantVisualizer:
                 bgcolor='rgba(255, 255, 255, 0.8)',
                 bordercolor='black',
                 borderwidth=1
-            )
+            ),
+            # Enable all interactive features
+            dragmode='pan'
         )
+        
+        # Configure the plot to show all interactive controls
+        config = {
+            'displayModeBar': True,
+            'modeBarButtonsToAdd': ['pan2d', 'select2d', 'lasso2d', 'resetScale2d'],
+            'displaylogo': False,
+            'toImageButtonOptions': {
+                'format': 'png',
+                'filename': 'floor_plan_analysis',
+                'height': 700,
+                'width': 1200,
+                'scale': 2
+            }
+        }
+        
+        # Store config for use in streamlit
+        fig.layout.config = config
         
         return fig
     

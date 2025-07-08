@@ -468,7 +468,20 @@ class ProductionCADAnalyzer:
                     st.session_state.placed_ilots,
                     st.session_state.get('corridors', [])
                 )
-                st.plotly_chart(fig, use_container_width=True, height=700, key=f"final_layout_{len(st.session_state.placed_ilots)}")
+                # Configure plotly with zoom and pan enabled
+                config = {
+                    'displayModeBar': True,
+                    'modeBarButtonsToAdd': ['pan2d', 'select2d', 'lasso2d', 'resetScale2d'],
+                    'displaylogo': False,
+                    'toImageButtonOptions': {
+                        'format': 'png',
+                        'filename': 'floor_plan_analysis',
+                        'height': 700,
+                        'width': 1200,
+                        'scale': 2
+                    }
+                }
+                st.plotly_chart(fig, use_container_width=True, height=700, config=config, key=f"final_layout_{len(st.session_state.placed_ilots)}")
                 
                 # Display compliance metrics
                 metrics = self.client_visualizer.get_ilot_placement_summary(st.session_state.placed_ilots)
@@ -858,7 +871,20 @@ class ProductionCADAnalyzer:
                     st.session_state.placed_ilots,
                     st.session_state.get('corridors', [])
                 )
-                st.plotly_chart(fig, use_container_width=True, height=600, key=f"ilot_viz_{len(st.session_state.placed_ilots)}")
+                # Configure plotly with zoom and pan enabled
+                config = {
+                    'displayModeBar': True,
+                    'modeBarButtonsToAdd': ['pan2d', 'select2d', 'lasso2d', 'resetScale2d'],
+                    'displaylogo': False,
+                    'toImageButtonOptions': {
+                        'format': 'png',
+                        'filename': 'ilot_placement_analysis',
+                        'height': 600,
+                        'width': 1000,
+                        'scale': 2
+                    }
+                }
+                st.plotly_chart(fig, use_container_width=True, height=600, config=config, key=f"ilot_viz_{len(st.session_state.placed_ilots)}")
             except Exception as e:
                 st.error(f"Visualization error: {str(e)}")
         else:
