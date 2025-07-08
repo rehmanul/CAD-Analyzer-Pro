@@ -21,11 +21,11 @@ import os
 # Add utils to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'utils'))
 
-# Import production modules
-from production_floor_analyzer import ProductionFloorAnalyzer
-from production_ilot_system import ProductionIlotSystem
+# Import ultra-high performance modules
+from ultra_high_performance_analyzer import UltraHighPerformanceAnalyzer
+from ultra_high_performance_ilot_placer import UltraHighPerformanceIlotPlacer
+from client_expected_visualizer import ClientExpectedVisualizer
 from corridor_generator import AdvancedCorridorGenerator
-from production_visualizer import ProductionVisualizer
 
 # Page configuration
 st.set_page_config(
@@ -87,10 +87,10 @@ st.markdown("""
 
 class CADAnalyzerApp:
     def __init__(self):
-        self.floor_analyzer = ProductionFloorAnalyzer()
-        self.ilot_system = ProductionIlotSystem()
+        self.floor_analyzer = UltraHighPerformanceAnalyzer()
+        self.ilot_placer = UltraHighPerformanceIlotPlacer()
         self.corridor_generator = AdvancedCorridorGenerator()
-        self.visualizer = ProductionVisualizer()
+        self.visualizer = ClientExpectedVisualizer()
         
         # Initialize session state
         if 'analysis_results' not in st.session_state:
@@ -192,14 +192,8 @@ class CADAnalyzerApp:
             with st.spinner(f"Processing {uploaded_file.name}..."):
                 file_content = uploaded_file.read()
                 
-                # Process based on file type
-                if uploaded_file.name.lower().endswith(('.dxf', '.dwg')):
-                    result = self.floor_analyzer.process_dxf_file(file_content, uploaded_file.name)
-                elif uploaded_file.name.lower().endswith('.pdf'):
-                    st.error("PDF processing not yet implemented. Please use DXF/DWG files.")
-                    return
-                else:
-                    result = self.floor_analyzer.process_image_file(file_content, uploaded_file.name)
+                # Process using ultra-high performance analyzer
+                result = self.floor_analyzer.process_file_ultra_fast(file_content, uploaded_file.name)
 
                 if result.get('success'):
                     st.session_state.analysis_results = result
@@ -251,66 +245,15 @@ class CADAnalyzerApp:
             st.plotly_chart(fig, use_container_width=True, height=600)
 
     def create_floor_plan_visualization(self, result):
-        """Create floor plan visualization"""
-        fig = go.Figure()
-        
-        bounds = result.get('bounds', {})
-        
-        # Add walls (black lines)
-        walls = result.get('walls', [])
-        for wall in walls:
-            if len(wall) >= 2:
-                x_coords = [point[0] for point in wall] + [wall[0][0]]
-                y_coords = [point[1] for point in wall] + [wall[0][1]]
-                fig.add_trace(go.Scatter(
-                    x=x_coords, y=y_coords,
-                    mode='lines',
-                    line=dict(color='black', width=2),
-                    name='Walls',
-                    showlegend=False
-                ))
-
-        # Add restricted areas (light blue)
-        restricted = result.get('restricted_areas', [])
-        for area in restricted:
-            if len(area) >= 3:
-                x_coords = [point[0] for point in area] + [area[0][0]]
-                y_coords = [point[1] for point in area] + [area[0][1]]
-                fig.add_trace(go.Scatter(
-                    x=x_coords, y=y_coords,
-                    fill='toself',
-                    fillcolor='lightblue',
-                    line=dict(color='blue', width=1),
-                    name='Restricted Areas',
-                    showlegend=False
-                ))
-
-        # Add entrances (red)
-        entrances = result.get('entrances', [])
-        for entrance in entrances:
-            if len(entrance) >= 3:
-                x_coords = [point[0] for point in entrance] + [entrance[0][0]]
-                y_coords = [point[1] for point in entrance] + [entrance[0][1]]
-                fig.add_trace(go.Scatter(
-                    x=x_coords, y=y_coords,
-                    fill='toself',
-                    fillcolor='red',
-                    line=dict(color='darkred', width=1),
-                    name='Entrances',
-                    showlegend=False
-                ))
-
-        # Update layout
-        fig.update_layout(
-            title="Floor Plan Analysis",
-            xaxis_title="X (meters)",
-            yaxis_title="Y (meters)",
-            showlegend=True,
-            height=600,
-            xaxis=dict(scaleanchor="y", scaleratio=1),
-            yaxis=dict(scaleanchor="x", scaleratio=1)
+        """Create floor plan visualization matching client expected output"""
+        # Use client expected visualizer for consistent output
+        fig = self.visualizer.create_client_expected_visualization(
+            analysis_data=result,
+            ilots=[],
+            corridors=[],
+            show_measurements=False
         )
-
+        
         return fig
 
     def render_ilot_placement_tab(self):
@@ -362,26 +305,40 @@ class CADAnalyzerApp:
             self.display_ilot_results()
 
     def place_ilots(self, config):
-        """Place îlots based on configuration"""
-        with st.spinner("Placing îlots..."):
+        """Place îlots using ultra-high performance placement"""
+        with st.spinner("Placing îlots with ultra-high performance algorithm..."):
             try:
-                # Load floor plan data
+                # Get analysis results
                 result = st.session_state.analysis_results
-                self.ilot_system.load_floor_plan_data(
-                    walls=result.get('walls', []),
-                    restricted_areas=result.get('restricted_areas', []),
-                    entrances=result.get('entrances', []),
-                    zones={},
-                    bounds=result.get('bounds', {})
+                
+                # Calculate target count based on configuration
+                target_count = config.get('max_ilots', 50)
+                
+                # Use ultra-high performance îlot placer
+                placed_ilots = self.ilot_placer.generate_optimal_ilot_placement(
+                    analysis_data=result,
+                    target_count=target_count
                 )
-
-                # Process placement
-                placement_result = self.ilot_system.process_full_placement(config)
                 
-                st.session_state.placed_ilots = placement_result.get('ilots', [])
+                st.session_state.placed_ilots = placed_ilots
                 
-                if st.session_state.placed_ilots:
-                    st.markdown(f'<div class="success-message">✅ Successfully placed {len(st.session_state.placed_ilots)} îlots!</div>', unsafe_allow_html=True)
+                if placed_ilots:
+                    # Generate placement statistics
+                    stats = self.ilot_placer.generate_placement_statistics(placed_ilots)
+                    
+                    st.markdown(f'<div class="success-message">✅ Successfully placed {len(placed_ilots)} îlots!</div>', unsafe_allow_html=True)
+                    
+                    # Display performance metrics
+                    st.markdown("### 📊 Placement Performance")
+                    col1, col2, col3, col4 = st.columns(4)
+                    with col1:
+                        st.metric("Total Placed", len(placed_ilots))
+                    with col2:
+                        st.metric("Total Area", f"{stats['total_area']:.1f} m²")
+                    with col3:
+                        st.metric("Average Area", f"{stats['average_area']:.1f} m²")
+                    with col4:
+                        st.metric("Efficiency", f"{stats['placement_efficiency']:.1f}%")
                 else:
                     st.warning("No îlots were placed. Please check your configuration.")
                     
@@ -580,16 +537,20 @@ class CADAnalyzerApp:
                 st.info("Use the camera icon in the plot toolbar above to save the visualization as an image.")
 
     def create_complete_visualization(self):
-        """Create complete visualization with all elements"""
-        fig = go.Figure()
-        
+        """Create complete visualization matching client expected output"""
         result = st.session_state.analysis_results
+        ilots = st.session_state.placed_ilots
+        corridors = st.session_state.corridors
         
-        # Add walls (black lines)
-        walls = result.get('walls', [])
-        for wall in walls:
-            if len(wall) >= 2:
-                x_coords = [point[0] for point in wall] + [wall[0][0]]
+        # Use client expected visualizer for exact match to requirements
+        fig = self.visualizer.create_client_expected_visualization(
+            analysis_data=result,
+            ilots=ilots,
+            corridors=corridors,
+            show_measurements=True
+        )
+        
+        return fig
                 y_coords = [point[1] for point in wall] + [wall[0][1]]
                 fig.add_trace(go.Scatter(
                     x=x_coords, y=y_coords,
