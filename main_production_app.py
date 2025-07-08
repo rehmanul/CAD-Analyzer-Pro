@@ -28,6 +28,7 @@ from utils.production_floor_analyzer import ProductionFloorAnalyzer
 from utils.production_ilot_system import ProductionIlotSystem
 from utils.production_visualizer import ProductionVisualizer
 from utils.client_compliant_visualizer import ClientCompliantVisualizer
+from utils.memory_efficient_ilot_placer import MemoryEfficientIlotPlacer
 from webgl_renderer import WebGLRenderer
 
 # Streamlit configuration will be set in run() method
@@ -42,6 +43,7 @@ class ProductionCADAnalyzer:
         self.ilot_system = ProductionIlotSystem()
         self.visualizer = ProductionVisualizer()
         self.client_visualizer = ClientCompliantVisualizer()
+        self.memory_placer = MemoryEfficientIlotPlacer()
         self.current_project_id = None
         
         # Initialize session state with caching
@@ -145,6 +147,19 @@ class ProductionCADAnalyzer:
         st.sidebar.subheader("Project Management")
         project_name = st.sidebar.text_input("Project Name", value="Hotel Floor Plan Analysis")
         
+        # Memory monitoring
+        try:
+            import psutil
+            memory_usage = psutil.virtual_memory().percent
+            if memory_usage > 80:
+                st.sidebar.error(f"⚠️ High memory usage: {memory_usage:.1f}%")
+            elif memory_usage > 60:
+                st.sidebar.warning(f"⚠️ Memory usage: {memory_usage:.1f}%")
+            else:
+                st.sidebar.info(f"✅ Memory usage: {memory_usage:.1f}%")
+        except:
+            pass
+        
         if st.sidebar.button("💾 Save Project"):
             if st.session_state.analysis_results:
                 self.save_project(project_name)
@@ -226,6 +241,16 @@ class ProductionCADAnalyzer:
                 "filetype": uploaded_file.type,
                 "filesize": uploaded_file.size
             }
+            
+            # Check file size to prevent crashes
+            max_size = 50 * 1024 * 1024  # 50MB limit
+            if file_details['filesize'] > max_size:
+                st.error(f"File too large: {file_details['filesize']} bytes. Maximum allowed: {max_size} bytes (50MB)")
+                st.warning("Large files may cause memory issues. Consider reducing file size or complexity.")
+                return
+            elif file_details['filesize'] > 10 * 1024 * 1024:  # 10MB warning
+                st.warning(f"Large file detected: {file_details['filesize']} bytes. Processing may take longer and use more memory.")
+            
             st.success(f"File uploaded: {file_details['filename']} ({file_details['filesize']} bytes)")
 
             # Process file asynchronously for DXF/DWG
@@ -595,12 +620,12 @@ class ProductionCADAnalyzer:
             status_text.text(message)
 
         try:
-            update_progress(0.1, "Initializing îlot placement...")
+            update_progress(0.1, "Initializing memory-safe îlot placement...")
             
-            # Use the fast placement algorithm with real data
-            ilots = self._fast_place_ilots(bounds, config)
-            
-            update_progress(0.8, "Optimizing placement...")
+            # Use memory-efficient placement to prevent crashes
+            ilots = self.memory_placer.place_ilots_memory_safe(
+                bounds, config, update_progress
+            )
             
             # Calculate metrics
             total_ilots = len(ilots)
@@ -610,8 +635,6 @@ class ProductionCADAnalyzer:
             else:
                 space_utilization = 0.0
                 efficiency_score = 0.0
-            
-            update_progress(1.0, f"Complete! Generated {total_ilots} îlots")
             
             # Store results
             st.session_state.placed_ilots = ilots

@@ -34,3 +34,4 @@ sqlalchemy
 streamlit
 websockets
 openai
+psutil
