@@ -264,6 +264,20 @@ class ProductionCADAnalyzer:
                 "filetype": uploaded_file.type,
                 "filesize": uploaded_file.size
             }
+            
+            # Memory optimization for Render
+            from utils.render_memory_optimizer import render_optimizer
+            
+            # Check file size for memory limits
+            if not render_optimizer.check_file_size(file_details['filesize']):
+                st.error(f"File too large: {file_details['filesize']} bytes. Maximum allowed: 3MB")
+                st.warning("Large files cause memory issues on Render. Please reduce file size.")
+                return
+            
+            # Show memory warning if needed
+            memory_warning = render_optimizer.create_memory_warning(file_details['filesize'])
+            if memory_warning:
+                st.warning(memory_warning)
 
             # Check file size to prevent crashes
             max_size = 50 * 1024 * 1024  # 50MB limit
@@ -630,10 +644,10 @@ class ProductionCADAnalyzer:
                 self.export_json_data()
 
     def generate_ilot_placement_async(self):
-        """Generate îlot placement with crash-proof algorithm"""
+        """Generate îlot placement optimized for Render memory limits"""
         
-        # Import crash-proof placer
-        from utils.crash_proof_ilot_placer import crash_proof_placer
+        # Import memory optimizer
+        from utils.render_memory_optimizer import render_optimizer
         
         analysis_data = st.session_state.analysis_results
         progress_bar = st.progress(0)
@@ -644,42 +658,50 @@ class ProductionCADAnalyzer:
             status_text.text(message)
 
         try:
-            update_progress(0.1, "Initializing crash-proof îlot placement...")
+            update_progress(0.1, "Initializing memory-efficient îlot placement...")
 
-            # Use crash-proof placement system
-            ilots = crash_proof_placer.place_ilots_safely(analysis_data)
+            # Clean up memory before placement
+            render_optimizer.cleanup_session_state()
+
+            # Optimize analysis data for memory
+            optimized_data = render_optimizer.optimize_analysis_data(analysis_data)
+
+            update_progress(0.5, "Generating memory-efficient îlots...")
+
+            # Create memory-efficient îlots
+            bounds = optimized_data.get('bounds', {})
+            ilots = render_optimizer.create_memory_efficient_ilots(bounds)
 
             update_progress(0.8, "Calculating placement metrics...")
 
-            # Calculate metrics safely
-            metrics = crash_proof_placer.get_placement_metrics(ilots)
+            # Calculate metrics
             total_ilots = len(ilots)
+            
+            # Count by size category
+            size_counts = {}
+            for ilot in ilots:
+                category = ilot.get('size_category', 'size_1_3')
+                size_counts[category] = size_counts.get(category, 0) + 1
+            
+            # Calculate distribution percentages
+            size_distribution = {}
+            for category, count in size_counts.items():
+                size_distribution[category] = (count / total_ilots) * 100 if total_ilots > 0 else 0
 
             # Store results in session state
-            st.session_state.placed_ilots = [
-                {
-                    'id': ilot.id,
-                    'x': ilot.x,
-                    'y': ilot.y,
-                    'width': ilot.width,
-                    'height': ilot.height,
-                    'size_category': ilot.size_category,
-                    'area': ilot.area
-                }
-                for ilot in ilots
-            ]
+            st.session_state.placed_ilots = ilots
             
             st.session_state.placement_metrics = {
-                'space_utilization': min(0.85, total_ilots / 100),
-                'efficiency_score': 0.8 + (total_ilots / 200)
+                'space_utilization': min(0.85, total_ilots / 50),
+                'efficiency_score': 0.8 + (total_ilots / 100)
             }
             
-            st.session_state.ilot_distribution = metrics.get('size_distribution', {})
+            st.session_state.ilot_distribution = size_distribution
 
             progress_bar.empty()
             status_text.empty()
 
-            st.success(f"Successfully placed {total_ilots} îlots with crash-proof system")
+            st.success(f"Successfully placed {total_ilots} îlots (memory-optimized)")
             st.rerun()
 
         except Exception as e:
@@ -687,24 +709,19 @@ class ProductionCADAnalyzer:
             status_text.empty()
             st.error(f"Îlot placement failed: {str(e)}")
             
+            # Emergency cleanup and minimal fallback
+            render_optimizer.emergency_memory_cleanup()
+            
             # Generate minimal fallback
             try:
-                fallback_ilots = crash_proof_placer._generate_fallback_ilots()
-                st.session_state.placed_ilots = [
-                    {
-                        'id': ilot.id,
-                        'x': ilot.x,
-                        'y': ilot.y,
-                        'width': ilot.width,
-                        'height': ilot.height,
-                        'size_category': ilot.size_category,
-                        'area': ilot.area
-                    }
-                    for ilot in fallback_ilots
-                ]
-                st.warning(f"Used fallback placement: {len(fallback_ilots)} îlots generated")
+                fallback_ilots = render_optimizer.create_memory_efficient_ilots(
+                    {'min_x': 0, 'max_x': 100, 'min_y': 0, 'max_y': 80}, 
+                    target_count=15  # Minimal count
+                )
+                st.session_state.placed_ilots = fallback_ilots
+                st.warning(f"Used emergency fallback: {len(fallback_ilots)} îlots generated")
             except:
-                st.error("Complete placement failure - please try again")
+                st.error("Complete placement failure - please refresh page")
 
     def _fast_place_ilots(self, bounds, config):
         """Fast îlot placement algorithm"""

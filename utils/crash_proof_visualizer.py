@@ -18,7 +18,7 @@ class CrashProofVisualizer:
     """Crash-proof visualization system"""
     
     def __init__(self):
-        self.max_elements = 500  # Limit elements to prevent crashes
+        self.max_elements = 100  # Reduced for memory efficiency
         self.colors = {
             'walls': '#000000',
             'restricted': '#0066CC',

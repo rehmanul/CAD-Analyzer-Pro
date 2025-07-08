@@ -34,9 +34,9 @@ class CrashProofIlotPlacer:
     """Crash-proof îlot placement with error handling"""
     
     def __init__(self):
-        self.max_ilots = 200  # Limit to prevent crashes
-        self.grid_size = 5.0  # Larger grid for performance
-        self.placement_timeout = 30  # 30 seconds timeout
+        self.max_ilots = 50  # Reduced for memory efficiency
+        self.grid_size = 8.0  # Larger grid for performance
+        self.placement_timeout = 15  # Reduced timeout
         
         # Client-specified size distribution
         self.size_distribution = {
