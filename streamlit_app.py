@@ -190,10 +190,19 @@ class CADAnalyzerApp:
 
         if uploaded_file is not None:
             with st.spinner(f"Processing {uploaded_file.name}..."):
-                file_content = uploaded_file.read()
-                
-                # Process using ultra-high performance analyzer
-                result = self.floor_analyzer.process_file_ultra_fast(file_content, uploaded_file.name)
+                try:
+                    file_content = uploaded_file.read()
+                    
+                    # Process using ultra-high performance analyzer with timeout
+                    result = self.floor_analyzer.process_file_ultra_fast(file_content, uploaded_file.name)
+                    
+                    if not result.get('success'):
+                        st.error(f"Processing failed: {result.get('error', 'Unknown error')}")
+                        return
+                        
+                except Exception as e:
+                    st.error(f"Error processing file: {str(e)}")
+                    return
 
                 if result.get('success'):
                     st.session_state.analysis_results = result
