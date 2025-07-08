@@ -161,61 +161,26 @@ class EnhancedCADAnalyzer:
         """, unsafe_allow_html=True)
     
     def render_enhanced_sidebar(self):
-        """Enhanced sidebar with professional features"""
-        
-        st.markdown("### 📋 Project Management")
+        """Clean sidebar with essential controls"""
         
         # Project selector
-        project_name = st.text_input("Project Name", value="Hotel Floor Plan Analysis")
-        
-        if st.button("🆕 Create New Project", type="primary"):
-            self.create_new_project(project_name)
-        
-        # File upload with multiple formats
-        st.markdown("### 📁 File Upload")
-        uploaded_file = st.file_uploader(
-            "Upload Floor Plan",
-            type=['dxf', 'dwg', 'pdf', 'jpg', 'jpeg', 'png'],
-            help="Supports DXF, DWG, PDF, and image formats"
-        )
-        
-        if uploaded_file:
-            self.process_uploaded_file(uploaded_file)
+        project_name = st.text_input("Project Name", value="New Floor Plan")
         
         # Analysis configuration
-        st.markdown("### ⚙️ Analysis Settings")
-        
-        with st.expander("Îlot Configuration", expanded=True):
+        with st.expander("Îlot Settings", expanded=False):
             col1, col2 = st.columns(2)
             with col1:
-                small_pct = st.slider("Small Îlots (%)", 5, 20, 10)
-                medium_pct = st.slider("Medium Îlots (%)", 20, 35, 25)
+                small_pct = st.slider("Small (%)", 5, 20, 10)
+                medium_pct = st.slider("Medium (%)", 20, 35, 25)
             with col2:
-                large_pct = st.slider("Large Îlots (%)", 25, 40, 30)
-                xlarge_pct = st.slider("XL Îlots (%)", 30, 45, 35)
-            
-            # Ensure percentages add to 100
-            total_pct = small_pct + medium_pct + large_pct + xlarge_pct
-            if total_pct != 100:
-                st.warning(f"Percentages total {total_pct}%. Adjusting to 100%.")
+                large_pct = st.slider("Large (%)", 25, 40, 30)
+                xlarge_pct = st.slider("XL (%)", 30, 45, 35)
         
-        # View options
-        st.markdown("### 👁️ View Options")
-        view_mode = st.radio("View Mode", ["2D Plan", "3D Perspective", "Interactive"])
-        st.session_state.view_mode = view_mode
-        
-        show_measurements = st.checkbox("Show Measurements", True)
-        show_room_labels = st.checkbox("Show Room Labels", True)
-        show_corridors = st.checkbox("Show Corridors", True)
-        
-        # Export options
-        st.markdown("### 📤 Export Options")
-        if st.button("📊 Generate Report"):
-            self.generate_professional_report()
-        if st.button("🖼️ Export Image"):
-            self.export_high_res_image()
-        if st.button("📋 Export Data"):
-            self.export_analysis_data()
+        # View controls
+        with st.expander("Display Options", expanded=False):
+            show_measurements = st.checkbox("Measurements", True)
+            show_room_labels = st.checkbox("Room Labels", True)
+            show_corridors = st.checkbox("Corridors", True)
     
     def render_main_interface(self):
         """Enhanced main interface"""
@@ -223,26 +188,33 @@ class EnhancedCADAnalyzer:
         # Status indicator
         self.show_status_indicator()
         
-        # Main tabs
-        tab1, tab2, tab3, tab4, tab5 = st.tabs([
-            "📊 Analysis", "🏗️ Îlot Placement", "🛤️ Corridor Design", 
-            "📏 Measurements", "📈 Reports"
-        ])
+        # File upload prominently placed
+        if not st.session_state.analysis_results:
+            st.markdown("### Upload Floor Plan")
+            uploaded_file = st.file_uploader(
+                "Choose your floor plan file",
+                type=['dxf', 'dwg', 'pdf', 'jpg', 'jpeg', 'png'],
+                help="Supports DXF, DWG, PDF, and image formats"
+            )
+            
+            if uploaded_file:
+                self.process_uploaded_file(uploaded_file)
+                st.rerun()
         
-        with tab1:
-            self.render_analysis_tab()
+        # Main content tabs (only show after file upload)
+        if st.session_state.analysis_results:
+            tab1, tab2, tab3 = st.tabs([
+                "Analysis", "Îlot Placement", "Export"
+            ])
             
-        with tab2:
-            self.render_enhanced_ilot_tab()
-            
-        with tab3:
-            self.render_corridor_tab()
-            
-        with tab4:
-            self.render_measurements_tab()
-            
-        with tab5:
-            self.render_reports_tab()
+            with tab1:
+                self.render_analysis_tab()
+                
+            with tab2:
+                self.render_enhanced_ilot_tab()
+                
+            with tab3:
+                self.render_export_tab()
     
     def show_status_indicator(self):
         """Show current analysis status"""
@@ -265,104 +237,73 @@ class EnhancedCADAnalyzer:
             st.markdown(f"**Export:** {status}")
     
     def render_analysis_tab(self):
-        """Enhanced analysis tab with professional features"""
+        """Clean analysis display"""
         
-        if not st.session_state.analysis_results:
-            st.info("👆 Upload a floor plan file to begin analysis")
-            return
-        
-        # Show real analysis results
-        st.markdown("### 📊 Floor Plan Analysis Results")
-        
-        # Metrics row
-        col1, col2, col3, col4 = st.columns(4)
         analysis = st.session_state.analysis_results
         
+        # Key metrics
+        col1, col2, col3, col4 = st.columns(4)
         with col1:
             st.metric("Total Area", f"{analysis.get('total_area', 0):.1f} m²")
         with col2:
-            st.metric("Rooms Detected", len(analysis.get('rooms', [])))
+            st.metric("Rooms", len(analysis.get('rooms', [])))
         with col3:
             st.metric("Entrances", len(analysis.get('entrances', [])))
         with col4:
-            st.metric("Utilization", f"{analysis.get('utilization', 0):.1f}%")
+            st.metric("Efficiency", f"{analysis.get('utilization', 0):.1f}%")
         
-        # Interactive floor plan
+        # Floor plan visualization
         fig = self.create_professional_floor_plan(analysis)
         st.plotly_chart(fig, use_container_width=True)
         
-        # Room details table
+        # Room details
         if analysis.get('rooms'):
-            st.markdown("### 🏠 Room Details")
-            rooms_df = pd.DataFrame(analysis['rooms'])
-            st.dataframe(rooms_df, use_container_width=True)
+            with st.expander("Room Details", expanded=False):
+                rooms_df = pd.DataFrame(analysis['rooms'])
+                st.dataframe(rooms_df, use_container_width=True)
     
     def render_enhanced_ilot_tab(self):
-        """Enhanced îlot placement with interactive features"""
+        """Îlot placement interface"""
         
-        st.markdown("### 🏗️ Intelligent Îlot Placement")
-        
-        if not st.session_state.analysis_results:
-            st.warning("Please complete floor plan analysis first")
-            return
-        
-        # Configuration panel
-        col1, col2 = st.columns([2, 1])
-        
-        with col1:
-            if st.button("🎯 Generate Optimal Placement", type="primary"):
-                with st.spinner("Calculating optimal îlot placement..."):
-                    self.generate_optimal_ilots()
-        
-        with col2:
-            if st.session_state.placed_ilots:
-                st.success(f"✅ {len(st.session_state.placed_ilots)} îlots placed")
-        
-        # Show placement results
-        if st.session_state.placed_ilots:
-            self.show_ilot_results()
-    
-    def render_corridor_tab(self):
-        """Enhanced corridor design tab"""
-        
-        st.markdown("### 🛤️ Corridor Network Design")
-        
-        if not st.session_state.placed_ilots:
-            st.warning("Please complete îlot placement first")
-            return
-        
-        # Corridor generation
-        if st.button("🔗 Generate Corridor Network", type="primary"):
-            with st.spinner("Designing optimal corridor network..."):
+        # Generate button
+        if st.button("Generate Îlot Placement", type="primary"):
+            with st.spinner("Optimizing placement..."):
+                self.generate_optimal_ilots()
                 self.generate_corridors()
         
-        # Show corridor results
-        if st.session_state.corridors:
-            self.show_corridor_results()
+        # Results
+        if st.session_state.placed_ilots:
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("Îlots Placed", len(st.session_state.placed_ilots))
+            with col2:
+                st.metric("Corridors", len(st.session_state.corridors))
+            
+            self.show_ilot_results()
+            if st.session_state.corridors:
+                self.show_corridor_results()
     
-    def render_measurements_tab(self):
-        """Measurements and area calculations"""
+    def render_export_tab(self):
+        """Export options"""
         
-        st.markdown("### 📏 Precise Measurements & Calculations")
+        col1, col2, col3 = st.columns(3)
         
-        if not st.session_state.analysis_results:
-            st.info("Complete analysis to view measurements")
-            return
+        with col1:
+            if st.button("PDF Report", type="secondary"):
+                self.generate_professional_report()
+                
+        with col2:
+            if st.button("High-Res Image", type="secondary"):
+                self.export_high_res_image()
+                
+        with col3:
+            if st.button("Data Export", type="secondary"):
+                self.export_analysis_data()
         
-        # Show detailed measurements like in the client's expected output
-        self.show_detailed_measurements()
-    
-    def render_reports_tab(self):
-        """Professional reports and export"""
-        
-        st.markdown("### 📈 Professional Reports & Export")
-        
+        # Measurements
         if st.session_state.analysis_results:
-            # Generate comprehensive report
-            if st.button("📊 Generate Comprehensive Report"):
-                self.generate_comprehensive_report()
-        else:
-            st.info("Complete analysis to generate reports")
+            with st.expander("Detailed Measurements", expanded=False):
+                self.show_detailed_measurements()
     
     def create_sample_analysis(self) -> Dict:
         """Create sample analysis data for demonstration"""
@@ -384,28 +325,27 @@ class EnhancedCADAnalyzer:
         
         fig = go.Figure()
         
-        # Set professional layout matching the expected output
+        # Clean professional layout
         fig.update_layout(
-            title=f"Floor Plan Analysis - {data.get('filename', 'Villa Plan')}",
+            title=data.get('filename', 'Floor Plan'),
             xaxis=dict(
-                title="X Coordinate (meters)",
                 showgrid=True,
-                gridcolor='#E5E5E5',
-                showticklabels=True,
+                gridcolor='#F0F0F0',
+                showticklabels=False,
                 scaleanchor="y",
                 scaleratio=1
             ),
             yaxis=dict(
-                title="Y Coordinate (meters)", 
                 showgrid=True,
-                gridcolor='#E5E5E5',
-                showticklabels=True
+                gridcolor='#F0F0F0',
+                showticklabels=False
             ),
             plot_bgcolor='white',
             paper_bgcolor='white',
-            showlegend=True,
-            width=900,
-            height=700
+            showlegend=False,
+            width=800,
+            height=600,
+            margin=dict(l=20, r=20, t=40, b=20)
         )
         
         # Draw walls from DXF data
@@ -622,11 +562,10 @@ class EnhancedCADAnalyzer:
     def show_ilot_results(self):
         """Show îlot placement results"""
         
-        st.markdown("#### 🎯 Îlot Placement Results")
+        # Create combined visualization
+        fig = self.create_professional_floor_plan(st.session_state.analysis_results)
         
-        # Create îlot visualization
-        fig = go.Figure()
-        
+        # Add îlots to the floor plan
         for ilot in st.session_state.placed_ilots:
             color = {
                 'small': '#FF6B6B',
@@ -644,42 +583,11 @@ class EnhancedCADAnalyzer:
                 line=dict(color='black', width=1)
             )
         
-        fig.update_layout(
-            title="Îlot Placement Optimization",
-            xaxis_title="X Coordinate (m)",
-            yaxis_title="Y Coordinate (m)",
-            showlegend=False
-        )
-        
         st.plotly_chart(fig, use_container_width=True)
     
     def show_corridor_results(self):
-        """Show corridor generation results"""
-        
-        st.markdown("#### 🛤️ Corridor Network")
-        
-        # Create corridor visualization
-        fig = go.Figure()
-        
-        for corridor in st.session_state.corridors:
-            fig.add_trace(go.Scatter(
-                x=[corridor['start']['x'], corridor['end']['x']],
-                y=[corridor['start']['y'], corridor['end']['y']],
-                mode='lines',
-                line=dict(
-                    color='red',
-                    width=max(corridor['width'] * 2, 2)
-                ),
-                name=corridor['type'].title()
-            ))
-        
-        fig.update_layout(
-            title="Corridor Network Design",
-            xaxis_title="X Coordinate (m)",
-            yaxis_title="Y Coordinate (m)"
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
+        """Add corridors to existing visualization"""
+        # Corridors are now integrated into the main floor plan view
     
     def show_detailed_measurements(self):
         """Show detailed measurements like client's expected output"""
