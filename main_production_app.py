@@ -160,7 +160,7 @@ class ProductionCADAnalyzer:
         st.sidebar.subheader("Project Management")
         project_name = st.sidebar.text_input("Project Name", value="Hotel Floor Plan Analysis")
 
-        # Memory monitoring
+        # Memory monitoring (with fallback if psutil not available)
         try:
             import psutil
             memory_usage = psutil.virtual_memory().percent
@@ -170,7 +170,9 @@ class ProductionCADAnalyzer:
                 st.sidebar.warning(f"⚠️ Memory usage: {memory_usage:.1f}%")
             else:
                 st.sidebar.info(f"✅ Memory usage: {memory_usage:.1f}%")
-        except:
+        except ImportError:
+            st.sidebar.info("💻 Memory monitoring: Not available")
+        except Exception:
             pass
 
         if st.sidebar.button("💾 Save Project"):

@@ -3,6 +3,7 @@
 """
 Streamlit Share Deployment Entry Point
 Main entry point for Streamlit Share deployment
+Updated: 2025-01-08 - Psutil dependency fix with graceful fallback
 """
 
 import sys
@@ -20,6 +21,9 @@ def check_dependencies():
         import psutil
     except ImportError:
         missing_deps.append("psutil")
+        # Set global flag to disable memory monitoring
+        import streamlit as st
+        st.session_state.psutil_available = False
     
     try:
         import streamlit
@@ -34,24 +38,33 @@ def main():
     missing_deps = check_dependencies()
     
     if missing_deps:
-        st.error(f"Missing dependencies: {', '.join(missing_deps)}")
-        st.error("Please ensure all required packages are installed.")
+        # Only show error for critical dependencies (not psutil)
+        critical_missing = [dep for dep in missing_deps if dep != "psutil"]
         
-        st.subheader("Debug Information")
-        st.write(f"Python path: {sys.path}")
-        st.write(f"Current directory: {os.getcwd()}")
-        st.write(f"Files in current directory: {os.listdir('.')}")
+        if critical_missing:
+            st.error(f"Missing critical dependencies: {', '.join(critical_missing)}")
+            st.error("Please ensure all required packages are installed.")
+            
+            st.subheader("Debug Information")
+            st.write(f"Python path: {sys.path}")
+            st.write(f"Current directory: {os.getcwd()}")
+            st.write(f"Files in current directory: {os.listdir('.')}")
+            
+            # Show requirements.txt content
+            try:
+                with open('requirements.txt', 'r') as f:
+                    st.subheader("Requirements.txt content:")
+                    st.code(f.read())
+            except:
+                st.error("Could not read requirements.txt")
+            
+            st.stop()
+            return
         
-        # Show requirements.txt content
-        try:
-            with open('requirements.txt', 'r') as f:
-                st.subheader("Requirements.txt content:")
-                st.code(f.read())
-        except:
-            st.error("Could not read requirements.txt")
-        
-        st.stop()
-        return
+        # Show warning for non-critical dependencies like psutil
+        if "psutil" in missing_deps:
+            st.warning("⚠️ psutil not available - memory monitoring disabled")
+            st.info("The app will continue without memory monitoring features.")
     
     try:
         # Import and run the main production app
