@@ -23,6 +23,11 @@ class RenderMemoryOptimizer:
         """Check if file size is within limits"""
         return file_size <= self.max_file_size
     
+    def can_process_large_file(self, file_size: int) -> bool:
+        """Check if large file can be processed with limitations"""
+        # Allow files up to 10MB with heavy optimization
+        return file_size <= (10 * 1024 * 1024)
+    
     def create_memory_warning(self, file_size: int) -> Optional[str]:
         """Create warning message for file size"""
         if file_size > self.max_file_size:

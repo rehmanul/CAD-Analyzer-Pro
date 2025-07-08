@@ -272,28 +272,43 @@ class ProductionCADAnalyzer:
             file_size_mb = render_optimizer.get_file_size_mb(file_details['filesize'])
             
             if not render_optimizer.check_file_size(file_details['filesize']):
-                st.error(f"File too large: {file_size_mb:.1f}MB. Maximum allowed: 3MB")
-                st.warning("Large files cause memory issues on Render. Please reduce file size.")
-                st.info("💡 **How to reduce file size:**")
-                st.info("• Use DXF format instead of DWG")
-                st.info("• Remove unnecessary layers")
-                st.info("• Simplify complex geometry")
-                st.info("• Use file compression")
-                return
+                st.error(f"File too large: {file_size_mb:.1f}MB. Maximum recommended: 3MB")
+                
+                # Offer progressive processing option
+                st.warning("Large files may cause memory issues on Render deployment.")
+                
+                with st.expander("🔧 Options for Large Files"):
+                    st.info("**Option 1: Reduce File Size (Recommended)**")
+                    st.info("• Use DXF format instead of DWG")
+                    st.info("• Remove unnecessary layers")
+                    st.info("• Simplify complex geometry")
+                    st.info("• Use file compression")
+                    
+                    st.info("**Option 2: Try Progressive Processing**")
+                    process_anyway = st.checkbox("Process file anyway (may crash on Render)")
+                    
+                    if process_anyway:
+                        st.warning("⚠️ Processing large file - this may cause memory issues")
+                    else:
+                        return
             
             # Show memory warning if needed
             memory_warning = render_optimizer.create_memory_warning(file_details['filesize'])
             if memory_warning:
                 st.warning(memory_warning)
 
-            # Check file size to prevent crashes
-            max_size = 50 * 1024 * 1024  # 50MB limit
-            if file_details['filesize'] > max_size:
-                st.error(f"File too large: {file_details['filesize']} bytes. Maximum allowed: {max_size} bytes (50MB)")
-                st.warning("Large files may cause memory issues. Consider reducing file size or complexity.")
-                return
-            elif file_details['filesize'] > 10 * 1024 * 1024:  # 10MB warning
-                st.warning(f"Large file detected: {file_details['filesize']} bytes. Processing may take longer and use more memory.")
+            # Enhanced file size handling for large files
+            if file_details['filesize'] > render_optimizer.max_file_size:
+                from utils.large_file_processor import large_file_processor
+                
+                if not large_file_processor.can_process_file(file_details['filesize']):
+                    st.error(f"File too large: {file_size_mb:.1f}MB. Maximum: 10MB")
+                    st.warning("Extremely large files cannot be processed safely.")
+                    return
+                else:
+                    st.warning(f"Large file: {file_size_mb:.1f}MB. Using optimized processing...")
+            elif file_details['filesize'] > 5 * 1024 * 1024:  # 5MB warning
+                st.warning(f"Large file detected: {file_size_mb:.1f}MB. Processing may take longer.")
 
             st.success(f"File uploaded: {file_details['filename']} ({file_details['filesize']} bytes)")
 
@@ -304,18 +319,24 @@ class ProductionCADAnalyzer:
             filename = uploaded_file.name.lower()
 
             if filename.endswith(('.dxf', '.dwg')):
-                import concurrent.futures
-                from utils.advanced_dxf_parser import parse_dxf_advanced
+                # Choose processing method based on file size
+                if file_details['filesize'] > render_optimizer.max_file_size:
+                    from utils.large_file_processor import large_file_processor
+                    with st.spinner("Processing large CAD file with optimization..."):
+                        results = large_file_processor.process_large_file_safe(file_content, uploaded_file.name)
+                else:
+                    import concurrent.futures
+                    from utils.advanced_dxf_parser import parse_dxf_advanced
 
-                def parse_file():
-                    return parse_dxf_advanced(file_content, uploaded_file.name)
+                    def parse_file():
+                        return parse_dxf_advanced(file_content, uploaded_file.name)
 
-                with st.spinner("Parsing CAD file..."):
-                    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                        future = executor.submit(parse_file)
-                        while not future.done():
-                            time.sleep(0.05)
-                        results = future.result()
+                    with st.spinner("Parsing CAD file..."):
+                        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                            future = executor.submit(parse_file)
+                            while not future.done():
+                                time.sleep(0.05)
+                            results = future.result()
             elif filename.endswith(('.png', '.jpg', '.jpeg')):
                 with st.spinner("Processing image file..."):
                     results = self.floor_analyzer.process_image_file(file_content, uploaded_file.name)
