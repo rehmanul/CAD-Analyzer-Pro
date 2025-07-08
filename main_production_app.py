@@ -125,13 +125,7 @@ class ProductionCADAnalyzer:
         </style>
         """, unsafe_allow_html=True)
 
-        # Header
-        st.markdown("""
-        <div class="main-header">
-            <h1>🏨 CAD Analyzer Pro - Enterprise Edition</h1>
-            <p>Professional hotel floor plan analysis with intelligent îlot placement</p>
-        </div>
-        """, unsafe_allow_html=True)
+        # Header removed to prevent duplication when used as fallback
 
         # Sidebar configuration
         self.render_sidebar()
