@@ -2,6 +2,7 @@
 """
 CAD Analyzer Pro - Main Application Entry Point
 Streamlit Cloud compatible entry point
+Updated: Fresh deployment with psutil fix
 """
 
 import streamlit as st
