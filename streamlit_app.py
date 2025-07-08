@@ -11,7 +11,13 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 # Import and run the main production app
-from main_production_app import main
+from main_production_app import ProductionCADAnalyzer
 
+# Create and run the application
 if __name__ == "__main__":
-    main()
+    app = ProductionCADAnalyzer()
+    app.run()
+else:
+    # For Streamlit Share deployment
+    app = ProductionCADAnalyzer()
+    app.run()

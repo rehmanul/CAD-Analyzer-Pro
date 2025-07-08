@@ -10,8 +10,6 @@
 ```toml
 [server]
 headless = true
-address = "0.0.0.0"
-port = 5000
 enableCORS = false
 enableXsrfProtection = false
 
@@ -21,6 +19,8 @@ gatherUsageStats = false
 [theme]
 base = "light"
 ```
+
+**Note**: Port and address are omitted for Streamlit Share compatibility (uses dynamic port allocation)
 
 ## Key Features Ready for Deployment
 - ✅ Memory-efficient îlot placement system
