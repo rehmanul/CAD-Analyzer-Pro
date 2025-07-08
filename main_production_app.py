@@ -31,6 +31,14 @@ from utils.client_compliant_visualizer import ClientCompliantVisualizer
 from utils.memory_efficient_ilot_placer import MemoryEfficientIlotPlacer
 from webgl_renderer import WebGLRenderer
 
+# Optional psutil import with graceful fallback
+try:
+    import psutil
+    PSUTIL_AVAILABLE = True
+except ImportError:
+    PSUTIL_AVAILABLE = False
+    psutil = None
+
 # Streamlit configuration will be set in run() method
 
 # CSS and page config will be set in run() method
