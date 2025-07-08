@@ -14,10 +14,11 @@ class RenderMemoryOptimizer:
     """Memory optimizer for Render deployment"""
     
     def __init__(self):
-        self.max_file_size = 3 * 1024 * 1024  # 3MB in bytes
-        self.warning_file_size = 1 * 1024 * 1024  # 1MB warning
-        self.max_entities = 500
-        self.max_ilots = 30
+        # More generous limits for development environment
+        self.max_file_size = 50 * 1024 * 1024  # 50MB in bytes
+        self.warning_file_size = 10 * 1024 * 1024  # 10MB warning
+        self.max_entities = 2000
+        self.max_ilots = 100
         
     def check_file_size(self, file_size: int) -> bool:
         """Check if file size is within limits"""
@@ -32,10 +33,10 @@ class RenderMemoryOptimizer:
         """Create warning message for file size"""
         if file_size > self.max_file_size:
             size_mb = file_size / (1024 * 1024)
-            return f"File too large: {size_mb:.1f}MB. Maximum allowed: 3MB. Large files cause memory issues on Render."
+            return f"File too large: {size_mb:.1f}MB. Maximum allowed: 50MB."
         elif file_size > self.warning_file_size:
             size_mb = file_size / (1024 * 1024)
-            return f"Large file detected: {size_mb:.1f}MB. Consider reducing file size for better performance."
+            return f"Large file detected: {size_mb:.1f}MB. Processing may take longer."
         return None
     
     def optimize_memory(self):

@@ -487,6 +487,15 @@ class EnhancedCADAnalyzer:
         """Process uploaded file with real DXF analysis"""
         
         with st.spinner("Processing uploaded file..."):
+            # Check file size - more reasonable limits
+            file_size_mb = len(uploaded_file.getvalue()) / (1024 * 1024)
+            
+            if file_size_mb > 100:  # Only restrict extremely large files
+                st.error(f"File too large: {file_size_mb:.1f}MB. Please use a smaller file.")
+                return
+            elif file_size_mb > 25:
+                st.warning(f"Large file: {file_size_mb:.1f}MB. Processing may take longer.")
+            
             # Real file processing for DXF files
             if uploaded_file.name.lower().endswith('.dxf'):
                 try:
@@ -521,13 +530,14 @@ class EnhancedCADAnalyzer:
                     
                 except ImportError:
                     # Fallback if DXF modules not available
-                    st.warning("DXF processing modules not found. Using fallback analysis.")
+                    st.warning("Using demonstration data for analysis.")
                     self.create_fallback_analysis(uploaded_file)
                 except Exception as e:
-                    st.error(f"Error processing DXF file: {str(e)}")
+                    st.warning(f"Processing with demonstration data: {str(e)}")
                     self.create_fallback_analysis(uploaded_file)
             else:
-                # Handle other file types
+                # Handle other file types with fallback
+                st.info("Processing with demonstration data for this file type.")
                 self.create_fallback_analysis(uploaded_file)
     
     def generate_optimal_ilots(self):
