@@ -19,3 +19,4 @@ redis
 websockets
 openai
 psutil>=5.8.0
+psutil
