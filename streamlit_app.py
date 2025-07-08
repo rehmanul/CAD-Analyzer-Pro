@@ -50,6 +50,24 @@ def main():
     missing_deps = check_dependencies()
     
     if missing_deps:
+        st.error(f"Missing critical dependencies: {missing_deps}")
+        st.info("Please install the required packages and restart the application.")
+        return
+    
+    # Import and run enhanced application
+    try:
+        from enhanced_professional_app import main as enhanced_main
+        enhanced_main()
+    except ImportError:
+        # Fallback to production app
+        try:
+            from main_production_app import main as production_main
+            production_main()
+        except ImportError:
+            st.error("Unable to load application modules. Please check the installation.")
+            return
+    
+    if missing_deps:
         st.error(f"Missing critical dependencies: {', '.join(missing_deps)}")
         st.error("Please ensure all required packages are installed.")
         
