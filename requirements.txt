@@ -33,3 +33,4 @@ shapely
 sqlalchemy
 streamlit
 websockets
+openai

@@ -251,6 +251,13 @@ class ProductionCADAnalyzer:
             if results and results.get('success'):
                 st.session_state.analysis_results = results
                 st.session_state.file_processed = True
+                
+                # Update analyzer with the parsed data
+                self.floor_analyzer.entities = results.get('entities', [])
+                self.floor_analyzer.walls = results.get('walls', [])
+                self.floor_analyzer.restricted_areas = results.get('restricted_areas', [])
+                self.floor_analyzer.entrances = results.get('entrances', [])
+                self.floor_analyzer.bounds = results.get('bounds', {})
 
                 # Display processing results
                 col1, col2, col3, col4 = st.columns(4)
@@ -286,7 +293,15 @@ class ProductionCADAnalyzer:
                     layers.add(layer)
             st.expander('Debug: Unique DXF Layers').write(sorted(layers))
 
-        # Zone validation
+        # Zone validation - ensure analyzer has the current data
+        if hasattr(st.session_state, 'analysis_results') and st.session_state.analysis_results:
+            results = st.session_state.analysis_results
+            self.floor_analyzer.entities = results.get('entities', [])
+            self.floor_analyzer.walls = results.get('walls', [])
+            self.floor_analyzer.restricted_areas = results.get('restricted_areas', [])
+            self.floor_analyzer.entrances = results.get('entrances', [])
+            self.floor_analyzer.bounds = results.get('bounds', {})
+        
         validation = self.floor_analyzer.validate_zones()
 
         st.subheader("Zone Detection Results")
