@@ -1,6 +1,6 @@
 """
-Crash-Proof Visualizer - Prevents visualization crashes
-Robust visualization with error handling and memory management
+Fixed Crash-Proof Visualizer - Prevents visualization crashes with correct Plotly usage
+Robust visualization with proper error handling and correct Plotly configuration
 """
 
 import plotly.graph_objects as go
@@ -14,8 +14,8 @@ import traceback
 
 logger = logging.getLogger(__name__)
 
-class CrashProofVisualizer:
-    """Crash-proof visualization system"""
+class FixedCrashProofVisualizer:
+    """Fixed crash-proof visualization system with correct Plotly usage"""
     
     def __init__(self):
         self.max_elements = 100  # Reduced for memory efficiency
@@ -33,7 +33,7 @@ class CrashProofVisualizer:
         }
     
     def create_safe_floor_plan(self, analysis_data: Dict, ilots: List[Dict]) -> Optional[go.Figure]:
-        """Create floor plan visualization with error handling"""
+        """Create floor plan visualization with proper error handling"""
         try:
             fig = go.Figure()
             
@@ -47,14 +47,13 @@ class CrashProofVisualizer:
             if ilots:
                 self._add_ilots_safely(fig, ilots[:self.max_elements])
             
-            # Configure layout safely
+            # Configure layout safely - NO config parameter here
             self._configure_safe_layout(fig, bounds)
             
             return fig
             
         except Exception as e:
             logger.error(f"Visualization creation failed: {str(e)}")
-            st.error(f"Visualization error: {str(e)}")
             return self._create_fallback_figure()
     
     def _get_safe_bounds(self, analysis_data: Dict) -> Dict:
@@ -93,7 +92,7 @@ class CrashProofVisualizer:
                 y=bounds['max_y'] + 5,
                 text="Floor Plan with Îlot Placement",
                 showarrow=False,
-                font=dict(size=16, color=self.colors['walls'])
+                font=dict(size=14, color=self.colors['walls'])
             )
             
         except Exception as e:
@@ -164,7 +163,7 @@ class CrashProofVisualizer:
                     mode='markers',
                     marker=dict(
                         color=color,
-                        size=8,
+                        size=6,
                         opacity=0.8
                     ),
                     text=labels,
@@ -177,11 +176,12 @@ class CrashProofVisualizer:
             logger.error(f"Îlot group rendering failed: {str(e)}")
     
     def _configure_safe_layout(self, fig: go.Figure, bounds: Dict):
-        """Configure layout safely"""
+        """Configure layout safely without config parameter"""
         try:
             # Add margins
             margin = 10
             
+            # Update layout WITHOUT config parameter
             fig.update_layout(
                 title="Floor Plan Analysis - Îlot Placement",
                 xaxis=dict(
@@ -225,8 +225,6 @@ class CrashProofVisualizer:
                 title="Floor Plan Visualization",
                 xaxis=dict(range=[0, 100]),
                 yaxis=dict(range=[0, 80]),
-                width=800,
-                height=600,
                 showlegend=False
             )
             
@@ -314,4 +312,4 @@ class CrashProofVisualizer:
             return None
 
 # Global instance
-crash_proof_visualizer = CrashProofVisualizer()
+fixed_crash_proof_visualizer = FixedCrashProofVisualizer()

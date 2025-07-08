@@ -961,7 +961,7 @@ class ProductionCADAnalyzer:
     def _create_crash_proof_visualization(self):
         """Create crash-proof visualization"""
         try:
-            from utils.crash_proof_visualizer import crash_proof_visualizer
+            from utils.fixed_crash_proof_visualizer import fixed_crash_proof_visualizer
             
             ilots = st.session_state.get('placed_ilots', [])
             analysis_data = st.session_state.get('analysis_results', {})
@@ -971,10 +971,10 @@ class ProductionCADAnalyzer:
                 return
             
             # Create safe visualization
-            fig = crash_proof_visualizer.create_safe_floor_plan(analysis_data, ilots)
+            fig = fixed_crash_proof_visualizer.create_safe_floor_plan(analysis_data, ilots)
             
             if fig:
-                # Configure plotly with crash protection
+                # Configure plotly properly (config goes in st.plotly_chart, not layout)
                 config = {
                     'displayModeBar': True,
                     'modeBarButtonsToAdd': ['pan2d', 'select2d', 'resetScale2d'],
@@ -987,7 +987,7 @@ class ProductionCADAnalyzer:
                         'scale': 2
                     }
                 }
-                st.plotly_chart(fig, use_container_width=True, height=600, config=config, key=f"safe_ilot_viz_{len(ilots)}")
+                st.plotly_chart(fig, use_container_width=True, config=config, key=f"fixed_ilot_viz_{len(ilots)}")
             else:
                 st.error("Visualization failed - showing alternative view")
                 self._show_fallback_results()
@@ -1029,7 +1029,7 @@ class ProductionCADAnalyzer:
     def _create_fast_ilot_visualization(self):
         """Create fast ilot visualization with crash protection"""
         try:
-            from utils.crash_proof_visualizer import crash_proof_visualizer
+            from utils.fixed_crash_proof_visualizer import fixed_crash_proof_visualizer
             
             ilots = st.session_state.get('placed_ilots', [])
             analysis_data = st.session_state.get('analysis_results', {})
@@ -1039,7 +1039,7 @@ class ProductionCADAnalyzer:
                 return None
             
             # Create safe visualization
-            fig = crash_proof_visualizer.create_safe_floor_plan(analysis_data, ilots)
+            fig = fixed_crash_proof_visualizer.create_safe_floor_plan(analysis_data, ilots)
             return fig
             
         except Exception as e:
