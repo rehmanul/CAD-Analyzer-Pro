@@ -159,10 +159,6 @@ class ProductionCADAnalyzer:
         """Render sidebar configuration"""
         st.sidebar.header("🎛️ Configuration")
 
-        # Project management
-        st.sidebar.subheader("Project Management")
-        project_name = st.sidebar.text_input("Project Name", value="Hotel Floor Plan Analysis")
-
         # Memory monitoring (with fallback if psutil not available)
         if PSUTIL_AVAILABLE and psutil:
             try:
@@ -178,9 +174,7 @@ class ProductionCADAnalyzer:
         else:
             st.sidebar.info("💻 Memory monitoring: Not available")
 
-        if st.sidebar.button("💾 Save Project"):
-            if st.session_state.analysis_results:
-                self.save_project(project_name)
+        # Removed save project functionality
 
         # Îlot size distribution (CLIENT REQUIREMENT)
         st.sidebar.subheader("Îlot Size Distribution (%)")

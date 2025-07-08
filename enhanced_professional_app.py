@@ -196,19 +196,6 @@ class EnhancedCADAnalyzer:
     def render_main_interface(self):
         """Clean main interface"""
         
-        # File upload prominently placed (when no file uploaded)
-        if not st.session_state.analysis_results:
-            st.markdown("### Upload Floor Plan")
-            uploaded_file = st.file_uploader(
-                "Choose your floor plan file",
-                type=['dxf', 'dwg', 'pdf', 'jpg', 'jpeg', 'png'],
-                help="Supports DXF, DWG, PDF, and image formats"
-            )
-            
-            if uploaded_file:
-                self.process_uploaded_file(uploaded_file)
-                st.rerun()
-        
         # Status indicator and tabs (only show after file upload)
         if st.session_state.analysis_results:
             # Status indicator
@@ -227,6 +214,18 @@ class EnhancedCADAnalyzer:
                 
             with tab3:
                 self.render_export_tab()
+        else:
+            # Single upload interface when no file uploaded
+            st.markdown("### Upload Floor Plan")
+            uploaded_file = st.file_uploader(
+                "Choose your floor plan file",
+                type=['dxf', 'dwg', 'pdf', 'jpg', 'jpeg', 'png'],
+                help="Supports DXF, DWG, PDF, and image formats"
+            )
+            
+            if uploaded_file:
+                self.process_uploaded_file(uploaded_file)
+                st.rerun()
     
     def show_status_indicator(self):
         """Show current analysis status"""
