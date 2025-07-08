@@ -1,9 +1,9 @@
 
 #!/usr/bin/env python3
 """
-Streamlit Share Deployment Entry Point
-Main entry point for Streamlit Share deployment
-Updated: 2025-01-08 - Psutil dependency fix with graceful fallback
+CAD Analyzer Pro - Universal Deployment Entry Point
+Compatible with Streamlit Share, Render, and Replit
+Updated: 2025-01-08 - Production-ready with Render optimization
 """
 
 import sys
@@ -12,6 +12,14 @@ import streamlit as st
 
 # Add the current directory to the path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+# Configure for Render deployment
+if os.environ.get('RENDER'):
+    # Render-specific configuration
+    os.environ.setdefault('STREAMLIT_SERVER_HEADLESS', 'true')
+    os.environ.setdefault('STREAMLIT_SERVER_PORT', os.environ.get('PORT', '10000'))
+    os.environ.setdefault('STREAMLIT_SERVER_ADDRESS', '0.0.0.0')
+    os.environ.setdefault('STREAMLIT_BROWSER_GATHER_USAGE_STATS', 'false')
 
 def check_dependencies():
     """Check if critical dependencies are available"""

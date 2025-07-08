@@ -1,0 +1,36 @@
+[server]
+headless = true
+port = 10000
+address = "0.0.0.0"
+enableCORS = false
+enableXsrfProtection = false
+maxUploadSize = 200
+maxMessageSize = 200
+
+[browser]
+gatherUsageStats = false
+showErrorDetails = true
+
+[theme]
+base = "light"
+primaryColor = "#0066cc"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f0f2f6"
+textColor = "#262730"
+font = "sans serif"
+
+[client]
+showErrorDetails = true
+toolbarMode = "minimal"
+
+[runner]
+fastReruns = true
+installTracer = false
+fixMatplotlib = true
+
+[logger]
+level = "info"
+messageFormat = "%(asctime)s %(message)s"
+
+[deprecation]
+showPyplotGlobalUse = false

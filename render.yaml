@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: cad-analyzer-pro
+    env: python
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: streamlit run streamlit_app.py --server.port $PORT --server.address 0.0.0.0
+    envVars:
+      - key: PYTHONPATH
+        value: /opt/render/project/src
+      - key: STREAMLIT_SERVER_HEADLESS
+        value: true
+      - key: STREAMLIT_SERVER_PORT
+        value: $PORT
+      - key: STREAMLIT_SERVER_ADDRESS
+        value: 0.0.0.0
+      - key: STREAMLIT_BROWSER_GATHER_USAGE_STATS
+        value: false
+      - key: STREAMLIT_THEME_BASE
+        value: light
+      - key: STREAMLIT_THEME_PRIMARY_COLOR
+        value: "#0066cc"
+      - key: PSUTIL_AVAILABLE
+        value: true
+  
+  - type: pserv
+    name: cad-analyzer-db
+    env: postgresql
+    plan: starter
+    databaseName: cad_analyzer_prod
+    databaseUser: cad_analyzer_user
+    region: oregon
