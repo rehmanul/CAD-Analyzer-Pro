@@ -255,7 +255,7 @@ class ProductionCADAnalyzer:
         uploaded_file = st.file_uploader(
             "Choose your floor plan file",
             type=['dxf', 'dwg', 'png', 'jpg', 'jpeg'],
-            help="Upload DXF/DWG for best results, or images for color-based detection"
+            help="Upload DXF/DWG for best results, or images for color-based detection. Maximum file size: 3MB for Render deployment"
         )
 
         if uploaded_file is not None:
@@ -269,9 +269,16 @@ class ProductionCADAnalyzer:
             from utils.render_memory_optimizer import render_optimizer
             
             # Check file size for memory limits
+            file_size_mb = render_optimizer.get_file_size_mb(file_details['filesize'])
+            
             if not render_optimizer.check_file_size(file_details['filesize']):
-                st.error(f"File too large: {file_details['filesize']} bytes. Maximum allowed: 3MB")
+                st.error(f"File too large: {file_size_mb:.1f}MB. Maximum allowed: 3MB")
                 st.warning("Large files cause memory issues on Render. Please reduce file size.")
+                st.info("💡 **How to reduce file size:**")
+                st.info("• Use DXF format instead of DWG")
+                st.info("• Remove unnecessary layers")
+                st.info("• Simplify complex geometry")
+                st.info("• Use file compression")
                 return
             
             # Show memory warning if needed
