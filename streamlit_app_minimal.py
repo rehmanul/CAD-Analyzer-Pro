@@ -4,6 +4,21 @@ Render-compatible version without scipy dependencies
 """
 
 import streamlit as st
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Handle PostgreSQL import gracefully
+POSTGRES_AVAILABLE = False
+try:
+    import psycopg2
+    POSTGRES_AVAILABLE = True
+    logger.info("✅ PostgreSQL support available")
+except ImportError as e:
+    logger.warning(f"⚠️ PostgreSQL not available: {e}. Using SQLite fallback.")
+    POSTGRES_AVAILABLE = False
 import sys
 import os
 import traceback
