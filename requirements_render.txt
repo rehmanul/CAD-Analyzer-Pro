@@ -5,13 +5,13 @@ plotly==5.24.1
 pandas==2.2.3
 numpy==1.26.4
 shapely==2.1.0
-scipy==1.14.1
-scikit-learn==1.6.0
+scipy==1.13.1
+scikit-learn==1.5.2
 ezdxf==1.4.0
 PyMuPDF==1.24.14
 opencv-python-headless==4.10.0.84
 pillow==10.4.0
-psycopg2-binary==2.9.9
+psycopg2==2.9.10
 sqlalchemy==2.0.35
 python-dotenv==1.0.1
 reportlab==4.2.2
