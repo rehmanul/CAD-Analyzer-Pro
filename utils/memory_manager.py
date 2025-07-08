@@ -16,9 +16,9 @@ class MemoryManager:
     """Manage memory usage for Render deployment"""
     
     def __init__(self):
-        self.memory_limit = 400 * 1024 * 1024  # 400MB limit (safe margin)
-        self.max_file_size = 10 * 1024 * 1024  # 10MB max file
-        self.max_entities = 1000  # Limit entities processed
+        self.memory_limit = 600 * 1024 * 1024  # 600MB limit (increased)
+        self.max_file_size = 50 * 1024 * 1024  # 50MB max file
+        self.max_entities = 3000  # Increased entity limit
         
     def check_memory_usage(self) -> Dict[str, Any]:
         """Check current memory usage"""

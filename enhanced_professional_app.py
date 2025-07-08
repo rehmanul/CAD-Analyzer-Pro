@@ -362,14 +362,26 @@ class EnhancedCADAnalyzer:
         # Draw walls from DXF data
         if 'walls' in data:
             for wall in data['walls']:
-                fig.add_shape(
-                    type="line",
-                    x0=wall.get('start_x', 0),
-                    y0=wall.get('start_y', 0),
-                    x1=wall.get('end_x', 10),
-                    y1=wall.get('end_y', 10),
-                    line=dict(color='#2C3E50', width=2)
-                )
+                # Handle both dict and list formats
+                if isinstance(wall, dict):
+                    fig.add_shape(
+                        type="line",
+                        x0=wall.get('start_x', 0),
+                        y0=wall.get('start_y', 0),
+                        x1=wall.get('end_x', 10),
+                        y1=wall.get('end_y', 10),
+                        line=dict(color='#2C3E50', width=2)
+                    )
+                elif isinstance(wall, list) and len(wall) >= 4:
+                    # Handle list format: [start_x, start_y, end_x, end_y]
+                    fig.add_shape(
+                        type="line",
+                        x0=wall[0],
+                        y0=wall[1],
+                        x1=wall[2],
+                        y1=wall[3],
+                        line=dict(color='#2C3E50', width=2)
+                    )
         
         # Add room zones with proper color coding
         zones = data.get('zones', [])
@@ -486,14 +498,16 @@ class EnhancedCADAnalyzer:
         """Process uploaded file with real DXF analysis"""
         
         with st.spinner("Processing uploaded file..."):
-            # Check file size - more reasonable limits
+            # Check file size - increased limits for better handling
             file_size_mb = len(uploaded_file.getvalue()) / (1024 * 1024)
             
-            if file_size_mb > 100:  # Only restrict extremely large files
+            if file_size_mb > 200:  # Only restrict extremely large files
                 st.error(f"File too large: {file_size_mb:.1f}MB. Please use a smaller file.")
                 return
-            elif file_size_mb > 25:
+            elif file_size_mb > 50:
                 st.warning(f"Large file: {file_size_mb:.1f}MB. Processing may take longer.")
+            elif file_size_mb > 10:
+                st.info(f"Processing {file_size_mb:.1f}MB file with optimization...")
             
             # Real file processing for DXF files
             if uploaded_file.name.lower().endswith('.dxf'):

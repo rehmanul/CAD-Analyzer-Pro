@@ -14,9 +14,9 @@ class LargeFileProcessor:
     """Processor for large files with memory optimization"""
     
     def __init__(self):
-        self.max_safe_size = 3 * 1024 * 1024  # 3MB
-        self.max_large_size = 10 * 1024 * 1024  # 10MB absolute limit
-        self.chunk_size = 1000  # Process in chunks
+        self.max_safe_size = 10 * 1024 * 1024  # 10MB
+        self.max_large_size = 50 * 1024 * 1024  # 50MB absolute limit
+        self.chunk_size = 2000  # Process in larger chunks
         
     def can_process_file(self, file_size: int) -> bool:
         """Check if file can be processed"""
@@ -53,7 +53,7 @@ class LargeFileProcessor:
             # Extract entities in chunks
             entities = []
             entity_count = 0
-            max_entities = 1000  # Limit for memory
+            max_entities = 3000  # Increased limit for better processing
             
             with st.spinner("Extracting entities..."):
                 for space in [doc.modelspace(), doc.paperspace()]:
