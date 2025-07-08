@@ -130,9 +130,13 @@ class ProductionCADAnalyzer:
         # Sidebar configuration
         self.render_sidebar()
 
-        # Main content tabs
-        tab1, tab2, tab3, tab4, tab5 = st.tabs([
-            "📁 File Upload", 
+        # File upload when no analysis results
+        if not st.session_state.analysis_results:
+            self.render_file_upload_tab()
+            return
+        
+        # Main content tabs (only after file processing)
+        tab1, tab2, tab3, tab4 = st.tabs([
             "🔍 Analysis", 
             "🏗️ Îlot Placement", 
             "🛤️ Corridor Generation",
@@ -140,18 +144,15 @@ class ProductionCADAnalyzer:
         ])
 
         with tab1:
-            self.render_file_upload_tab()
-
-        with tab2:
             self.render_analysis_tab()
 
-        with tab3:
+        with tab2:
             self.render_ilot_placement_tab()
 
-        with tab4:
+        with tab3:
             self.render_corridor_generation_tab()
 
-        with tab5:
+        with tab4:
             self.render_results_export_tab()
 
     def render_sidebar(self):
