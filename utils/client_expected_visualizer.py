@@ -75,19 +75,36 @@ class ClientExpectedVisualizer:
         
         return fig
     
-    def _add_client_expected_walls(self, fig: go.Figure, walls: List[Dict]):
+    def _add_client_expected_walls(self, fig: go.Figure, walls: List):
         """Add walls exactly as shown in client expected output - black lines"""
         for wall in walls:
-            if wall['type'] == 'line':
-                coords = wall['coordinates']
-                if len(coords) >= 2:
-                    fig.add_trace(go.Scatter(
-                        x=[coords[0][0], coords[1][0]],
-                        y=[coords[0][1], coords[1][1]],
-                        mode='lines',
-                        line=dict(color=self.colors['walls'], width=2),
-                        showlegend=False,
-                        hoverinfo='skip'
+            # Handle both dict format and simple coordinate array format
+            if isinstance(wall, dict) and 'type' in wall:
+                if wall['type'] == 'line':
+                    coords = wall['coordinates']
+                elif wall['type'] == 'polygon':
+                    coords = wall['coordinates']
+                else:
+                    coords = wall.get('coordinates', [])
+            else:
+                # Handle simple coordinate array format from DXF processing
+                coords = wall
+            
+            if len(coords) >= 2:
+                x_coords = [coord[0] for coord in coords]
+                y_coords = [coord[1] for coord in coords]
+                
+                # Close polygon if more than 2 points
+                if len(coords) > 2:
+                    x_coords.append(coords[0][0])
+                    y_coords.append(coords[0][1])
+                
+                fig.add_trace(go.Scatter(
+                    x=x_coords, y=y_coords,
+                    mode='lines',
+                    line=dict(color=self.colors['walls'], width=2),
+                    showlegend=False,
+                    hoverinfo='skip'
                     ))
             
             elif wall['type'] == 'polyline':
@@ -105,11 +122,55 @@ class ClientExpectedVisualizer:
                         hoverinfo='skip'
                     ))
     
-    def _add_client_expected_restricted_areas(self, fig: go.Figure, restricted_areas: List[Dict]):
+    def _add_client_expected_restricted_areas(self, fig: go.Figure, restricted_areas: List):
         """Add restricted areas exactly as in client expected output - blue zones marked 'NO ENTREE'"""
         for i, area in enumerate(restricted_areas):
-            if area['type'] == 'polygon':
-                coords = area['coordinates']
+            # Handle both dict format and simple coordinate array format
+            if isinstance(area, dict) and 'type' in area:
+                if area['type'] == 'polygon':
+                    coords = area['coordinates']
+                elif area['type'] == 'circle':
+                    center = area['center']
+                    radius = area['radius']
+                    # Convert circle to polygon
+                    angles = np.linspace(0, 2*np.pi, 50)
+                    coords = [[center[0] + radius * np.cos(angle), center[1] + radius * np.sin(angle)] for angle in angles]
+                else:
+                    coords = area.get('coordinates', [])
+            else:
+                # Handle simple coordinate array format
+                coords = area
+            
+            if len(coords) >= 3:
+                x_coords = [coord[0] for coord in coords] + [coords[0][0]]
+                y_coords = [coord[1] for coord in coords] + [coords[0][1]]
+                
+                # Add filled blue area
+                fig.add_trace(go.Scatter(
+                    x=x_coords,
+                    y=y_coords,
+                    fill='toself',
+                    fillcolor=self.colors['restricted_no_entry'],
+                    line=dict(color=self.colors['restricted_no_entry'], width=1),
+                    opacity=0.7,
+                    showlegend=False,
+                    hoverinfo='skip'
+                ))
+                
+                # Add "NO ENTREE" label
+                center_x = sum(x_coords[:-1]) / len(x_coords[:-1])
+                center_y = sum(y_coords[:-1]) / len(y_coords[:-1])
+                
+                fig.add_annotation(
+                    x=center_x,
+                    y=center_y,
+                    text="NO ENTREE",
+                    showarrow=False,
+                    font=dict(color="white", size=10, family="Arial"),
+                    bgcolor=self.colors['restricted_no_entry'],
+                    bordercolor="white",
+                    borderwidth=1
+                )
                 if len(coords) >= 3:
                     x_coords = [coord[0] for coord in coords] + [coords[0][0]]
                     y_coords = [coord[1] for coord in coords] + [coords[0][1]]
@@ -173,10 +234,20 @@ class ClientExpectedVisualizer:
                     borderwidth=1
                 )
     
-    def _add_client_expected_entrances(self, fig: go.Figure, entrances: List[Dict]):
+    def _add_client_expected_entrances(self, fig: go.Figure, entrances: List):
         """Add entrances exactly as in client expected output - red zones marked 'ENTREE/SORTIE'"""
         for entrance in entrances:
-            if entrance['type'] == 'polygon':
+            # Handle both dict format and simple coordinate array format
+            if isinstance(entrance, dict) and 'type' in entrance:
+                if entrance['type'] == 'polygon':
+                    coords = entrance['coordinates']
+                else:
+                    coords = entrance.get('coordinates', [])
+            else:
+                # Handle simple coordinate array format
+                coords = entrance
+            
+            if len(coords) >= 3:
                 coords = entrance['coordinates']
                 if len(coords) >= 3:
                     x_coords = [coord[0] for coord in coords] + [coords[0][0]]
