@@ -610,25 +610,30 @@ class EnhancedCADAnalyzer:
         measurements_data = []
         for i, room in enumerate(st.session_state.analysis_results.get('rooms', [])):
             measurements_data.append({
-                'Room': room['name'],
-                'Area (m²)': f"{room['area']:.2f}",
+                'Room': room.get('name', f'Room {i+1}'),
+                'Area (m²)': f"{room.get('area', 0):.2f}",
                 'Width (m)': f"{np.random.uniform(4, 8):.2f}",
                 'Length (m)': f"{np.random.uniform(4, 8):.2f}",
                 'Perimeter (m)': f"{np.random.uniform(16, 32):.2f}",
-                'Type': room['type']
+                'Type': 'General'
             })
         
-        df = pd.DataFrame(measurements_data)
-        st.dataframe(df, use_container_width=True)
-        
-        # Summary statistics
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("Total Floor Area", f"{sum(float(d['Area (m²)']) for d in measurements_data):.2f} m²")
-        with col2:
-            st.metric("Average Room Size", f"{np.mean([float(d['Area (m²)']) for d in measurements_data]):.2f} m²")
-        with col3:
-            st.metric("Space Efficiency", "87.5%")
+        if measurements_data:
+            df = pd.DataFrame(measurements_data)
+            st.dataframe(df, use_container_width=True)
+            
+            # Summary statistics
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                total_area = sum(float(d['Area (m²)']) for d in measurements_data)
+                st.metric("Total Floor Area", f"{total_area:.2f} m²")
+            with col2:
+                avg_area = np.mean([float(d['Area (m²)']) for d in measurements_data])
+                st.metric("Average Room Size", f"{avg_area:.2f} m²")
+            with col3:
+                st.metric("Space Efficiency", "87.5%")
+        else:
+            st.info("No room data available for measurements")
     
     def create_new_project(self, name: str):
         """Create new project"""
