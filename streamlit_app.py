@@ -17,18 +17,22 @@ def check_dependencies():
     """Check if critical dependencies are available"""
     missing_deps = []
     
+    # Check for psutil with graceful fallback
     try:
         import psutil
+        os.environ['PSUTIL_AVAILABLE'] = 'true'
     except ImportError:
-        missing_deps.append("psutil")
-        # Set global flag to disable memory monitoring
-        import streamlit as st
-        st.session_state.psutil_available = False
+        os.environ['PSUTIL_AVAILABLE'] = 'false'
+        # Don't treat psutil as a critical dependency
+        pass
     
-    try:
-        import streamlit
-    except ImportError:
-        missing_deps.append("streamlit")
+    # Check critical dependencies
+    critical_deps = ['streamlit', 'plotly', 'pandas', 'numpy']
+    for dep in critical_deps:
+        try:
+            __import__(dep)
+        except ImportError:
+            missing_deps.append(dep)
     
     return missing_deps
 
@@ -38,28 +42,24 @@ def main():
     missing_deps = check_dependencies()
     
     if missing_deps:
-        # Only show error for critical dependencies (not psutil)
-        critical_missing = [dep for dep in missing_deps if dep != "psutil"]
+        st.error(f"Missing critical dependencies: {', '.join(missing_deps)}")
+        st.error("Please ensure all required packages are installed.")
         
-        if critical_missing:
-            st.error(f"Missing critical dependencies: {', '.join(critical_missing)}")
-            st.error("Please ensure all required packages are installed.")
-            
-            st.subheader("Debug Information")
-            st.write(f"Python path: {sys.path}")
-            st.write(f"Current directory: {os.getcwd()}")
-            st.write(f"Files in current directory: {os.listdir('.')}")
-            
-            # Show requirements.txt content
-            try:
-                with open('requirements.txt', 'r') as f:
-                    st.subheader("Requirements.txt content:")
-                    st.code(f.read())
-            except:
-                st.error("Could not read requirements.txt")
-            
-            st.stop()
-            return
+        st.subheader("Debug Information")
+        st.write(f"Python path: {sys.path}")
+        st.write(f"Current directory: {os.getcwd()}")
+        st.write(f"Files in current directory: {os.listdir('.')}")
+        
+        # Show requirements.txt content
+        try:
+            with open('requirements.txt', 'r') as f:
+                st.subheader("Requirements.txt content:")
+                st.code(f.read())
+        except:
+            st.error("Could not read requirements.txt")
+        
+        st.stop()
+        return
         
         # Show warning for non-critical dependencies like psutil
         if "psutil" in missing_deps:
