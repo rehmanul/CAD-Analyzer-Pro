@@ -463,6 +463,21 @@ class ProductionFloorAnalyzer:
         
         return validation
     
+    def _manual_dxf_parse(self, file_content: bytes, filename: str) -> Dict[str, Any]:
+        """Manual DXF parsing using advanced DXF parser"""
+        try:
+            from utils.advanced_dxf_parser import parse_dxf_advanced
+            return parse_dxf_advanced(file_content, filename)
+        except Exception as e:
+            return {
+                'success': False,
+                'error': f'Manual DXF parsing failed: {str(e)}',
+                'walls': [],
+                'restricted_areas': [],
+                'entrances': [],
+                'entities': []
+            }
+
     def generate_sample_dxf_data(self, filename: str) -> Dict[str, Any]:
         """Generate sample DXF data for demonstration when file cannot be read"""
         # Generate sample walls (rectangular room)
