@@ -23,9 +23,10 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'utils'))
 
 # Import ultra-high performance modules
 from ultra_high_performance_analyzer import UltraHighPerformanceAnalyzer
-from ultra_high_performance_ilot_placer import UltraHighPerformanceIlotPlacer
+from optimized_dxf_processor import OptimizedDXFProcessor
+from optimized_ilot_placer import OptimizedIlotPlacer
 from client_expected_visualizer import ClientExpectedVisualizer
-from corridor_generator import AdvancedCorridorGenerator
+from optimized_corridor_generator import OptimizedCorridorGenerator
 
 # Page configuration
 st.set_page_config(
@@ -88,8 +89,9 @@ st.markdown("""
 class CADAnalyzerApp:
     def __init__(self):
         self.floor_analyzer = UltraHighPerformanceAnalyzer()
-        self.ilot_placer = UltraHighPerformanceIlotPlacer()
-        self.corridor_generator = AdvancedCorridorGenerator()
+        self.dxf_processor = OptimizedDXFProcessor()
+        self.ilot_placer = OptimizedIlotPlacer()
+        self.corridor_generator = OptimizedCorridorGenerator()
         self.visualizer = ClientExpectedVisualizer()
         
         # Initialize session state
@@ -475,20 +477,13 @@ class CADAnalyzerApp:
         """Generate corridors based on configuration"""
         with st.spinner("Generating corridors..."):
             try:
-                # Load data into corridor generator
+                # Generate optimized corridor network
                 result = st.session_state.analysis_results
-                self.corridor_generator.load_floor_plan_data(
-                    ilots=st.session_state.placed_ilots,
-                    walls=result.get('walls', []),
-                    restricted_areas=result.get('restricted_areas', []),
-                    entrances=result.get('entrances', []),
-                    bounds=result.get('bounds', {})
-                )
-
-                # Generate corridor network
-                corridor_result = self.corridor_generator.generate_complete_corridor_network(config)
                 
-                st.session_state.corridors = corridor_result.get('corridors', [])
+                st.session_state.corridors = self.corridor_generator.generate_optimized_corridors(
+                    analysis_data=result,
+                    ilots=st.session_state.placed_ilots
+                )
                 
                 if st.session_state.corridors:
                     st.markdown(f'<div class="success-message">✅ Generated {len(st.session_state.corridors)} corridors!</div>', unsafe_allow_html=True)

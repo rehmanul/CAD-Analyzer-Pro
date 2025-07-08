@@ -435,7 +435,8 @@ class ClientExpectedVisualizer:
         # Add individual îlot measurements
         for ilot in ilots:
             x, y = ilot['position']
-            width, height = ilot['size']
+            width = ilot.get('width', 3.0)
+            height = ilot.get('height', 2.0)
             
             # Add width measurement
             fig.add_annotation(
@@ -531,7 +532,8 @@ class ClientExpectedVisualizer:
         
         for ilot in ilots:
             x, y = ilot['position']
-            width, height = ilot['size']
+            width = ilot.get('width', 3.0)
+            height = ilot.get('height', 2.0)
             area = ilot.get('area', width * height)
             
             # Add precise area measurement in red
