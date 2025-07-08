@@ -22,7 +22,7 @@ services:
         value: "#0066cc"
       - key: PSUTIL_AVAILABLE
         value: true
-  
+
   - type: pserv
     name: cad-analyzer-db
     env: postgresql
