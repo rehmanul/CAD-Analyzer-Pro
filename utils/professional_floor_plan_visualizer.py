@@ -184,9 +184,16 @@ class ProfessionalFloorPlanVisualizer:
                 room_types[size_cat] = []
             room_types[size_cat].append(room)
         
-        # Add rooms by category
+        # Add rooms by category with proper color coding
         for size_cat, room_list in room_types.items():
-            color = self.colors.get(f'room_{size_cat}', self.colors['room_medium'])
+            # Map size categories to proper colors
+            color_map = {
+                'small': '#fed7d7',      # Light pink for small (0-1 m²)
+                'medium': '#fefcbf',     # Light yellow for medium (1-3 m²)
+                'large': '#c6f6d5',      # Light green for large (3-5 m²)
+                'xlarge': '#e9d8fd'      # Light purple for xlarge (5-10 m²)
+            }
+            color = color_map.get(size_cat, self.colors['room_medium'])
             
             for i, room in enumerate(room_list):
                 x = room.get('x', 0)
@@ -195,13 +202,13 @@ class ProfessionalFloorPlanVisualizer:
                 height = room.get('height', 2)
                 area = room.get('area', width * height)
                 
-                # Add room rectangle
+                # Add room rectangle with proper color
                 fig.add_shape(
                     type="rect",
                     x0=x, y0=y, x1=x+width, y1=y+height,
                     fillcolor=color,
-                    line=dict(color=self.colors['walls'], width=1),
-                    opacity=0.8
+                    line=dict(color=self.colors['walls'], width=2),
+                    opacity=0.9
                 )
                 
                 # Add room label with area
@@ -210,15 +217,27 @@ class ProfessionalFloorPlanVisualizer:
                     y=y + height/2,
                     text=f"{area:.1f} m²",
                     showarrow=False,
-                    font=self.fonts['room_label'],
+                    font=dict(
+                        family='Inter, Arial, sans-serif', 
+                        size=12, 
+                        color='#1a202c'
+                    ),
                     bgcolor="rgba(255,255,255,0.9)",
-                    bordercolor=self.colors['text_medium'],
+                    bordercolor=self.colors['text_dark'],
                     borderwidth=1,
                     borderpad=4
                 )
             
-            # Add legend entry
+            # Add legend entry with proper color
             if room_list:
+                size_range_map = {
+                    'small': '0-1 m²',
+                    'medium': '1-3 m²', 
+                    'large': '3-5 m²',
+                    'xlarge': '5-10 m²'
+                }
+                size_range = size_range_map.get(size_cat, size_cat)
+                
                 fig.add_trace(go.Scatter(
                     x=[None], y=[None],
                     mode='markers',
@@ -227,7 +246,7 @@ class ProfessionalFloorPlanVisualizer:
                         size=15,
                         symbol='square'
                     ),
-                    name=f'{size_cat.replace("_", " ").title()} Rooms ({len(room_list)})',
+                    name=f'{size_range} ({len(room_list)})',
                     showlegend=True
                 ))
     
@@ -339,18 +358,24 @@ class ProfessionalFloorPlanVisualizer:
             [x, y, z_height], [x+width, y, z_height], [x+width, y+height, z_height], [x, y+height, z_height]  # top
         ]
         
-        # Define faces
-        faces = [
-            [0, 1, 2, 3],  # bottom
-            [4, 5, 6, 7],  # top
-            [0, 1, 5, 4],  # front
-            [2, 3, 7, 6],  # back
-            [1, 2, 6, 5],  # right
-            [0, 3, 7, 4]   # left
-        ]
-        
         size_cat = room.get('size_category', 'medium')
-        color = self.colors.get(f'room_{size_cat}', self.colors['room_medium'])
+        
+        # Use the same color mapping as 2D
+        color_map = {
+            'small': '#fed7d7',      # Light pink for small (0-1 m²)
+            'medium': '#fefcbf',     # Light yellow for medium (1-3 m²)
+            'large': '#c6f6d5',      # Light green for large (3-5 m²)
+            'xlarge': '#e9d8fd'      # Light purple for xlarge (5-10 m²)
+        }
+        color = color_map.get(size_cat, '#fefcbf')
+        
+        size_range_map = {
+            'small': '0-1 m²',
+            'medium': '1-3 m²', 
+            'large': '3-5 m²',
+            'xlarge': '5-10 m²'
+        }
+        size_range = size_range_map.get(size_cat, size_cat)
         
         fig.add_trace(go.Mesh3d(
             x=[v[0] for v in vertices],
@@ -358,8 +383,8 @@ class ProfessionalFloorPlanVisualizer:
             z=[v[2] for v in vertices],
             color=color,
             opacity=0.8,
-            name=f'{size_cat.title()} Room',
-            showlegend=(index == 0)
+            name=f'{size_range}',
+            showlegend=True
         ))
     
     def _add_3d_walls(self, fig: go.Figure, walls: List):
