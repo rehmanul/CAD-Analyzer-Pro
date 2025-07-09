@@ -36,6 +36,7 @@ from exact_reference_visualizer import ExactReferenceVisualizer
 from proper_dxf_processor import ProperDXFProcessor
 from fast_dxf_processor import FastDXFProcessor
 from real_dxf_processor import RealDXFProcessor
+from fast_architectural_visualizer import FastArchitecturalVisualizer
 from data_validator import DataValidator
 
 # Page configuration
@@ -251,6 +252,7 @@ class CADAnalyzerApp:
         self.proper_dxf_processor = ProperDXFProcessor()  # For proper architectural extraction
         self.fast_dxf_processor = FastDXFProcessor(timeout_seconds=8)  # For large files
         self.real_dxf_processor = RealDXFProcessor()  # For real architectural data
+        self.fast_visualizer = FastArchitecturalVisualizer()  # For fast rendering
         self.ilot_placer = OptimizedIlotPlacer()
         self.simple_placer = SimpleIlotPlacer()  # Backup placer
         self.corridor_generator = OptimizedCorridorGenerator()
@@ -470,28 +472,25 @@ class CADAnalyzerApp:
             st.plotly_chart(fig, use_container_width=True, height=600)
 
     def create_architectural_floor_plan_visualization(self, result):
-        """Create EXACT architectural floor plan visualization matching your reference images"""
+        """Create fast architectural floor plan visualization without simplification"""
         mode = st.session_state.get('visualization_mode', 'base')
         
-        # Use the architectural room visualizer for proper room structure
+        # Use fast visualizer for large architectural data
         if mode == 'base':
-            # Image 1 style - Empty floor plan with walls, restricted areas, entrances
-            fig = self.room_visualizer.create_architectural_floor_plan(result, mode='base')
+            # Empty floor plan with walls, restricted areas, entrances
+            fig = self.fast_visualizer.create_fast_floor_plan(result)
         elif mode == 'with_ilots':
-            # Image 2 style - Floor plan with green îlots
-            # Add îlots to result data for visualization
-            result_with_ilots = result.copy()
-            result_with_ilots['ilots'] = st.session_state.placed_ilots
-            fig = self.room_visualizer.create_architectural_floor_plan(result_with_ilots, mode='ilots')
+            # Floor plan with îlots
+            ilots = st.session_state.get('placed_ilots', [])
+            fig = self.fast_visualizer.create_floor_plan_with_ilots(result, ilots)
         elif mode == 'detailed':
-            # Image 3 style - Complete layout with corridors
-            result_complete = result.copy()
-            result_complete['ilots'] = st.session_state.placed_ilots
-            result_complete['corridors'] = st.session_state.corridors
-            fig = self.room_visualizer.create_architectural_floor_plan(result_complete, mode='complete')
+            # Complete layout with corridors
+            ilots = st.session_state.get('placed_ilots', [])
+            corridors = st.session_state.get('corridors', [])
+            fig = self.fast_visualizer.create_complete_floor_plan(result, ilots, corridors)
         else:
             # Fallback to empty floor plan
-            fig = self.room_visualizer.create_architectural_floor_plan(result, mode='base')
+            fig = self.fast_visualizer.create_fast_floor_plan(result)
         
         return fig
 
