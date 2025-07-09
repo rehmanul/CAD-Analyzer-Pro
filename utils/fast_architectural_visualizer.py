@@ -14,12 +14,12 @@ class FastArchitecturalVisualizer:
     
     def __init__(self):
         self.colors = {
-            'background': '#FFFFFF',
-            'walls': '#2C2C2C',  # Dark gray walls
-            'restricted': '#4285F4',  # Blue restricted areas
-            'entrances': '#EA4335',  # Red entrances
-            'ilots': '#EA4335',  # Red îlots
-            'corridors': '#EA4335'  # Red corridors
+            'background': '#F5F5F5',  # Light gray background like reference
+            'walls': '#6B7280',       # Gray walls (MUR)
+            'restricted': '#3B82F6',  # Blue restricted areas (NO ENTREE)
+            'entrances': '#EF4444',   # Red entrances (ENTRÉE/SORTIE)
+            'ilots': '#EF4444',       # Red îlots
+            'corridors': '#EF4444'    # Red corridors
         }
     
     def create_fast_floor_plan(self, analysis_data: Dict) -> go.Figure:
@@ -45,7 +45,7 @@ class FastArchitecturalVisualizer:
                 zeroline=False,
                 showticklabels=False
             ),
-            plot_bgcolor='white',
+            plot_bgcolor=self.colors['background'],
             paper_bgcolor='white',
             margin=dict(l=0, r=0, t=0, b=0),
             dragmode='pan'
@@ -268,6 +268,119 @@ class FastArchitecturalVisualizer:
         )
         
         # Legend items including îlots
+        legend_items = [
+            {"color": "#3B82F6", "text": "NO ENTREE", "y_offset": -0.05},
+            {"color": "#EF4444", "text": "ENTRÉE/SORTIE", "y_offset": -0.08},
+            {"color": "#6B7280", "text": "MUR", "y_offset": -0.11},
+            {"color": "#EF4444", "text": "ÎLOTS", "y_offset": -0.14}
+        ]
+        
+        for item in legend_items:
+            # Color box
+            fig.add_annotation(
+                x=legend_x - 0.08, y=legend_y + item["y_offset"],
+                text="■",
+                showarrow=False,
+                xref="paper", yref="paper",
+                xanchor="center", yanchor="middle",
+                font=dict(size=16, color=item["color"]),
+                bgcolor="white"
+            )
+            
+            # Text label
+            fig.add_annotation(
+                x=legend_x - 0.02, y=legend_y + item["y_offset"],
+                text=item["text"],
+                showarrow=False,
+                xref="paper", yref="paper",
+                xanchor="left", yanchor="middle",
+                font=dict(size=11, color="black"),
+                bgcolor="white"
+            )
+    
+    def create_complete_floor_plan(self, analysis_data: Dict, ilots: List[Dict], corridors: List[Dict]) -> go.Figure:
+        """Create complete floor plan with îlots and corridors"""
+        # Start with floor plan with îlots
+        fig = self.create_floor_plan_with_ilots(analysis_data, ilots)
+        
+        # Add corridors
+        for corridor in corridors:
+            points = corridor.get('points', [])
+            if len(points) >= 2:
+                x_coords = [p[0] for p in points]
+                y_coords = [p[1] for p in points]
+                
+                fig.add_trace(go.Scatter(
+                    x=x_coords,
+                    y=y_coords,
+                    mode='lines',
+                    line=dict(
+                        color=self.colors['corridors'],
+                        width=3
+                    ),
+                    showlegend=False,
+                    hoverinfo='skip',
+                    name='corridors'
+                ))
+        
+        # Update legend to include corridors
+        self._add_legend_with_corridors(fig)
+        
+        return fig
+    
+    def _add_legend_with_corridors(self, fig: go.Figure):
+        """Add legend with corridors included"""
+        # Clear existing legend annotations
+        fig.layout.annotations = []
+        
+        # Add legend as annotations positioned in top-right
+        legend_x = 0.98
+        legend_y = 0.98
+        
+        # Legend title
+        fig.add_annotation(
+            x=legend_x, y=legend_y,
+            text="<b>LÉGENDE</b>",
+            showarrow=False,
+            xref="paper", yref="paper",
+            xanchor="right", yanchor="top",
+            font=dict(size=14, color="black"),
+            bgcolor="white",
+            bordercolor="black",
+            borderwidth=1
+        )
+        
+        # Legend items including corridors
+        legend_items = [
+            {"color": "#3B82F6", "text": "NO ENTREE", "y_offset": -0.05},
+            {"color": "#EF4444", "text": "ENTRÉE/SORTIE", "y_offset": -0.08},
+            {"color": "#6B7280", "text": "MUR", "y_offset": -0.11},
+            {"color": "#EF4444", "text": "ÎLOTS", "y_offset": -0.14},
+            {"color": "#EF4444", "text": "CORRIDORS", "y_offset": -0.17}
+        ]
+        
+        for item in legend_items:
+            # Color box
+            fig.add_annotation(
+                x=legend_x - 0.08, y=legend_y + item["y_offset"],
+                text="■",
+                showarrow=False,
+                xref="paper", yref="paper",
+                xanchor="center", yanchor="middle",
+                font=dict(size=16, color=item["color"]),
+                bgcolor="white"
+            )
+            
+            # Text label
+            fig.add_annotation(
+                x=legend_x - 0.02, y=legend_y + item["y_offset"],
+                text=item["text"],
+                showarrow=False,
+                xref="paper", yref="paper",
+                xanchor="left", yanchor="middle",
+                font=dict(size=11, color="black"),
+                bgcolor="white"
+            )
         legend_items = [
             {"color": "#4285F4", "text": "NO ENTREE", "y_offset": -0.05},
             {"color": "#EA4335", "text": "ENTRÉE/SORTIE", "y_offset": -0.08},

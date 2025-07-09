@@ -477,25 +477,25 @@ class CADAnalyzerApp:
             st.plotly_chart(fig, use_container_width=True, height=600)
 
     def create_architectural_floor_plan_visualization(self, result):
-        """Create fast architectural floor plan visualization without simplification"""
+        """Create authentic architectural floor plan visualization from real DXF data"""
         mode = st.session_state.get('visualization_mode', 'base')
         
-        # Use appropriate visualizer based on mode
+        # Always use fast architectural visualizer for authentic DXF data
         if mode == 'base':
-            # Clean empty floor plan like reference image
-            fig = self.empty_plan_visualizer.create_empty_plan(result)
+            # Clean empty floor plan with authentic architectural data
+            fig = self.fast_visualizer.create_fast_floor_plan(result)
         elif mode == 'with_ilots':
-            # Clean floor plan with red rectangular îlots
+            # Floor plan with red rectangular îlots
             ilots = st.session_state.get('placed_ilots', [])
-            fig = self.empty_plan_visualizer.create_plan_with_ilots(result, ilots)
+            fig = self.fast_visualizer.create_floor_plan_with_ilots(result, ilots)
         elif mode == 'detailed':
-            # Complete layout with corridors using fast visualizer
+            # Complete layout with corridors
             ilots = st.session_state.get('placed_ilots', [])
             corridors = st.session_state.get('corridors', [])
             fig = self.fast_visualizer.create_complete_floor_plan(result, ilots, corridors)
         else:
-            # Fallback to clean empty floor plan
-            fig = self.empty_plan_visualizer.create_empty_plan(result)
+            # Default to authentic architectural visualization
+            fig = self.fast_visualizer.create_fast_floor_plan(result)
         
         return fig
 
