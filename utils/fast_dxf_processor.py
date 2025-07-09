@@ -14,7 +14,7 @@ import queue
 class FastDXFProcessor:
     """Fast DXF processor with timeout protection for large files"""
     
-    def __init__(self, timeout_seconds: int = 30):
+    def __init__(self, timeout_seconds: int = 10):
         self.timeout_seconds = timeout_seconds
         self.wall_layers = ['WALLS', 'WALL', 'MUR', 'MURS', '0', 'DEFPOINTS']
         self.door_layers = ['DOORS', 'DOOR', 'PORTE', 'PORTES']
@@ -116,19 +116,22 @@ class FastDXFProcessor:
         
         return {'min_x': 0, 'max_x': 200, 'min_y': 0, 'max_y': 150}
     
-    def _extract_walls_optimized(self, doc, max_walls: int = 100) -> List[Dict]:
+    def _extract_walls_optimized(self, doc, max_walls: int = 50) -> List[Dict]:
         """Extract walls with sampling for large files"""
         walls = []
         entity_count = 0
         sample_rate = 1
         
-        # Count entities first to determine sampling rate
+        # Use aggressive sampling for large files
         try:
-            total_entities = sum(1 for _ in doc.modelspace())
-            if total_entities > 1000:
-                sample_rate = max(1, total_entities // max_walls)
+            # Quick count of first 1000 entities to estimate total
+            sample_entities = list(doc.modelspace())[:1000]
+            if len(sample_entities) >= 1000:
+                sample_rate = max(100, len(sample_entities) // 10)  # Very aggressive sampling
+            else:
+                sample_rate = max(1, len(sample_entities) // max_walls)
         except:
-            pass
+            sample_rate = 100  # Default aggressive sampling
         
         for i, entity in enumerate(doc.modelspace()):
             if len(walls) >= max_walls:

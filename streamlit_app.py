@@ -248,7 +248,7 @@ class CADAnalyzerApp:
         self.floor_analyzer = UltraHighPerformanceAnalyzer()
         self.dxf_processor = OptimizedDXFProcessor()
         self.proper_dxf_processor = ProperDXFProcessor()  # For proper architectural extraction
-        self.fast_dxf_processor = FastDXFProcessor(timeout_seconds=15)  # For large files
+        self.fast_dxf_processor = FastDXFProcessor(timeout_seconds=8)  # For large files
         self.ilot_placer = OptimizedIlotPlacer()
         self.simple_placer = SimpleIlotPlacer()  # Backup placer
         self.corridor_generator = OptimizedCorridorGenerator()
@@ -382,14 +382,11 @@ class CADAnalyzerApp:
                 try:
                     file_content = uploaded_file.read()
                     
-                    # Process using fast DXF processor for large files
+                    # Always use fast DXF processor for DXF files to prevent timeouts
                     if uploaded_file.name.lower().endswith('.dxf'):
                         file_size_mb = len(file_content) / (1024 * 1024)
-                        if file_size_mb > 10:  # Large file (>10MB)
-                            st.info(f"Processing large DXF file ({file_size_mb:.1f}MB) with timeout protection...")
-                            result = self.fast_dxf_processor.process_dxf_file(file_content, uploaded_file.name)
-                        else:
-                            result = self.proper_dxf_processor.process_dxf_file(file_content, uploaded_file.name)
+                        st.info(f"Processing DXF file ({file_size_mb:.1f}MB) with smart sampling...")
+                        result = self.fast_dxf_processor.process_dxf_file(file_content, uploaded_file.name)
                     else:
                         # Use ultra-high performance analyzer for other files
                         result = self.floor_analyzer.process_file_ultra_fast(file_content, uploaded_file.name)
