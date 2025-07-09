@@ -31,7 +31,9 @@ from optimized_corridor_generator import OptimizedCorridorGenerator
 from professional_floor_plan_visualizer import ProfessionalFloorPlanVisualizer
 from reference_style_visualizer import ReferenceStyleVisualizer
 from architectural_floor_plan_visualizer import ArchitecturalFloorPlanVisualizer
+from architectural_room_visualizer import ArchitecturalRoomVisualizer
 from exact_reference_visualizer import ExactReferenceVisualizer
+from proper_dxf_processor import ProperDXFProcessor
 from data_validator import DataValidator
 
 # Page configuration
@@ -244,6 +246,7 @@ class CADAnalyzerApp:
     def __init__(self):
         self.floor_analyzer = UltraHighPerformanceAnalyzer()
         self.dxf_processor = OptimizedDXFProcessor()
+        self.proper_dxf_processor = ProperDXFProcessor()  # For proper architectural extraction
         self.ilot_placer = OptimizedIlotPlacer()
         self.simple_placer = SimpleIlotPlacer()  # Backup placer
         self.corridor_generator = OptimizedCorridorGenerator()
@@ -252,6 +255,7 @@ class CADAnalyzerApp:
         self.reference_visualizer = ReferenceStyleVisualizer()  # Matches your reference images
         self.architectural_visualizer = ArchitecturalFloorPlanVisualizer()  # Exact match to your reference
         self.exact_visualizer = ExactReferenceVisualizer()  # EXACT match to your reference images
+        self.room_visualizer = ArchitecturalRoomVisualizer()  # For proper room structure
         self.data_validator = DataValidator()
         
         # Initialize session state with visualization modes
@@ -376,8 +380,12 @@ class CADAnalyzerApp:
                 try:
                     file_content = uploaded_file.read()
                     
-                    # Process using ultra-high performance analyzer with timeout
-                    result = self.floor_analyzer.process_file_ultra_fast(file_content, uploaded_file.name)
+                    # Process using proper DXF processor for architectural structure
+                    if uploaded_file.name.lower().endswith('.dxf'):
+                        result = self.proper_dxf_processor.process_dxf_file(file_content, uploaded_file.name)
+                    else:
+                        # Use ultra-high performance analyzer for other files
+                        result = self.floor_analyzer.process_file_ultra_fast(file_content, uploaded_file.name)
                     
                     if not result.get('success'):
                         st.error(f"Processing failed: {result.get('error', 'Unknown error')}")
@@ -459,25 +467,25 @@ class CADAnalyzerApp:
         """Create EXACT architectural floor plan visualization matching your reference images"""
         mode = st.session_state.get('visualization_mode', 'base')
         
-        # Use the exact reference visualizer for perfect match
+        # Use the architectural room visualizer for proper room structure
         if mode == 'base':
             # Image 1 style - Empty floor plan with walls, restricted areas, entrances
-            fig = self.exact_visualizer.create_architectural_floor_plan(result, mode='base')
+            fig = self.room_visualizer.create_architectural_floor_plan(result, mode='base')
         elif mode == 'with_ilots':
             # Image 2 style - Floor plan with green îlots
             # Add îlots to result data for visualization
             result_with_ilots = result.copy()
             result_with_ilots['ilots'] = st.session_state.placed_ilots
-            fig = self.exact_visualizer.create_architectural_floor_plan(result_with_ilots, mode='with_ilots')
+            fig = self.room_visualizer.create_architectural_floor_plan(result_with_ilots, mode='ilots')
         elif mode == 'detailed':
             # Image 3 style - Complete layout with corridors
             result_complete = result.copy()
             result_complete['ilots'] = st.session_state.placed_ilots
             result_complete['corridors'] = st.session_state.corridors
-            fig = self.exact_visualizer.create_architectural_floor_plan(result_complete, mode='detailed')
+            fig = self.room_visualizer.create_architectural_floor_plan(result_complete, mode='complete')
         else:
             # Fallback to empty floor plan
-            fig = self.exact_visualizer.create_architectural_floor_plan(result, mode='base')
+            fig = self.room_visualizer.create_architectural_floor_plan(result, mode='base')
         
         return fig
 
