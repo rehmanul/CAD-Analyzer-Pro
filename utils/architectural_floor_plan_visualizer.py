@@ -100,35 +100,46 @@ class ArchitecturalFloorPlanVisualizer:
         
         walls_added = 0
         
+        # Try walls first
         if walls:
             for wall in walls:
                 if isinstance(wall, list) and len(wall) >= 2:
                     # Wall is a list of points
-                    x_coords = [point[0] for point in wall]
-                    y_coords = [point[1] for point in wall]
+                    x_coords = [point[0] for point in wall if len(point) >= 2]
+                    y_coords = [point[1] for point in wall if len(point) >= 2]
                     
-                    fig.add_trace(go.Scatter(
-                        x=x_coords,
-                        y=y_coords,
-                        mode='lines',
-                        line=dict(
-                            color=self.colors['walls'],
-                            width=self.line_widths['walls']
-                        ),
-                        showlegend=False,
-                        hoverinfo='skip'
-                    ))
-                    walls_added += 1
+                    if len(x_coords) >= 2:
+                        fig.add_trace(go.Scatter(
+                            x=x_coords,
+                            y=y_coords,
+                            mode='lines',
+                            line=dict(
+                                color=self.colors['walls'],
+                                width=self.line_widths['walls']
+                            ),
+                            showlegend=False,
+                            hoverinfo='skip'
+                        ))
+                        walls_added += 1
                 elif isinstance(wall, dict):
                     self._add_wall_line(fig, wall)
                     walls_added += 1
         
-        if entities and walls_added == 0:
-            # Extract wall-like entities only if no walls were found
+        # If no walls found, try entities (DXF entities)
+        if entities and walls_added < 5:  # Add more entities if few walls found
+            entity_count = 0
             for entity in entities:
-                if entity.get('type') in ['LINE', 'POLYLINE', 'LWPOLYLINE']:
-                    self._add_entity_as_wall(fig, entity)
-                    walls_added += 1
+                if entity_count >= 200:  # Limit to prevent overload
+                    break
+                    
+                entity_type = entity.get('type', '').upper()
+                if entity_type in ['LINE', 'POLYLINE', 'LWPOLYLINE', 'SPLINE']:
+                    try:
+                        self._add_entity_as_wall(fig, entity)
+                        walls_added += 1
+                        entity_count += 1
+                    except:
+                        continue
         
         print(f"DEBUG: Added {walls_added} wall elements to architectural visualization")
     
@@ -149,35 +160,78 @@ class ArchitecturalFloorPlanVisualizer:
     
     def _add_entity_as_wall(self, fig: go.Figure, entity: Dict):
         """Add entity as wall line"""
-        if 'points' in entity and len(entity['points']) >= 2:
-            points = entity['points']
-            x_coords = [point[0] for point in points]
-            y_coords = [point[1] for point in points]
-            
-            fig.add_trace(go.Scatter(
-                x=x_coords,
-                y=y_coords,
-                mode='lines',
-                line=dict(
-                    color=self.colors['walls'],
-                    width=self.line_widths['walls']
-                ),
-                showlegend=False,
-                hoverinfo='skip'
-            ))
-        elif 'start' in entity and 'end' in entity:
-            # Single line entity
-            fig.add_trace(go.Scatter(
-                x=[entity['start'][0], entity['end'][0]],
-                y=[entity['start'][1], entity['end'][1]],
-                mode='lines',
-                line=dict(
-                    color=self.colors['walls'],
-                    width=self.line_widths['walls']
-                ),
-                showlegend=False,
-                hoverinfo='skip'
-            ))
+        try:
+            # Handle different entity formats
+            if 'points' in entity and len(entity['points']) >= 2:
+                points = entity['points']
+                x_coords = []
+                y_coords = []
+                
+                for point in points:
+                    if isinstance(point, (list, tuple)) and len(point) >= 2:
+                        x_coords.append(point[0])
+                        y_coords.append(point[1])
+                
+                if len(x_coords) >= 2:
+                    fig.add_trace(go.Scatter(
+                        x=x_coords,
+                        y=y_coords,
+                        mode='lines',
+                        line=dict(
+                            color=self.colors['walls'],
+                            width=self.line_widths['walls']
+                        ),
+                        showlegend=False,
+                        hoverinfo='skip'
+                    ))
+                    
+            elif 'start' in entity and 'end' in entity:
+                # Single line entity
+                start = entity['start']
+                end = entity['end']
+                
+                if (isinstance(start, (list, tuple)) and len(start) >= 2 and 
+                    isinstance(end, (list, tuple)) and len(end) >= 2):
+                    
+                    fig.add_trace(go.Scatter(
+                        x=[start[0], end[0]],
+                        y=[start[1], end[1]],
+                        mode='lines',
+                        line=dict(
+                            color=self.colors['walls'],
+                            width=self.line_widths['walls']
+                        ),
+                        showlegend=False,
+                        hoverinfo='skip'
+                    ))
+                    
+            elif 'coordinates' in entity:
+                # Handle coordinate-based entities
+                coords = entity['coordinates']
+                if isinstance(coords, list) and len(coords) >= 2:
+                    x_coords = []
+                    y_coords = []
+                    
+                    for coord in coords:
+                        if isinstance(coord, (list, tuple)) and len(coord) >= 2:
+                            x_coords.append(coord[0])
+                            y_coords.append(coord[1])
+                    
+                    if len(x_coords) >= 2:
+                        fig.add_trace(go.Scatter(
+                            x=x_coords,
+                            y=y_coords,
+                            mode='lines',
+                            line=dict(
+                                color=self.colors['walls'],
+                                width=self.line_widths['walls']
+                            ),
+                            showlegend=False,
+                            hoverinfo='skip'
+                        ))
+        except Exception as e:
+            # Skip problematic entities silently
+            pass
     
     def _add_restricted_areas(self, fig: go.Figure, restricted_areas: List[Dict]):
         """Add blue restricted areas (NO ENTREE)"""

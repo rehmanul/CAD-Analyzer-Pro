@@ -494,7 +494,7 @@ class CADAnalyzerApp:
         mode = st.session_state.get('visualization_mode', 'base')
         
         try:
-            # Use the exact reference visualizer to match your expected output
+            # Always use architectural visualizer for consistent results
             if mode == 'base':
                 # Clean empty floor plan with gray walls, blue restricted areas, red entrances
                 fig = self.architectural_visualizer.create_empty_floor_plan(result)
@@ -508,27 +508,63 @@ class CADAnalyzerApp:
                 corridors = st.session_state.get('corridors', [])
                 fig = self.architectural_visualizer.create_complete_floor_plan(result, ilots, corridors)
             else:
-                # Default to clean visualization that works
+                # Default to clean visualization
                 fig = self.architectural_visualizer.create_empty_floor_plan(result)
+                
+            # Ensure the visualization has proper styling
+            fig.update_layout(
+                plot_bgcolor='#f7fafc',  # Light gray background
+                paper_bgcolor='white',
+                showlegend=True,
+                legend=dict(
+                    x=1.02, y=1,
+                    bgcolor='white',
+                    bordercolor='#4a5568',
+                    borderwidth=1
+                )
+            )
+            
         except Exception as e:
-            st.error(f"Visualization error: {str(e)}")
-            # Fallback to reference style visualizer
-            try:
-                fig = self.reference_visualizer.create_empty_floor_plan(result)
-            except:
-                # Final fallback
-                fig = go.Figure()
-                fig.add_annotation(
-                    text="Unable to render floor plan visualization",
-                    xref="paper", yref="paper",
-                    x=0.5, y=0.5, showarrow=False,
-                    font=dict(size=16, color="red")
-                )
-                fig.update_layout(
-                    title="Visualization Error",
-                    xaxis=dict(showgrid=False, showticklabels=False),
-                    yaxis=dict(showgrid=False, showticklabels=False)
-                )
+            st.error(f"Architectural visualization error: {str(e)}")
+            # Create a simple fallback that works
+            fig = go.Figure()
+            
+            # Add basic walls if available
+            walls = result.get('walls', [])
+            entities = result.get('entities', [])
+            
+            if walls or entities:
+                # Add walls as gray lines
+                for wall in (walls if walls else entities[:50]):  # Limit to first 50 entities
+                    if isinstance(wall, list) and len(wall) >= 2:
+                        x_coords = [point[0] for point in wall]
+                        y_coords = [point[1] for point in wall]
+                        fig.add_trace(go.Scatter(
+                            x=x_coords, y=y_coords,
+                            mode='lines',
+                            line=dict(color='#4a5568', width=2),
+                            showlegend=False,
+                            hoverinfo='skip'
+                        ))
+            
+            # Set basic layout
+            bounds = result.get('bounds', {'min_x': 0, 'max_x': 100, 'min_y': 0, 'max_y': 100})
+            padding = 5
+            
+            fig.update_layout(
+                title="Floor Plan Analysis",
+                xaxis=dict(
+                    range=[bounds['min_x'] - padding, bounds['max_x'] + padding],
+                    showgrid=False, showticklabels=False,
+                    scaleanchor="y", scaleratio=1
+                ),
+                yaxis=dict(
+                    range=[bounds['min_y'] - padding, bounds['max_y'] + padding],
+                    showgrid=False, showticklabels=False
+                ),
+                plot_bgcolor='#f7fafc',
+                paper_bgcolor='white'
+            )
         
         return fig
 
