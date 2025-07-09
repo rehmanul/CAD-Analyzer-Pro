@@ -221,23 +221,7 @@ class CADAnalyzerApp:
         """Display analysis results"""
         st.subheader("Analysis Results")
         
-        # Performance Metrics Section
-        st.markdown("### 🚀 Ultra-High Performance Metrics")
-        perf_metrics = result.get('performance_metrics', {})
-        
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            st.metric("Processing Time", f"{result.get('processing_time', 0):.3f}s")
-        with col2:
-            st.metric("Entities/Second", f"{perf_metrics.get('entities_per_second', 0):,}")
-        with col3:
-            st.metric("File Size", f"{perf_metrics.get('file_size_mb', 0):.2f} MB")
-        with col4:
-            st.metric("Processing Speed", f"{perf_metrics.get('processing_speed_mbps', 0):.1f} MB/s")
-        
-        # Additional performance details
-        if perf_metrics:
-            st.info(f"🔥 {perf_metrics.get('optimization_level', 'Standard')} - {perf_metrics.get('speed_improvement', 'Optimized processing')} using {perf_metrics.get('cpu_cores_used', 1)} CPU cores")
+
         
         # Analysis Metrics
         st.markdown("### 📊 Analysis Results")
@@ -357,22 +341,6 @@ class CADAnalyzerApp:
                     stats = self.ilot_placer.generate_placement_statistics(placed_ilots)
                     
                     st.markdown(f'<div class="success-message">✅ Successfully placed {len(placed_ilots)} îlots!</div>', unsafe_allow_html=True)
-                    
-                    # Display ultra-high performance metrics
-                    st.markdown("### 🚀 Ultra-High Performance Placement Metrics")
-                    col1, col2, col3, col4 = st.columns(4)
-                    with col1:
-                        st.metric("Total Placed", len(placed_ilots))
-                    with col2:
-                        st.metric("Total Area", f"{stats['total_area']:.1f} m²")
-                    with col3:
-                        st.metric("Average Area", f"{stats['average_area']:.1f} m²")
-                    with col4:
-                        st.metric("Efficiency", f"{stats['placement_efficiency']:.1f}%")
-                    
-                    # Show placement speed metrics
-                    placement_time = stats.get('placement_time', 0.001)
-                    st.info(f"🔥 ULTRA-HIGH PERFORMANCE: {len(placed_ilots)} îlots placed in {placement_time:.3f}s = {int(len(placed_ilots) / placement_time)} îlots/second")
                 else:
                     st.warning("No îlots were placed. Please check your configuration.")
                     

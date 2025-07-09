@@ -476,6 +476,9 @@ class ClientExpectedVisualizer:
         # Add padding for measurements
         padding = 10
         
+        # Calculate legend position outside of visual area
+        legend_margin = 120  # Extra margin for legend
+        
         fig.update_layout(
             title={
                 'text': 'Plan d\'étage avec îlots et couloirs',
@@ -503,13 +506,13 @@ class ClientExpectedVisualizer:
             plot_bgcolor='white',
             paper_bgcolor='white',
             showlegend=False,
-            margin=dict(l=50, r=50, t=80, b=50)
+            margin=dict(l=50, r=legend_margin, t=80, b=50)  # Extra right margin for legend
         )
         
-        # Add legend matching client expected output
+        # Add legend completely outside the visual area using relative positioning
         fig.add_annotation(
-            x=bounds['max_x'] + 5,
-            y=bounds['max_y'] - 5,
+            xref="paper", yref="paper",  # Use paper coordinates (0-1) instead of data coordinates
+            x=1.02, y=0.98,  # Position at 102% of plot width, 98% of plot height
             text="<b>LÉGENDE</b><br>" +
                  "▬ MUR<br>" +
                  "🔵 NO ENTREE<br>" +
@@ -523,7 +526,9 @@ class ClientExpectedVisualizer:
             bgcolor="white",
             bordercolor="black",
             borderwidth=1,
-            align="left"
+            align="left",
+            xanchor="left",
+            yanchor="top"
         )
     
     def create_measurements_overlay(self, fig: go.Figure, analysis_data: Dict, ilots: List[Dict]) -> go.Figure:

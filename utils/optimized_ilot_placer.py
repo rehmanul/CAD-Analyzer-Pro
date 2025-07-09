@@ -144,6 +144,10 @@ class OptimizedIlotPlacer:
         # Sort îlots by size (largest first for better packing)
         ilot_specs.sort(key=lambda x: x['area'], reverse=True)
         
+        # Fallback: if we have no valid grid points, create a simple grid
+        if not grid_points:
+            grid_points = self._create_fallback_grid(bounds)
+        
         for i, spec in enumerate(ilot_specs):
             best_position = None
             best_score = -1
@@ -283,6 +287,26 @@ class OptimizedIlotPlacer:
                 ilot['row_size'] = len(row)
                 
         return ilots
+        
+    def _create_fallback_grid(self, bounds: Dict) -> List[Tuple[float, float]]:
+        """Create a fallback grid when no grid points are available"""
+        min_x = bounds.get('min_x', 0)
+        max_x = bounds.get('max_x', 100)
+        min_y = bounds.get('min_y', 0)
+        max_y = bounds.get('max_y', 100)
+        
+        # Create a simple grid
+        grid_points = []
+        step_x = (max_x - min_x) / 10
+        step_y = (max_y - min_y) / 8
+        
+        for i in range(1, 10):
+            for j in range(1, 8):
+                x = min_x + i * step_x
+                y = min_y + j * step_y
+                grid_points.append((x, y))
+                
+        return grid_points
         
     def generate_placement_statistics(self, ilots: List[Dict]) -> Dict:
         """Generate placement statistics"""

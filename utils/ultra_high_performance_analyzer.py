@@ -29,7 +29,7 @@ class UltraHighPerformanceAnalyzer:
         file_size_mb = len(file_content) / (1024 * 1024)
         
         # Pre-allocate memory and optimize for speed
-        print(f"🚀 ULTRA-FAST PROCESSING: {filename} ({file_size_mb:.2f} MB)")
+        # Processing file silently for production
         
         # Detect file type
         file_ext = filename.lower().split('.')[-1]
@@ -62,7 +62,7 @@ class UltraHighPerformanceAnalyzer:
             'speed_improvement': f"{int(1000 / max(processing_time * 1000, 1))}x faster than standard"
         }
         
-        print(f"✅ COMPLETED: {entities_count} entities in {processing_time:.3f}s = {int(entities_count / max(processing_time, 0.001))} entities/sec")
+        # Processing completed silently
         
         return result
     
