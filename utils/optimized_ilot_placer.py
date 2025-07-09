@@ -9,7 +9,7 @@ from typing import Dict, List, Tuple, Optional
 from shapely.geometry import Point, Polygon, box
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import logging
-from .spatial_index import SpatialIndex
+from spatial_index import SpatialIndex
 
 class OptimizedIlotPlacer:
     """Ultra-high performance îlot placer with spatial indexing"""

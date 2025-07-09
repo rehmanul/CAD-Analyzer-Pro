@@ -8,7 +8,7 @@ import numpy as np
 from typing import Dict, List, Tuple, Optional
 from shapely.geometry import Point, LineString, Polygon
 import networkx as nx
-from .spatial_index import SpatialIndex
+from spatial_index import SpatialIndex
 import logging
 
 class OptimizedCorridorGenerator:
