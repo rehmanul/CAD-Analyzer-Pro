@@ -1,0 +1,50 @@
+2025-07-09T23:53:45.021715919Z       Program python found: YES (/opt/render/project/src/.venv/bin/python)
+2025-07-09T23:53:45.021717609Z       Found pkg-config: YES (/usr/bin/pkg-config) 1.8.1
+2025-07-09T23:53:45.02172254Z       Run-time dependency python found: YES 3.13
+2025-07-09T23:53:45.021724369Z       Program cython found: YES (/tmp/pip-build-env-4m0m77me/overlay/bin/cython)
+2025-07-09T23:53:45.02172608Z       Compiler for C supports arguments -Wno-unused-but-set-variable: YES
+2025-07-09T23:53:45.021727869Z       Compiler for C supports arguments -Wno-unused-function: YES
+2025-07-09T23:53:45.02172954Z       Compiler for C supports arguments -Wno-conversion: YES
+2025-07-09T23:53:45.02173124Z       Compiler for C supports arguments -Wno-misleading-indentation: YES
+2025-07-09T23:53:45.02173299Z       Library m found: YES
+2025-07-09T23:53:45.02173467Z       
+2025-07-09T23:53:45.02173711Z       ../meson.build:80:0: ERROR: Unknown compiler(s): [['gfortran'], ['flang-new'], ['flang'], ['nvfortran'], ['pgfortran'], ['ifort'], ['ifx'], ['g95']]
+2025-07-09T23:53:45.02173886Z       The following exception(s) were encountered:
+2025-07-09T23:53:45.02174067Z       Running `gfortran --help` gave "[Errno 2] No such file or directory: 'gfortran'"
+2025-07-09T23:53:45.02174244Z       Running `gfortran --version` gave "[Errno 2] No such file or directory: 'gfortran'"
+2025-07-09T23:53:45.02174416Z       Running `gfortran -V` gave "[Errno 2] No such file or directory: 'gfortran'"
+2025-07-09T23:53:45.02174592Z       Running `flang-new --help` gave "[Errno 2] No such file or directory: 'flang-new'"
+2025-07-09T23:53:45.02174763Z       Running `flang-new --version` gave "[Errno 2] No such file or directory: 'flang-new'"
+2025-07-09T23:53:45.02174932Z       Running `flang-new -V` gave "[Errno 2] No such file or directory: 'flang-new'"
+2025-07-09T23:53:45.02175096Z       Running `flang --help` gave "[Errno 2] No such file or directory: 'flang'"
+2025-07-09T23:53:45.0217526Z       Running `flang --version` gave "[Errno 2] No such file or directory: 'flang'"
+2025-07-09T23:53:45.02175435Z       Running `flang -V` gave "[Errno 2] No such file or directory: 'flang'"
+2025-07-09T23:53:45.02175606Z       Running `nvfortran --help` gave "[Errno 2] No such file or directory: 'nvfortran'"
+2025-07-09T23:53:45.02175773Z       Running `nvfortran --version` gave "[Errno 2] No such file or directory: 'nvfortran'"
+2025-07-09T23:53:45.02175938Z       Running `nvfortran -V` gave "[Errno 2] No such file or directory: 'nvfortran'"
+2025-07-09T23:53:45.02176103Z       Running `pgfortran --help` gave "[Errno 2] No such file or directory: 'pgfortran'"
+2025-07-09T23:53:45.021762701Z       Running `pgfortran --version` gave "[Errno 2] No such file or directory: 'pgfortran'"
+2025-07-09T23:53:45.02176437Z       Running `pgfortran -V` gave "[Errno 2] No such file or directory: 'pgfortran'"
+2025-07-09T23:53:45.02176609Z       Running `ifort --help` gave "[Errno 2] No such file or directory: 'ifort'"
+2025-07-09T23:53:45.02176773Z       Running `ifort --version` gave "[Errno 2] No such file or directory: 'ifort'"
+2025-07-09T23:53:45.021769421Z       Running `ifort -V` gave "[Errno 2] No such file or directory: 'ifort'"
+2025-07-09T23:53:45.021771161Z       Running `ifx --help` gave "[Errno 2] No such file or directory: 'ifx'"
+2025-07-09T23:53:45.021775961Z       Running `ifx --version` gave "[Errno 2] No such file or directory: 'ifx'"
+2025-07-09T23:53:45.021777721Z       Running `ifx -V` gave "[Errno 2] No such file or directory: 'ifx'"
+2025-07-09T23:53:45.021779441Z       Running `g95 --help` gave "[Errno 2] No such file or directory: 'g95'"
+2025-07-09T23:53:45.021781081Z       Running `g95 --version` gave "[Errno 2] No such file or directory: 'g95'"
+2025-07-09T23:53:45.021782731Z       Running `g95 -V` gave "[Errno 2] No such file or directory: 'g95'"
+2025-07-09T23:53:45.021784411Z       
+2025-07-09T23:53:45.021798121Z       A full log can be found at /tmp/pip-install-3a4z1oas/scipy_cda05dfdfe6b4b3c9b6703eb84e77aa4/.mesonpy-txztce3i/meson-logs/meson-log.txt
+2025-07-09T23:53:45.021800101Z       [end of output]
+2025-07-09T23:53:45.021801791Z   
+2025-07-09T23:53:45.021803822Z   note: This error originates from a subprocess, and is likely not a problem with pip.
+2025-07-09T23:53:45.030252856Z error: subprocess-exited-with-error
+2025-07-09T23:53:45.030267127Z 
+2025-07-09T23:53:45.030271607Z × Getting requirements to build wheel did not run successfully.
+2025-07-09T23:53:45.030274627Z │ exit code: 1
+2025-07-09T23:53:45.030279267Z ╰─> See above for output.
+2025-07-09T23:53:45.030282187Z 
+2025-07-09T23:53:45.030286207Z note: This error originates from a subprocess, and is likely not a problem with pip.
+2025-07-09T23:53:45.680965232Z ==> Build failed 😞
+2025-07-09T23:53:45.680987083Z ==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys
