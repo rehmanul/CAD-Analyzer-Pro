@@ -74,7 +74,7 @@ class ReferenceStyleVisualizer:
         
         return fig
     
-    def create_floor_plan_with_corridors(self, analysis_data: Dict, ilots: List[Dict], corridors: List[Dict]) -> go.Figure:
+    def create_complete_floor_plan(self, analysis_data: Dict, ilots: List[Dict], corridors: List[Dict]) -> go.Figure:
         """Create floor plan with îlots and red corridors like your Image 3"""
         # Start with îlots
         fig = self.create_floor_plan_with_ilots(analysis_data, ilots)
@@ -198,6 +198,148 @@ class ReferenceStyleVisualizer:
                     showlegend=False,
                     hoverinfo='skip'
                 ))
+    
+    def _add_walls_from_entities(self, fig: go.Figure, entities: List, bounds: Dict):
+        """Create walls from DXF entities"""
+        print(f"DEBUG: Processing {len(entities)} entities for walls")
+        
+        # Extract LINE entities as walls
+        for entity in entities:
+            if entity.get('type') == 'LINE':
+                start = entity.get('start', [0, 0])
+                end = entity.get('end', [100, 100])
+                
+                print(f"DEBUG: Adding wall from {start} to {end}")
+                
+                fig.add_trace(go.Scatter(
+                    x=[start[0], end[0]],
+                    y=[start[1], end[1]],
+                    mode='lines',
+                    line=dict(color=self.colors['walls'], width=3),
+                    showlegend=False,
+                    hoverinfo='skip'
+                ))
+            elif entity.get('type') == 'POLYLINE':
+                # Handle polylines as walls
+                points = entity.get('points', [])
+                if len(points) >= 2:
+                    x_coords = [p[0] for p in points]
+                    y_coords = [p[1] for p in points]
+                    
+                    fig.add_trace(go.Scatter(
+                        x=x_coords,
+                        y=y_coords,
+                        mode='lines',
+                        line=dict(color=self.colors['walls'], width=3),
+                        showlegend=False,
+                        hoverinfo='skip'
+                    ))
+            elif entity.get('type') == 'LWPOLYLINE':
+                # Handle lightweight polylines
+                points = entity.get('points', [])
+                if len(points) >= 2:
+                    x_coords = [p[0] for p in points]
+                    y_coords = [p[1] for p in points]
+                    
+                    fig.add_trace(go.Scatter(
+                        x=x_coords,
+                        y=y_coords,
+                        mode='lines',
+                        line=dict(color=self.colors['walls'], width=3),
+                        showlegend=False,
+                        hoverinfo='skip'
+                    ))
+    
+    def _add_area_measurements(self, fig: go.Figure, ilots: List[Dict]):
+        """Add red area measurements like your Image 3"""
+        for ilot in ilots:
+            x = ilot.get('x', 0)
+            y = ilot.get('y', 0)
+            width = ilot.get('width', 2)
+            height = ilot.get('height', 2)
+            area = ilot.get('area', width * height)
+            
+            # Add area text in red
+            fig.add_annotation(
+                x=x + width/2,
+                y=y + height/2,
+                text=f"{area:.1f}m²",
+                font=dict(color=self.colors['text'], size=10),
+                showarrow=False,
+                bgcolor='white',
+                bordercolor=self.colors['text'],
+                borderwidth=1
+            )
+    
+    def _add_legend(self, fig: go.Figure):
+        """Add legend like your reference image"""
+        # Add legend entries as invisible traces
+        fig.add_trace(go.Scatter(
+            x=[None], y=[None],
+            mode='markers',
+            marker=dict(size=10, color=self.colors['restricted']),
+            name='NO ENTRÉE',
+            showlegend=True
+        ))
+        
+        fig.add_trace(go.Scatter(
+            x=[None], y=[None],
+            mode='markers',
+            marker=dict(size=10, color=self.colors['entrances']),
+            name='ENTRÉE/SORTIE',
+            showlegend=True
+        ))
+        
+        fig.add_trace(go.Scatter(
+            x=[None], y=[None],
+            mode='markers',
+            marker=dict(size=10, color=self.colors['walls']),
+            name='MUR',
+            showlegend=True
+        ))
+    
+    def _set_clean_layout(self, fig: go.Figure, bounds: Dict):
+        """Set clean layout matching your reference"""
+        min_x, max_x = bounds.get('min_x', 0), bounds.get('max_x', 100)
+        min_y, max_y = bounds.get('min_y', 0), bounds.get('max_y', 100)
+        
+        # Add padding
+        padding = max((max_x - min_x), (max_y - min_y)) * 0.1
+        
+        fig.update_layout(
+            title="Floor Plan Analysis",
+            title_font_size=20,
+            title_x=0.5,
+            xaxis=dict(
+                showgrid=False,
+                zeroline=False,
+                showticklabels=False,
+                range=[min_x - padding, max_x + padding]
+            ),
+            yaxis=dict(
+                showgrid=False,
+                zeroline=False,
+                showticklabels=False,
+                range=[min_y - padding, max_y + padding],
+                scaleanchor="x",
+                scaleratio=1
+            ),
+            plot_bgcolor='white',
+            paper_bgcolor='white',
+            showlegend=True,
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=1.02,
+                xanchor="right",
+                x=1,
+                bgcolor='rgba(255,255,255,0.8)',
+                bordercolor='gray',
+                borderwidth=1
+            ),
+            height=600,
+            margin=dict(l=20, r=20, t=80, b=20)
+        )
     
     def _add_area_measurements(self, fig: go.Figure, ilots: List[Dict]):
         """Add red area measurements like your Image 3"""

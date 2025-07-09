@@ -250,7 +250,7 @@ class CADAnalyzerApp:
         self.reference_visualizer = ReferenceStyleVisualizer()  # Matches your reference images
         self.data_validator = DataValidator()
         
-        # Initialize session state
+        # Initialize session state with visualization modes
         if 'analysis_results' not in st.session_state:
             st.session_state.analysis_results = None
         if 'placed_ilots' not in st.session_state:
@@ -259,6 +259,9 @@ class CADAnalyzerApp:
             st.session_state.corridors = []
         if 'file_processed' not in st.session_state:
             st.session_state.file_processed = False
+        # Add visualization mode tracking
+        if 'visualization_mode' not in st.session_state:
+            st.session_state.visualization_mode = "none"  # none -> base -> with_ilots -> detailed
 
     def run(self):
         """Run the main application"""
@@ -383,8 +386,10 @@ class CADAnalyzerApp:
                 if result.get('success'):
                     st.session_state.analysis_results = result
                     st.session_state.file_processed = True
+                    # Set visualization mode to show base floor plan (Image 1 style)
+                    st.session_state.visualization_mode = "base"
                     
-                    st.markdown('<div class="success-message">✅ Floor plan processed successfully!</div>', unsafe_allow_html=True)
+                    st.markdown('<div class="success-message">✅ Floor plan processed successfully! Showing empty floor plan (walls, entrances, restricted areas).</div>', unsafe_allow_html=True)
                     
                     # Display analysis results
                     self.display_analysis_results(result)
@@ -426,16 +431,47 @@ class CADAnalyzerApp:
             with col3:
                 st.metric("Total Area", f"{area:.1f} m²")
 
-        # Visualization
+        # Visualization with status indicator
         if result.get('walls') or result.get('entities'):
+            # Show current visualization mode
+            mode = st.session_state.get('visualization_mode', 'base')
+            mode_messages = {
+                'base': '📋 Stage 1: Empty Floor Plan (walls, entrances, restricted areas)',
+                'with_ilots': '🏢 Stage 2: Floor Plan with Îlots Placed',
+                'detailed': '🛤️ Stage 3: Complete Layout with Corridors'
+            }
+            
+            st.markdown(f"""
+            <div class="success-message">
+                <strong>Current View:</strong> {mode_messages.get(mode, 'Floor Plan')}
+            </div>
+            """, unsafe_allow_html=True)
+            
             st.subheader("Floor Plan Visualization")
             fig = self.create_floor_plan_visualization(result)
             st.plotly_chart(fig, use_container_width=True, height=600)
 
     def create_floor_plan_visualization(self, result):
-        """Create floor plan visualization matching your reference images"""
-        # Use reference style visualizer for exact match to your images
-        fig = self.reference_visualizer.create_empty_floor_plan(result)
+        """Create floor plan visualization matching your reference images - Step by step approach"""
+        mode = st.session_state.get('visualization_mode', 'base')
+        
+        if mode == "base":
+            # Image 1: Empty floor plan (walls, entrances, restricted areas only)
+            fig = self.reference_visualizer.create_empty_floor_plan(result)
+        elif mode == "with_ilots":
+            # Image 2: Floor plan with îlots placed
+            fig = self.reference_visualizer.create_floor_plan_with_ilots(
+                result, st.session_state.placed_ilots
+            )
+        elif mode == "detailed":
+            # Image 3: Complete floor plan with îlots and corridors
+            fig = self.reference_visualizer.create_complete_floor_plan(
+                result, st.session_state.placed_ilots, st.session_state.corridors
+            )
+        else:
+            # Default to base mode
+            fig = self.reference_visualizer.create_empty_floor_plan(result)
+        
         return fig
 
     def render_ilot_placement_tab(self):
@@ -518,7 +554,9 @@ class CADAnalyzerApp:
                 st.session_state.placed_ilots = placed_ilots
                 
                 if placed_ilots:
-                    st.markdown(f'<div class="success-message">✅ Successfully placed {len(placed_ilots)} îlots with {sum(ilot.get("area", 0) for ilot in placed_ilots):.1f} m² total area!</div>', unsafe_allow_html=True)
+                    # Update visualization mode to show îlots (Image 2 style)
+                    st.session_state.visualization_mode = "with_ilots"
+                    st.markdown(f'<div class="success-message">✅ Successfully placed {len(placed_ilots)} îlots with {sum(ilot.get("area", 0) for ilot in placed_ilots):.1f} m² total area! Visualization updated to show îlots.</div>', unsafe_allow_html=True)
                 else:
                     st.error("Unable to place îlots. Please check the floor plan has sufficient open space.")
                     
@@ -562,17 +600,13 @@ class CADAnalyzerApp:
             with col4:
                 st.metric("5-10 m²", size_counts.get('size_5_10', 0))
 
-        # Modern visualization with îlots
-        st.subheader("Professional Floor Plan with Îlots")
+        # Show updated visualization with îlots
+        st.subheader("Updated Floor Plan with Îlots")
         
-        # Add visualization controls
-        col1, col2 = st.columns([3, 1])
-        with col2:
-            view_3d = st.checkbox("3D View", key="ilot_3d_toggle")
-            professional_style = st.checkbox("Professional Style", value=True, key="ilot_prof_style")
-        
-        fig = self.create_complete_visualization(use_professional=professional_style, show_3d=view_3d)
-        st.plotly_chart(fig, use_container_width=True, height=700)
+        # Display the updated visualization based on current mode
+        if st.session_state.analysis_results:
+            fig = self.create_floor_plan_visualization(st.session_state.analysis_results)
+            st.plotly_chart(fig, use_container_width=True, height=700)
 
     def render_corridor_generation_tab(self):
         """Render corridor generation interface"""
@@ -622,6 +656,12 @@ class CADAnalyzerApp:
         # Display corridor results
         if st.session_state.corridors:
             self.display_corridor_results()
+            
+            # Show final visualization with corridors
+            st.subheader("Complete Floor Plan with Corridors")
+            if st.session_state.analysis_results:
+                fig = self.create_floor_plan_visualization(st.session_state.analysis_results)
+                st.plotly_chart(fig, use_container_width=True, height=700)
 
     def generate_corridors(self, config):
         """Generate corridors based on configuration"""
@@ -636,7 +676,9 @@ class CADAnalyzerApp:
                 )
                 
                 if st.session_state.corridors:
-                    st.markdown(f'<div class="success-message">✅ Generated {len(st.session_state.corridors)} corridors!</div>', unsafe_allow_html=True)
+                    # Update visualization mode to show complete layout (Image 3 style)
+                    st.session_state.visualization_mode = "detailed"
+                    st.markdown(f'<div class="success-message">✅ Generated {len(st.session_state.corridors)} corridors! Visualization updated to show complete layout.</div>', unsafe_allow_html=True)
                 else:
                     st.warning("No corridors were generated.")
                     
