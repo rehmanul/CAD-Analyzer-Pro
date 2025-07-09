@@ -86,41 +86,74 @@ class ProfessionalFloorPlanVisualizer:
         return fig
     
     def _create_3d_floor_plan(self, analysis_data: Dict, ilots: List[Dict], corridors: List[Dict]) -> go.Figure:
-        """Create 3D isometric floor plan view"""
+        """Create realistic 3D architectural visualization like reference image"""
         
         fig = go.Figure()
         
         bounds = analysis_data.get('bounds', {'min_x': 0, 'max_x': 100, 'min_y': 0, 'max_y': 100})
         
-        # Create 3D room volumes
+        # Add realistic floor foundation
+        self._add_3d_foundation(fig, bounds)
+        
+        # Create detailed 3D room volumes with realistic textures
         if ilots:
             for i, room in enumerate(ilots):
-                self._add_3d_room(fig, room, i)
+                self._add_realistic_3d_room(fig, room, i)
         
-        # Add 3D walls
-        self._add_3d_walls(fig, analysis_data.get('walls', []))
+        # Add realistic 3D walls with thickness and texture
+        self._add_realistic_3d_walls(fig, analysis_data.get('walls', []))
         
-        # Set 3D layout
+        # Add furniture and interior details
+        if ilots:
+            self._add_3d_furniture(fig, ilots)
+        
+        # Add corridor pathways
+        if corridors:
+            self._add_3d_corridors(fig, corridors)
+        
+        # Set realistic 3D layout with proper lighting
         fig.update_layout(
             scene=dict(
                 camera=dict(
-                    eye=dict(x=1.5, y=1.5, z=1.2),
-                    projection=dict(type='orthographic')
+                    eye=dict(x=2.0, y=2.0, z=1.5),
+                    projection=dict(type='perspective')
                 ),
-                aspectmode='cube',
-                xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-                yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-                zaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-                bgcolor=self.colors['background']
+                aspectmode='data',
+                xaxis=dict(
+                    showgrid=False, 
+                    zeroline=False, 
+                    showticklabels=False,
+                    showbackground=False
+                ),
+                yaxis=dict(
+                    showgrid=False, 
+                    zeroline=False, 
+                    showticklabels=False,
+                    showbackground=False
+                ),
+                zaxis=dict(
+                    showgrid=False, 
+                    zeroline=False, 
+                    showticklabels=False,
+                    showbackground=False
+                ),
+                bgcolor='rgba(240,240,240,0.1)'
             ),
-            paper_bgcolor=self.colors['background'],
-            plot_bgcolor=self.colors['background'],
+            paper_bgcolor='white',
+            plot_bgcolor='white',
             title={
-                'text': '3D Floor Plan Visualization',
+                'text': '3D Architectural Visualization',
                 'x': 0.5,
                 'font': self.fonts['title']
             },
             showlegend=True,
+            legend=dict(
+                x=0.02,
+                y=0.98,
+                bgcolor="rgba(255,255,255,0.9)",
+                bordercolor="#e2e8f0",
+                borderwidth=1
+            ),
             width=1200,
             height=800
         )
@@ -344,48 +377,234 @@ class ProfessionalFloorPlanVisualizer:
                 xanchor='right'
             )
     
-    def _add_3d_room(self, fig: go.Figure, room: Dict, index: int):
-        """Add 3D room volume"""
+    def _add_realistic_3d_room(self, fig: go.Figure, room: Dict, index: int):
+        """Add realistic 3D room with detailed interior styling"""
         x = room.get('x', 0)
         y = room.get('y', 0)
         width = room.get('width', 3)
         height = room.get('height', 2)
-        z_height = 3.0  # Standard room height
-        
-        # Create 3D box for room
-        vertices = [
-            [x, y, 0], [x+width, y, 0], [x+width, y+height, 0], [x, y+height, 0],  # bottom
-            [x, y, z_height], [x+width, y, z_height], [x+width, y+height, z_height], [x, y+height, z_height]  # top
-        ]
+        z_height = 3.2  # Realistic room height
         
         size_cat = room.get('size_category', 'medium')
         
-        # Use the same color mapping as 2D
-        color_map = {
-            'small': '#fed7d7',      # Light pink for small (0-1 m²)
-            'medium': '#fefcbf',     # Light yellow for medium (1-3 m²)
-            'large': '#c6f6d5',      # Light green for large (3-5 m²)
-            'xlarge': '#e9d8fd'      # Light purple for xlarge (5-10 m²)
+        # Realistic color scheme based on room type
+        room_colors = {
+            'small': '#f8f6f0',      # Warm cream for small rooms
+            'medium': '#fff8e7',     # Light warm white for medium
+            'large': '#f0f8f0',      # Very light green for large
+            'xlarge': '#f5f0ff'      # Very light lavender for xlarge
         }
-        color = color_map.get(size_cat, '#fefcbf')
         
+        # Floor colors for variety
+        floor_colors = {
+            'small': '#d4af37',      # Light wood tone
+            'medium': '#deb887',     # Burlywood
+            'large': '#c8b99c',      # Light taupe
+            'xlarge': '#d3d3d3'      # Light gray
+        }
+        
+        room_color = room_colors.get(size_cat, '#fff8e7')
+        floor_color = floor_colors.get(size_cat, '#deb887')
+        
+        # Floor surface
+        fig.add_trace(go.Mesh3d(
+            x=[x, x+width, x+width, x, x],
+            y=[y, y, y+height, y+height, y],
+            z=[0, 0, 0, 0, 0],
+            color=floor_color,
+            opacity=0.9,
+            showlegend=False,
+            hoverinfo='skip'
+        ))
+        
+        # Ceiling surface
+        fig.add_trace(go.Mesh3d(
+            x=[x, x+width, x+width, x, x],
+            y=[y, y, y+height, y+height, y],
+            z=[z_height, z_height, z_height, z_height, z_height],
+            color='white',
+            opacity=0.3,
+            showlegend=False,
+            hoverinfo='skip'
+        ))
+        
+        # Room walls (interior surfaces)
+        wall_color = room_color
+        
+        # Front wall
+        fig.add_trace(go.Mesh3d(
+            x=[x, x+width, x+width, x],
+            y=[y, y, y, y],
+            z=[0, 0, z_height, z_height],
+            color=wall_color,
+            opacity=0.7,
+            showlegend=False,
+            hoverinfo='skip'
+        ))
+        
+        # Back wall  
+        fig.add_trace(go.Mesh3d(
+            x=[x, x+width, x+width, x],
+            y=[y+height, y+height, y+height, y+height],
+            z=[0, 0, z_height, z_height],
+            color=wall_color,
+            opacity=0.7,
+            showlegend=False,
+            hoverinfo='skip'
+        ))
+        
+        # Left wall
+        fig.add_trace(go.Mesh3d(
+            x=[x, x, x, x],
+            y=[y, y+height, y+height, y],
+            z=[0, 0, z_height, z_height],
+            color=wall_color,
+            opacity=0.7,
+            showlegend=False,
+            hoverinfo='skip'
+        ))
+        
+        # Right wall
+        fig.add_trace(go.Mesh3d(
+            x=[x+width, x+width, x+width, x+width],
+            y=[y, y+height, y+height, y],
+            z=[0, 0, z_height, z_height],
+            color=wall_color,
+            opacity=0.7,
+            showlegend=False,
+            hoverinfo='skip'
+        ))
+        
+        # Add room label in 3D space
+        fig.add_trace(go.Scatter3d(
+            x=[x + width/2],
+            y=[y + height/2],
+            z=[z_height + 0.3],
+            mode='text',
+            text=[f"{room.get('area', width*height):.1f}m²"],
+            textfont=dict(size=12, color='#2d3748'),
+            showlegend=False,
+            hoverinfo='skip'
+        ))
+        
+        # Legend entry for room type
         size_range_map = {
             'small': '0-1 m²',
             'medium': '1-3 m²', 
             'large': '3-5 m²',
             'xlarge': '5-10 m²'
         }
-        size_range = size_range_map.get(size_cat, size_cat)
+        
+        if index < 4:  # Only show legend for first few rooms
+            size_range = size_range_map.get(size_cat, size_cat)
+            fig.add_trace(go.Scatter3d(
+                x=[None], y=[None], z=[None],
+                mode='markers',
+                marker=dict(color=room_color, size=8),
+                name=f'{size_range}',
+                showlegend=True
+            ))
+    
+    def _add_3d_foundation(self, fig: go.Figure, bounds: Dict):
+        """Add realistic foundation/ground plane"""
+        min_x, max_x = bounds.get('min_x', 0), bounds.get('max_x', 100)
+        min_y, max_y = bounds.get('min_y', 0), bounds.get('max_y', 100)
+        
+        # Extend foundation beyond building
+        padding = 10
         
         fig.add_trace(go.Mesh3d(
-            x=[v[0] for v in vertices],
-            y=[v[1] for v in vertices],
-            z=[v[2] for v in vertices],
-            color=color,
-            opacity=0.8,
-            name=f'{size_range}',
-            showlegend=True
+            x=[min_x-padding, max_x+padding, max_x+padding, min_x-padding],
+            y=[min_y-padding, min_y-padding, max_y+padding, max_y+padding],
+            z=[-0.2, -0.2, -0.2, -0.2],
+            color='#e8e8e8',
+            opacity=0.4,
+            showlegend=False,
+            hoverinfo='skip'
         ))
+        
+    def _add_realistic_3d_walls(self, fig: go.Figure, walls: List):
+        """Add realistic 3D walls with proper thickness"""
+        wall_height = 3.2
+        wall_thickness = 0.2
+        
+        for wall in walls:
+            if len(wall) >= 2:
+                for i in range(len(wall) - 1):
+                    x1, y1 = wall[i][0], wall[i][1]
+                    x2, y2 = wall[i+1][0], wall[i+1][1]
+                    
+                    # Calculate wall normal for thickness
+                    dx = x2 - x1
+                    dy = y2 - y1
+                    length = (dx**2 + dy**2)**0.5
+                    if length > 0:
+                        nx = -dy / length * wall_thickness
+                        ny = dx / length * wall_thickness
+                        
+                        # Create wall volume
+                        wall_vertices_x = [x1, x2, x2+nx, x1+nx, x1, x2, x2+nx, x1+nx]
+                        wall_vertices_y = [y1, y2, y2+ny, y1+ny, y1, y2, y2+ny, y1+ny]
+                        wall_vertices_z = [0, 0, 0, 0, wall_height, wall_height, wall_height, wall_height]
+                        
+                        fig.add_trace(go.Mesh3d(
+                            x=wall_vertices_x,
+                            y=wall_vertices_y,
+                            z=wall_vertices_z,
+                            color='#d4d4aa',
+                            opacity=0.9,
+                            showlegend=False,
+                            hoverinfo='skip'
+                        ))
+    
+    def _add_3d_furniture(self, fig: go.Figure, rooms: List[Dict]):
+        """Add simple furniture elements to rooms"""
+        for room in rooms:
+            x = room.get('x', 0)
+            y = room.get('y', 0)
+            width = room.get('width', 3)
+            height = room.get('height', 2)
+            
+            # Add simple furniture based on room size
+            if width > 2 and height > 2:
+                # Add a table/desk in center
+                table_size = 0.8
+                table_height = 0.8
+                table_x = x + width/2 - table_size/2
+                table_y = y + height/2 - table_size/2
+                
+                fig.add_trace(go.Mesh3d(
+                    x=[table_x, table_x+table_size, table_x+table_size, table_x, 
+                       table_x, table_x+table_size, table_x+table_size, table_x],
+                    y=[table_y, table_y, table_y+table_size, table_y+table_size,
+                       table_y, table_y, table_y+table_size, table_y+table_size],
+                    z=[table_height, table_height, table_height, table_height,
+                       table_height+0.1, table_height+0.1, table_height+0.1, table_height+0.1],
+                    color='#8b4513',
+                    opacity=0.8,
+                    showlegend=False,
+                    hoverinfo='skip'
+                ))
+    
+    def _add_3d_corridors(self, fig: go.Figure, corridors: List[Dict]):
+        """Add 3D corridor pathways"""
+        for corridor in corridors:
+            path = corridor.get('path', [])
+            if len(path) >= 2:
+                for i in range(len(path) - 1):
+                    x1, y1 = path[i][0], path[i][1]
+                    x2, y2 = path[i+1][0], path[i+1][1]
+                    
+                    # Simple corridor line at floor level
+                    fig.add_trace(go.Scatter3d(
+                        x=[x1, x2],
+                        y=[y1, y2],
+                        z=[0.1, 0.1],
+                        mode='lines',
+                        line=dict(color='#4299e1', width=8),
+                        showlegend=False,
+                        hoverinfo='skip'
+                    ))
     
     def _add_3d_walls(self, fig: go.Figure, walls: List):
         """Add 3D walls"""
