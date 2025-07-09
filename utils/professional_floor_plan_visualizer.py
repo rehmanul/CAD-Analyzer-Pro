@@ -111,11 +111,11 @@ class ProfessionalFloorPlanVisualizer:
         if corridors:
             self._add_3d_corridors(fig, corridors)
         
-        # Set realistic 3D layout with proper lighting
+        # Set realistic 3D layout with professional architectural presentation
         fig.update_layout(
             scene=dict(
                 camera=dict(
-                    eye=dict(x=2.0, y=2.0, z=1.5),
+                    eye=dict(x=1.8, y=1.8, z=1.2),
                     projection=dict(type='perspective')
                 ),
                 aspectmode='data',
@@ -123,39 +123,44 @@ class ProfessionalFloorPlanVisualizer:
                     showgrid=False, 
                     zeroline=False, 
                     showticklabels=False,
-                    showbackground=False
+                    showbackground=False,
+                    visible=False
                 ),
                 yaxis=dict(
                     showgrid=False, 
                     zeroline=False, 
                     showticklabels=False,
-                    showbackground=False
+                    showbackground=False,
+                    visible=False
                 ),
                 zaxis=dict(
                     showgrid=False, 
                     zeroline=False, 
                     showticklabels=False,
-                    showbackground=False
+                    showbackground=False,
+                    visible=False
                 ),
-                bgcolor='rgba(240,240,240,0.1)'
+                bgcolor='rgba(245,245,245,0.3)'
             ),
-            paper_bgcolor='white',
-            plot_bgcolor='white',
+            paper_bgcolor='#f8f9fa',
+            plot_bgcolor='#f8f9fa',
             title={
                 'text': '3D Architectural Visualization',
                 'x': 0.5,
-                'font': self.fonts['title']
+                'font': dict(family='Inter, Arial, sans-serif', size=20, color='#2d3748')
             },
             showlegend=True,
             legend=dict(
                 x=0.02,
                 y=0.98,
-                bgcolor="rgba(255,255,255,0.9)",
-                bordercolor="#e2e8f0",
-                borderwidth=1
+                bgcolor="rgba(255,255,255,0.95)",
+                bordercolor="#cbd5e0",
+                borderwidth=1,
+                font=dict(size=11)
             ),
             width=1200,
-            height=800
+            height=800,
+            margin=dict(l=0, r=0, t=40, b=0)
         )
         
         return fig

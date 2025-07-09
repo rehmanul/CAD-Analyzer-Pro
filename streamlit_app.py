@@ -505,12 +505,8 @@ class CADAnalyzerApp:
                     
                     st.markdown(f'<div class="success-message">✅ Successfully placed {len(placed_ilots)} îlots!</div>', unsafe_allow_html=True)
                 else:
-                    # Force create fallback îlots
-                    st.warning("Creating demonstration îlots...")
-                    bounds = result.get('bounds', {'min_x': 0, 'max_x': 100, 'min_y': 0, 'max_y': 100})
-                    fallback_ilots = self._create_fallback_ilots(bounds)
-                    st.session_state.placed_ilots = fallback_ilots
-                    st.markdown(f'<div class="success-message">✅ Created {len(fallback_ilots)} demonstration îlots!</div>', unsafe_allow_html=True)
+                    st.error("No îlots could be placed. Please try adjusting the configuration or uploading a different floor plan.")
+                    st.info("Suggestions: Reduce minimum spacing, lower space utilization target, or check if the floor plan has sufficient open space.")
                     
             except Exception as e:
                 st.error(f"Error placing îlots: {str(e)}")
