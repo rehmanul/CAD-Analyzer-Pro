@@ -38,13 +38,17 @@ class ReferenceStyleVisualizer:
         
         # Add black walls - ONLY if real data exists
         walls = analysis_data.get('walls', [])
+        entities = analysis_data.get('entities', [])
+        
+        print(f"DEBUG: Found {len(walls)} walls and {len(entities)} entities")
+        
         if walls:
             self._add_walls(fig, walls)
-        else:
+        elif entities:
             # Try to extract walls from entities - ONLY real data
-            entities = analysis_data.get('entities', [])
-            if entities:
-                self._add_walls_from_entities(fig, entities, bounds)
+            self._add_walls_from_entities(fig, entities, bounds)
+        else:
+            print("DEBUG: No wall data found in analysis_data")
         
         # Add blue restricted areas (NO ENTREE) - ONLY if real data exists
         restricted_areas = analysis_data.get('restricted_areas', [])
@@ -104,6 +108,7 @@ class ReferenceStyleVisualizer:
     def _add_walls(self, fig: go.Figure, walls: List):
         """Add black walls exactly like your reference"""
         print(f"DEBUG: Adding {len(walls)} walls")
+        walls_added = 0
         
         for wall in walls:
             if len(wall) >= 2:
@@ -112,17 +117,22 @@ class ReferenceStyleVisualizer:
                 
                 print(f"DEBUG: Wall coordinates: {x_coords}, {y_coords}")
                 
+                # Add wall trace with guaranteed visibility
                 fig.add_trace(go.Scatter(
                     x=x_coords,
                     y=y_coords,
                     mode='lines',
                     line=dict(
                         color=self.colors['walls'],
-                        width=3
+                        width=4  # Increased width for visibility
                     ),
                     showlegend=False,
-                    hoverinfo='skip'
+                    hoverinfo='skip',
+                    name='wall'  # Add name for debugging
                 ))
+                walls_added += 1
+        
+        print(f"DEBUG: Successfully added {walls_added} wall traces to figure")
     
     def _add_restricted_areas(self, fig: go.Figure, restricted_areas: List):
         """Add blue restricted areas (NO ENTREE)"""
@@ -303,23 +313,31 @@ class ReferenceStyleVisualizer:
         min_x, max_x = bounds.get('min_x', 0), bounds.get('max_x', 100)
         min_y, max_y = bounds.get('min_y', 0), bounds.get('max_y', 100)
         
-        # Add padding
-        padding = max((max_x - min_x), (max_y - min_y)) * 0.1
+        print(f"DEBUG: Setting layout with bounds: x=[{min_x:.1f}, {max_x:.1f}], y=[{min_y:.1f}, {max_y:.1f}]")
+        
+        # Calculate proper padding
+        width = max_x - min_x if max_x > min_x else 1000
+        height = max_y - min_y if max_y > min_y else 1000
+        padding = max(width * 0.05, height * 0.05, 100)  # Minimum 100 unit padding
+        
+        print(f"DEBUG: Using padding: {padding:.1f}")
         
         fig.update_layout(
             title="Floor Plan Analysis",
             title_font_size=20,
             title_x=0.5,
             xaxis=dict(
-                showgrid=False,
+                showgrid=True,  # Enable grid temporarily for debugging
+                gridcolor='lightgray',
                 zeroline=False,
-                showticklabels=False,
+                showticklabels=True,  # Show tick labels for debugging
                 range=[min_x - padding, max_x + padding]
             ),
             yaxis=dict(
-                showgrid=False,
+                showgrid=True,  # Enable grid temporarily for debugging
+                gridcolor='lightgray',
                 zeroline=False,
-                showticklabels=False,
+                showticklabels=True,  # Show tick labels for debugging
                 range=[min_y - padding, max_y + padding],
                 scaleanchor="x",
                 scaleratio=1
@@ -337,160 +355,9 @@ class ReferenceStyleVisualizer:
                 bordercolor='gray',
                 borderwidth=1
             ),
-            height=600,
-            margin=dict(l=20, r=20, t=80, b=20)
+            height=700,
+            margin=dict(l=50, r=50, t=80, b=50)
         )
     
-    def _add_area_measurements(self, fig: go.Figure, ilots: List[Dict]):
-        """Add red area measurements like your Image 3"""
-        for ilot in ilots:
-            x = ilot.get('x', 0)
-            y = ilot.get('y', 0)
-            width = ilot.get('width', 2)
-            height = ilot.get('height', 2)
-            area = ilot.get('area', width * height)
-            
-            # Add area text in red
-            fig.add_annotation(
-                x=x + width/2,
-                y=y + height/2,
-                text=f"{area:.1f}m²",
-                showarrow=False,
-                font=dict(
-                    color=self.colors['text'],
-                    size=12,
-                    family="Arial"
-                ),
-                bgcolor="rgba(255, 255, 255, 0.8)",
-                bordercolor=self.colors['text'],
-                borderwidth=1
-            )
-    
-    def _add_legend(self, fig: go.Figure):
-        """Add legend like your Image 1"""
-        # Add legend traces
-        fig.add_trace(go.Scatter(
-            x=[None], y=[None],
-            mode='markers',
-            marker=dict(color=self.colors['restricted'], size=15, symbol='square'),
-            name='NO ENTREE',
-            showlegend=True
-        ))
-        
-        fig.add_trace(go.Scatter(
-            x=[None], y=[None],
-            mode='markers',
-            marker=dict(color=self.colors['entrances'], size=15, symbol='square'),
-            name='ENTREE/SORTIE',
-            showlegend=True
-        ))
-        
-        fig.add_trace(go.Scatter(
-            x=[None], y=[None],
-            mode='markers',
-            marker=dict(color=self.colors['walls'], size=15, symbol='square'),
-            name='MUR',
-            showlegend=True
-        ))
-    
-    def _set_clean_layout(self, fig: go.Figure, bounds: Dict):
-        """Set clean layout matching your reference images"""
-        min_x, max_x = bounds.get('min_x', 0), bounds.get('max_x', 100)
-        min_y, max_y = bounds.get('min_y', 0), bounds.get('max_y', 100)
-        
-        print(f"DEBUG: Setting layout bounds: x=[{min_x}, {max_x}], y=[{min_y}, {max_y}]")
-        
-        # Calculate proper padding based on the actual data range
-        width = max_x - min_x
-        height = max_y - min_y
-        padding = max(0.5, width * 0.1, height * 0.1)
-        
-        fig.update_layout(
-            title={
-                'text': "Floor Plan Analysis",
-                'x': 0.5,
-                'font': {'size': 20, 'family': 'Arial', 'color': '#000000'}
-            },
-            xaxis=dict(
-                range=[min_x - padding, max_x + padding],
-                showgrid=False,
-                showticklabels=False,
-                zeroline=False,
-                showline=False
-            ),
-            yaxis=dict(
-                range=[min_y - padding, max_y + padding],
-                showgrid=False,
-                showticklabels=False,
-                zeroline=False,
-                showline=False,
-                scaleanchor="x",
-                scaleratio=1
-            ),
-            plot_bgcolor='white',
-            paper_bgcolor='white',
-            showlegend=True,
-            legend=dict(
-                x=0.8,
-                y=0.95,
-                bgcolor="rgba(255, 255, 255, 0.9)",
-                bordercolor="rgba(0, 0, 0, 0.1)",
-                borderwidth=1,
-                font=dict(size=12, family='Arial')
-            ),
-            width=1200,
-            height=800,
-            margin=dict(l=20, r=20, t=60, b=20)
-        )
-    
-    def _add_walls_from_entities(self, fig: go.Figure, entities: List, bounds: Dict):
-        """Create walls from DXF entities"""
-        print(f"DEBUG: Processing {len(entities)} entities for walls")
-        
-        # Extract LINE entities as walls
-        for entity in entities:
-            if entity.get('type') == 'LINE':
-                start = entity.get('start', [0, 0])
-                end = entity.get('end', [100, 100])
-                
-                print(f"DEBUG: Adding wall from {start} to {end}")
-                
-                fig.add_trace(go.Scatter(
-                    x=[start[0], end[0]],
-                    y=[start[1], end[1]],
-                    mode='lines',
-                    line=dict(color=self.colors['walls'], width=3),
-                    showlegend=False,
-                    hoverinfo='skip'
-                ))
-            elif entity.get('type') == 'POLYLINE':
-                # Handle polylines as walls
-                points = entity.get('points', [])
-                if len(points) >= 2:
-                    x_coords = [p[0] for p in points]
-                    y_coords = [p[1] for p in points]
-                    
-                    fig.add_trace(go.Scatter(
-                        x=x_coords,
-                        y=y_coords,
-                        mode='lines',
-                        line=dict(color=self.colors['walls'], width=3),
-                        showlegend=False,
-                        hoverinfo='skip'
-                    ))
-            elif entity.get('type') == 'LWPOLYLINE':
-                # Handle lightweight polylines
-                points = entity.get('points', [])
-                if len(points) >= 2:
-                    x_coords = [p[0] for p in points]
-                    y_coords = [p[1] for p in points]
-                    
-                    fig.add_trace(go.Scatter(
-                        x=x_coords,
-                        y=y_coords,
-                        mode='lines',
-                        line=dict(color=self.colors['walls'], width=3),
-                        showlegend=False,
-                        hoverinfo='skip'
-                    ))
+
     
