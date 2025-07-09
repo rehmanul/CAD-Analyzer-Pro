@@ -1,0 +1,99 @@
+2025-07-09T22:13:40.77145347Z ==> Cloning from https://github.com/rehmanul/CAD-Analyzer-Pro
+2025-07-09T22:13:41.302194932Z ==> Checking out commit 802c06bf558e9268a1409182a1c84df6bfae04ce in branch main
+2025-07-09T22:13:42.382465563Z ==> Downloading cache...
+2025-07-09T22:13:58.878808675Z ==> Transferred 645MB in 9s. Extraction took 6s.
+2025-07-09T22:14:02.989739892Z ==> Using Python version 3.13.4 (default)
+2025-07-09T22:14:03.018549149Z ==> Docs on specifying a Python version: https://render.com/docs/python-version
+2025-07-09T22:14:06.738512526Z ==> Using Poetry version 2.1.3 (default)
+2025-07-09T22:14:06.791732386Z ==> Docs on specifying a Poetry version: https://render.com/docs/poetry-version
+2025-07-09T22:14:06.81143355Z ==> Running build command 'pip install -r requirements_render.txt'...
+2025-07-09T22:14:07.523315108Z Collecting streamlit==1.36.0 (from -r requirements_render.txt (line 3))
+2025-07-09T22:14:07.524742664Z   Using cached streamlit-1.36.0-py2.py3-none-any.whl.metadata (8.5 kB)
+2025-07-09T22:14:07.744493581Z Collecting plotly==5.24.1 (from -r requirements_render.txt (line 4))
+2025-07-09T22:14:07.74583021Z   Using cached plotly-5.24.1-py3-none-any.whl.metadata (7.3 kB)
+2025-07-09T22:14:07.966184162Z Collecting pandas==2.2.3 (from -r requirements_render.txt (line 5))
+2025-07-09T22:14:07.967570454Z   Using cached pandas-2.2.3-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (89 kB)
+2025-07-09T22:14:08.280111974Z Collecting numpy==1.26.4 (from -r requirements_render.txt (line 6))
+2025-07-09T22:14:08.280250854Z   Using cached numpy-1.26.4-cp313-cp313-linux_x86_64.whl
+2025-07-09T22:14:08.455067473Z Collecting shapely==2.1.0 (from -r requirements_render.txt (line 7))
+2025-07-09T22:14:08.456369479Z   Using cached shapely-2.1.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (6.8 kB)
+2025-07-09T22:14:08.66696594Z Collecting scipy==1.13.1 (from -r requirements_render.txt (line 8))
+2025-07-09T22:14:08.66831886Z   Using cached scipy-1.13.1.tar.gz (57.2 MB)
+2025-07-09T22:14:12.651599232Z   Installing build dependencies: started
+2025-07-09T22:14:16.52880155Z   Installing build dependencies: finished with status 'done'
+2025-07-09T22:14:16.529650283Z   Getting requirements to build wheel: started
+2025-07-09T22:14:16.70809767Z   Getting requirements to build wheel: finished with status 'done'
+2025-07-09T22:14:16.710170493Z   Installing backend dependencies: started
+2025-07-09T22:14:17.291136134Z   Installing backend dependencies: finished with status 'done'
+2025-07-09T22:14:17.291636931Z   Preparing metadata (pyproject.toml): started
+2025-07-09T22:14:19.862152679Z   Preparing metadata (pyproject.toml): finished with status 'error'
+2025-07-09T22:14:19.869910512Z   error: subprocess-exited-with-error
+2025-07-09T22:14:19.869931783Z   
+2025-07-09T22:14:19.869937174Z   × Preparing metadata (pyproject.toml) did not run successfully.
+2025-07-09T22:14:19.869942264Z   │ exit code: 1
+2025-07-09T22:14:19.869946924Z   ╰─> [53 lines of output]
+2025-07-09T22:14:19.869952075Z       + meson setup /tmp/pip-install-rt6fz_lg/scipy_d1bfdd6871944d20bf1be32904c14ca9 /tmp/pip-install-rt6fz_lg/scipy_d1bfdd6871944d20bf1be32904c14ca9/.mesonpy-624obq5g -Dbuildtype=release -Db_ndebug=if-release -Db_vscrt=md --native-file=/tmp/pip-install-rt6fz_lg/scipy_d1bfdd6871944d20bf1be32904c14ca9/.mesonpy-624obq5g/meson-python-native-file.ini
+2025-07-09T22:14:19.869957935Z       The Meson build system
+2025-07-09T22:14:19.869962096Z       Version: 1.8.2
+2025-07-09T22:14:19.869967186Z       Source dir: /tmp/pip-install-rt6fz_lg/scipy_d1bfdd6871944d20bf1be32904c14ca9
+2025-07-09T22:14:19.869972556Z       Build dir: /tmp/pip-install-rt6fz_lg/scipy_d1bfdd6871944d20bf1be32904c14ca9/.mesonpy-624obq5g
+2025-07-09T22:14:19.869976637Z       Build type: native build
+2025-07-09T22:14:19.869980977Z       Project name: scipy
+2025-07-09T22:14:19.869985137Z       Project version: 1.13.1
+2025-07-09T22:14:19.869989418Z       C compiler for the host machine: cc (gcc 12.2.0 "cc (Debian 12.2.0-14+deb12u1) 12.2.0")
+2025-07-09T22:14:19.870010339Z       C linker for the host machine: cc ld.bfd 2.40
+2025-07-09T22:14:19.870013319Z       C++ compiler for the host machine: c++ (gcc 12.2.0 "c++ (Debian 12.2.0-14+deb12u1) 12.2.0")
+2025-07-09T22:14:19.8700161Z       C++ linker for the host machine: c++ ld.bfd 2.40
+2025-07-09T22:14:19.8700188Z       Cython compiler for the host machine: cython (cython 3.0.12)
+2025-07-09T22:14:19.87002142Z       Host machine cpu family: x86_64
+2025-07-09T22:14:19.87002393Z       Host machine cpu: x86_64
+2025-07-09T22:14:19.87002661Z       Program python found: YES (/opt/render/project/src/.venv/bin/python)
+2025-07-09T22:14:19.870029341Z       Found pkg-config: YES (/usr/bin/pkg-config) 1.8.1
+2025-07-09T22:14:19.870032061Z       Run-time dependency python found: YES 3.13
+2025-07-09T22:14:19.870034701Z       Program cython found: YES (/tmp/pip-build-env-x625qgkr/overlay/bin/cython)
+2025-07-09T22:14:19.870037101Z       Compiler for C supports arguments -Wno-unused-but-set-variable: YES
+2025-07-09T22:14:19.870039151Z       Compiler for C supports arguments -Wno-unused-function: YES
+2025-07-09T22:14:19.870041362Z       Compiler for C supports arguments -Wno-conversion: YES
+2025-07-09T22:14:19.870043702Z       Compiler for C supports arguments -Wno-misleading-indentation: YES
+2025-07-09T22:14:19.870045922Z       Library m found: YES
+2025-07-09T22:14:19.870048182Z       
+2025-07-09T22:14:19.870051512Z       ../meson.build:78:0: ERROR: Unknown compiler(s): [['gfortran'], ['flang-new'], ['flang'], ['nvfortran'], ['pgfortran'], ['ifort'], ['ifx'], ['g95']]
+2025-07-09T22:14:19.870054803Z       The following exception(s) were encountered:
+2025-07-09T22:14:19.870057413Z       Running `gfortran --help` gave "[Errno 2] No such file or directory: 'gfortran'"
+2025-07-09T22:14:19.870059853Z       Running `gfortran --version` gave "[Errno 2] No such file or directory: 'gfortran'"
+2025-07-09T22:14:19.870062733Z       Running `gfortran -V` gave "[Errno 2] No such file or directory: 'gfortran'"
+2025-07-09T22:14:19.870065283Z       Running `flang-new --help` gave "[Errno 2] No such file or directory: 'flang-new'"
+2025-07-09T22:14:19.870067843Z       Running `flang-new --version` gave "[Errno 2] No such file or directory: 'flang-new'"
+2025-07-09T22:14:19.870070344Z       Running `flang-new -V` gave "[Errno 2] No such file or directory: 'flang-new'"
+2025-07-09T22:14:19.870072684Z       Running `flang --help` gave "[Errno 2] No such file or directory: 'flang'"
+2025-07-09T22:14:19.870074924Z       Running `flang --version` gave "[Errno 2] No such file or directory: 'flang'"
+2025-07-09T22:14:19.870077654Z       Running `flang -V` gave "[Errno 2] No such file or directory: 'flang'"
+2025-07-09T22:14:19.870080374Z       Running `nvfortran --help` gave "[Errno 2] No such file or directory: 'nvfortran'"
+2025-07-09T22:14:19.870082725Z       Running `nvfortran --version` gave "[Errno 2] No such file or directory: 'nvfortran'"
+2025-07-09T22:14:19.870085625Z       Running `nvfortran -V` gave "[Errno 2] No such file or directory: 'nvfortran'"
+2025-07-09T22:14:19.870088195Z       Running `pgfortran --help` gave "[Errno 2] No such file or directory: 'pgfortran'"
+2025-07-09T22:14:19.870090735Z       Running `pgfortran --version` gave "[Errno 2] No such file or directory: 'pgfortran'"
+2025-07-09T22:14:19.870093115Z       Running `pgfortran -V` gave "[Errno 2] No such file or directory: 'pgfortran'"
+2025-07-09T22:14:19.870095586Z       Running `ifort --help` gave "[Errno 2] No such file or directory: 'ifort'"
+2025-07-09T22:14:19.870098386Z       Running `ifort --version` gave "[Errno 2] No such file or directory: 'ifort'"
+2025-07-09T22:14:19.870101036Z       Running `ifort -V` gave "[Errno 2] No such file or directory: 'ifort'"
+2025-07-09T22:14:19.870108567Z       Running `ifx --help` gave "[Errno 2] No such file or directory: 'ifx'"
+2025-07-09T22:14:19.870111657Z       Running `ifx --version` gave "[Errno 2] No such file or directory: 'ifx'"
+2025-07-09T22:14:19.870114157Z       Running `ifx -V` gave "[Errno 2] No such file or directory: 'ifx'"
+2025-07-09T22:14:19.870116807Z       Running `g95 --help` gave "[Errno 2] No such file or directory: 'g95'"
+2025-07-09T22:14:19.870119477Z       Running `g95 --version` gave "[Errno 2] No such file or directory: 'g95'"
+2025-07-09T22:14:19.870122027Z       Running `g95 -V` gave "[Errno 2] No such file or directory: 'g95'"
+2025-07-09T22:14:19.870124758Z       
+2025-07-09T22:14:19.870143589Z       A full log can be found at /tmp/pip-install-rt6fz_lg/scipy_d1bfdd6871944d20bf1be32904c14ca9/.mesonpy-624obq5g/meson-logs/meson-log.txt
+2025-07-09T22:14:19.870146839Z       [end of output]
+2025-07-09T22:14:19.870149459Z   
+2025-07-09T22:14:19.8701518Z   note: This error originates from a subprocess, and is likely not a problem with pip.
+2025-07-09T22:14:19.879043086Z error: metadata-generation-failed
+2025-07-09T22:14:19.879057177Z 
+2025-07-09T22:14:19.879060548Z × Encountered error while generating package metadata.
+2025-07-09T22:14:19.879063618Z ╰─> See above for output.
+2025-07-09T22:14:19.879065608Z 
+2025-07-09T22:14:19.879068298Z note: This is an issue with the package mentioned above, not pip.
+2025-07-09T22:14:19.879070468Z hint: See above for details.
+2025-07-09T22:14:20.585945377Z ==> Build failed 😞
+2025-07-09T22:14:20.585959108Z ==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys

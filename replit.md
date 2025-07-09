@@ -33,6 +33,11 @@ Preferred communication style: Simple, everyday language.
 ### Current Issues
 - Dark theme text visibility in file uploader still needs resolution
 
+### Bug Fixes
+- Fixed duplicate widget key error for 3D view toggles by using unique prefixes
+- Improved DXF file upload handling with multiple fallback processors
+- Enhanced error handling for file processing
+
 ### Canvas Improvements
 - Tripled visualization canvas size from 600px to 1800px for better floor plan visibility
 - Enhanced 3D visualization canvas size for improved detail viewing

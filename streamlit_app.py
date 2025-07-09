@@ -704,19 +704,25 @@ class CADAnalyzerApp:
         """Create advanced floor plan visualization with 3D rendering capabilities"""
         mode = st.session_state.get('visualization_mode', 'base')
         
+        # Get current tab context for unique keys
+        import inspect
+        frame = inspect.currentframe()
+        caller_name = frame.f_back.f_code.co_name
+        unique_prefix = f"{caller_name}_{mode}"
+        
         # Add 3D visualization option
         col1, col2 = st.columns([3, 1])
         with col2:
-            view_3d = st.checkbox("🎛️ 3D View", value=False, key="3d_view_toggle")
+            view_3d = st.checkbox("🎛️ 3D View", value=False, key=f"{unique_prefix}_3d_view_toggle")
             if view_3d:
                 render_quality = st.selectbox(
                     "Quality",
                     ["Standard", "High", "Ultra"],
                     index=1,
-                    key="3d_quality"
+                    key=f"{unique_prefix}_3d_quality"
                 )
-                show_wireframe = st.checkbox("Wireframe", value=False, key="wireframe_toggle")
-                enable_shadows = st.checkbox("Shadows", value=True, key="shadows_toggle")
+                show_wireframe = st.checkbox("Wireframe", value=False, key=f"{unique_prefix}_wireframe_toggle")
+                enable_shadows = st.checkbox("Shadows", value=True, key=f"{unique_prefix}_shadows_toggle")
 
         try:
             # Check if 3D view is enabled
@@ -1182,8 +1188,8 @@ class CADAnalyzerApp:
                 st.session_state.analysis_results, 
                 st.session_state.placed_ilots, 
                 st.session_state.corridors,
-                show_wireframe=st.checkbox("Show Wireframe", value=False, key="results_wireframe"),
-                enable_shadows=st.checkbox("Enable Shadows", value=True, key="results_shadows")
+                show_wireframe=st.checkbox("Show Wireframe", value=False, key="results_export_wireframe"),
+                enable_shadows=st.checkbox("Enable Shadows", value=True, key="results_export_shadows")
             )
             st.plotly_chart(fig, use_container_width=True, height=1800)
             
