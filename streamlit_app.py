@@ -37,6 +37,7 @@ from proper_dxf_processor import ProperDXFProcessor
 from fast_dxf_processor import FastDXFProcessor
 from real_dxf_processor import RealDXFProcessor
 from smart_floor_plan_detector import SmartFloorPlanDetector
+from floor_plan_extractor import FloorPlanExtractor
 from fast_architectural_visualizer import FastArchitecturalVisualizer
 from empty_plan_visualizer import EmptyPlanVisualizer
 from data_validator import DataValidator
@@ -257,6 +258,7 @@ class CADAnalyzerApp:
         self.fast_dxf_processor = FastDXFProcessor(timeout_seconds=8)  # For large files
         self.real_dxf_processor = RealDXFProcessor()  # For real architectural data
         self.smart_floor_detector = SmartFloorPlanDetector()  # For floor plan detection from multi-view DXF
+        self.floor_plan_extractor = FloorPlanExtractor()  # For precise floor plan extraction
         self.fast_visualizer = FastArchitecturalVisualizer()  # For fast rendering
         self.empty_plan_visualizer = EmptyPlanVisualizer()  # For clean empty plan view
         self.ilot_placer = OptimizedIlotPlacer()
@@ -397,8 +399,8 @@ class CADAnalyzerApp:
                     # Use smart floor plan detector for DXF files (extracts main floor plan only)
                     if uploaded_file.name.lower().endswith('.dxf'):
                         file_size_mb = len(file_content) / (1024 * 1024)
-                        st.info(f"Processing DXF file ({file_size_mb:.1f}MB) - detecting and extracting main floor plan...")
-                        result = self.smart_floor_detector.process_dxf_file(file_content, uploaded_file.name)
+                        st.info(f"Processing DXF file ({file_size_mb:.1f}MB) - extracting main floor plan...")
+                        result = self.floor_plan_extractor.process_dxf_file(file_content, uploaded_file.name)
                     else:
                         # Use ultra-high performance analyzer for other files
                         result = self.floor_analyzer.process_file_ultra_fast(file_content, uploaded_file.name)
