@@ -27,6 +27,7 @@ from optimized_dxf_processor import OptimizedDXFProcessor
 from optimized_ilot_placer import OptimizedIlotPlacer
 from client_expected_visualizer import ClientExpectedVisualizer
 from optimized_corridor_generator import OptimizedCorridorGenerator
+from modern_visualizer import ModernVisualizer
 
 # Page configuration
 st.set_page_config(
@@ -36,52 +37,200 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# CSS Styling - Dark theme compatible
+# Modern Professional CSS Styling
 st.markdown("""
 <style>
-    .section-header {
-        background: linear-gradient(90deg, #1e40af 0%, #3b82f6 100%);
-        padding: 1rem;
-        border-radius: 8px;
-        border-left: 4px solid #60a5fa;
-        margin: 1rem 0;
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    /* Global Styling */
+    .main {
+        font-family: 'Inter', sans-serif;
+    }
+    
+    /* Modern Hero Section */
+    .hero-section {
+        background: linear-gradient(135deg, rgba(67, 56, 202, 0.9), rgba(99, 102, 241, 0.9)), 
+                    url('https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=1200');
+        background-size: cover;
+        background-position: center;
         color: white;
-        font-weight: bold;
+        padding: 3rem 2rem;
+        border-radius: 16px;
+        margin-bottom: 2rem;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        text-align: center;
     }
+    
+    .hero-title {
+        font-size: 3.5rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        text-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        letter-spacing: -0.02em;
+    }
+    
+    .hero-subtitle {
+        font-size: 1.25rem;
+        font-weight: 400;
+        opacity: 0.9;
+        margin-bottom: 0;
+        line-height: 1.6;
+    }
+    
+    /* Modern Upload Section */
+    .upload-section {
+        background: linear-gradient(145deg, #ffffff, #f8fafc);
+        border: 2px dashed #d1d5db;
+        border-radius: 16px;
+        padding: 2rem;
+        text-align: center;
+        margin: 2rem 0;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    .upload-section:hover {
+        border-color: #6366f1;
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Enhanced Sidebar */
+    .sidebar-section {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin: 1rem 0;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(229, 231, 235, 0.5);
+    }
+    
+    .sidebar-header {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #e5e7eb;
+    }
+    
+    /* Modern Cards and Metrics */
     .metric-card {
-        background: rgba(59, 130, 246, 0.1);
-        padding: 1rem;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        border-left: 4px solid #3b82f6;
-        backdrop-filter: blur(10px);
+        background: linear-gradient(145deg, #ffffff, #f9fafb);
+        padding: 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e5e7eb;
+        margin: 1rem 0;
+        transition: transform 0.2s ease;
     }
+    
+    .metric-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Success and Error Messages */
     .success-message {
-        background: rgba(34, 197, 94, 0.2);
-        border: 2px solid #22c55e;
-        color: #22c55e;
-        padding: 1rem;
-        border-radius: 8px;
+        background: linear-gradient(145deg, #ecfdf5, #d1fae5);
+        border: 2px solid #10b981;
+        color: #065f46;
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
         margin: 1rem 0;
-        font-weight: bold;
+        font-weight: 500;
+        box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.1);
     }
+    
     .warning-message {
-        background: rgba(251, 146, 60, 0.2);
-        border: 2px solid #fb923c;
-        color: #fb923c;
-        padding: 1rem;
-        border-radius: 8px;
+        background: linear-gradient(145deg, #fffbeb, #fef3c7);
+        border: 2px solid #f59e0b;
+        color: #92400e;
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
         margin: 1rem 0;
-        font-weight: bold;
+        font-weight: 500;
+        box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.1);
     }
-    /* Enhanced sidebar styling */
-    .sidebar .sidebar-content {
-        background: rgba(30, 58, 138, 0.1);
+    
+    .error-message {
+        background: linear-gradient(145deg, #fef2f2, #fecaca);
+        border: 2px solid #ef4444;
+        color: #991b1b;
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        margin: 1rem 0;
+        font-weight: 500;
+        box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.1);
+    }
+    
+    /* Modern Buttons */
+    .stButton > button {
+        background: linear-gradient(145deg, #6366f1, #4f46e5);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 500;
+        font-family: 'Inter', sans-serif;
+        transition: all 0.2s ease;
+        box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.3);
+    }
+    
+    .stButton > button:hover {
+        background: linear-gradient(145deg, #4f46e5, #4338ca);
+        transform: translateY(-1px);
+        box-shadow: 0 10px 25px -3px rgba(99, 102, 241, 0.4);
+    }
+    
+    /* Tab Styling */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        background: rgba(249, 250, 251, 0.8);
+        padding: 0.5rem;
+        border-radius: 12px;
         backdrop-filter: blur(10px);
     }
-    /* Better contrast for text */
-    h1, h2, h3, p {
-        color: inherit !important;
+    
+    .stTabs [data-baseweb="tab"] {
+        border-radius: 8px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        background: linear-gradient(145deg, #6366f1, #4f46e5);
+        color: white;
+        box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.3);
+    }
+    
+    /* Professional Typography */
+    h1, h2, h3 {
+        font-family: 'Inter', sans-serif;
+        font-weight: 600;
+        color: #1f2937;
+    }
+    
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #1f2937;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    /* Modern Plotly Container */
+    .plot-container {
+        background: white;
+        border-radius: 16px;
+        padding: 1rem;
+        box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(229, 231, 235, 0.5);
+        margin: 1rem 0;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -93,6 +242,7 @@ class CADAnalyzerApp:
         self.ilot_placer = OptimizedIlotPlacer()
         self.corridor_generator = OptimizedCorridorGenerator()
         self.visualizer = ClientExpectedVisualizer()
+        # self.modern_visualizer = ModernVisualizer()
         
         # Initialize session state
         if 'analysis_results' not in st.session_state:
@@ -106,13 +256,21 @@ class CADAnalyzerApp:
 
     def run(self):
         """Run the main application"""
-        # Sidebar with settings
+        # Enhanced Sidebar with modern styling
         with st.sidebar:
-            st.markdown("## 🎛️ Settings & Controls")
+            st.markdown("""
+            <div class="sidebar-section">
+                <div class="sidebar-header">🎛️ Settings & Controls</div>
+            </div>
+            """, unsafe_allow_html=True)
             
             # Îlot Size Distribution Settings
-            st.markdown("### 📊 Îlot Size Distribution")
-            st.markdown("**Client Requirements:**")
+            st.markdown("""
+            <div class="sidebar-section">
+                <div class="sidebar-header">📊 Îlot Size Distribution</div>
+                <p style="color: #6b7280; margin-bottom: 1rem;"><strong>Client Requirements:</strong></p>
+            </div>
+            """, unsafe_allow_html=True)
             size_0_1_pct = st.slider("0-1 m² (Small - Yellow)", 5, 20, 10, key="size_0_1")
             size_1_3_pct = st.slider("1-3 m² (Medium - Orange)", 15, 35, 25, key="size_1_3") 
             size_3_5_pct = st.slider("3-5 m² (Large - Green)", 20, 40, 30, key="size_3_5")
@@ -122,12 +280,20 @@ class CADAnalyzerApp:
             if total_pct != 100:
                 st.error(f"Total must be 100%. Current: {total_pct}%")
             
-            st.markdown("### 🛤️ Spacing Settings")
+            st.markdown("""
+            <div class="sidebar-section">
+                <div class="sidebar-header">🛤️ Spacing Settings</div>
+            </div>
+            """, unsafe_allow_html=True)
             min_spacing = st.slider("Minimum Spacing (m)", 0.5, 3.0, 1.0, key="min_spacing")
             wall_clearance = st.slider("Wall Clearance (m)", 0.3, 2.0, 0.5, key="wall_clearance")
             corridor_width = st.slider("Corridor Width (m)", 1.0, 3.0, 1.5, key="corridor_width")
             
-            st.markdown("### 🎯 Optimization")
+            st.markdown("""
+            <div class="sidebar-section">
+                <div class="sidebar-header">🎯 Optimization</div>
+            </div>
+            """, unsafe_allow_html=True)
             utilization_target = st.slider("Space Utilization (%)", 50, 90, 70, key="utilization")
             
             # Store settings in session state
@@ -142,18 +308,13 @@ class CADAnalyzerApp:
                 'utilization_target': utilization_target / 100
             }
 
-        # Main header with better visibility
+        # Modern Hero Section
         st.markdown("""
-        <div style="background: linear-gradient(90deg, #1e3a8a 0%, #3b82f6 100%); 
-                    padding: 2rem; 
-                    border-radius: 15px; 
-                    color: white; 
-                    text-align: center; 
-                    margin-bottom: 2rem;
-                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-            <h1 style="margin: 0; font-size: 2.5em;">🏨 CAD Analyzer Pro</h1>
-            <p style="margin: 0.5rem 0 0 0; font-size: 1.2em; opacity: 0.9;">
-                Professional Hotel Floor Plan Analysis with Îlot Placement & Corridor Generation
+        <div class="hero-section">
+            <h1 class="hero-title">🏨 CAD Analyzer Pro</h1>
+            <p class="hero-subtitle">
+                Professional Floor Plan Analysis & Hotel Layout Optimization
+                <br>Advanced îlot placement • Intelligent corridor generation • Export capabilities
             </p>
         </div>
         """, unsafe_allow_html=True)
@@ -182,12 +343,20 @@ class CADAnalyzerApp:
         """Render floor plan analysis interface"""
         st.markdown('<div class="section-header"><h2>📋 Floor Plan Analysis</h2></div>', unsafe_allow_html=True)
 
-        # File upload section
-        st.subheader("Upload Floor Plan")
+        # Modern File Upload Section
+        st.markdown("""
+        <div class="upload-section">
+            <h3 style="color: #374151; margin-bottom: 1rem;">📁 Upload Floor Plan</h3>
+            <p style="color: #6b7280; margin-bottom: 1.5rem;">
+                Drop your DXF, DWG, PDF, or image files here for professional analysis
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+        
         uploaded_file = st.file_uploader(
             "Choose a floor plan file",
             type=['dxf', 'dwg', 'pdf', 'png', 'jpg', 'jpeg'],
-            help="Upload your floor plan file for analysis"
+            help="Supported formats: DXF, DWG, PDF, PNG, JPG • Max size: 50MB"
         )
 
         if uploaded_file is not None:
