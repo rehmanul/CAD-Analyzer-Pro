@@ -29,6 +29,7 @@ from simple_ilot_placer import SimpleIlotPlacer
 from client_expected_visualizer import ClientExpectedVisualizer
 from optimized_corridor_generator import OptimizedCorridorGenerator
 from professional_floor_plan_visualizer import ProfessionalFloorPlanVisualizer
+from reference_style_visualizer import ReferenceStyleVisualizer
 from data_validator import DataValidator
 
 # Page configuration
@@ -246,6 +247,7 @@ class CADAnalyzerApp:
         self.corridor_generator = OptimizedCorridorGenerator()
         self.visualizer = ClientExpectedVisualizer()
         self.professional_visualizer = ProfessionalFloorPlanVisualizer()
+        self.reference_visualizer = ReferenceStyleVisualizer()  # Matches your reference images
         self.data_validator = DataValidator()
         
         # Initialize session state
@@ -431,15 +433,9 @@ class CADAnalyzerApp:
             st.plotly_chart(fig, use_container_width=True, height=600)
 
     def create_floor_plan_visualization(self, result):
-        """Create floor plan visualization matching client expected output"""
-        # Use client expected visualizer for consistent output
-        fig = self.visualizer.create_client_expected_visualization(
-            analysis_data=result,
-            ilots=[],
-            corridors=[],
-            show_measurements=False
-        )
-        
+        """Create floor plan visualization matching your reference images"""
+        # Use reference style visualizer for exact match to your images
+        fig = self.reference_visualizer.create_empty_floor_plan(result)
         return fig
 
     def render_ilot_placement_tab(self):
@@ -732,27 +728,37 @@ class CADAnalyzerApp:
                 st.info("Use the camera icon in the plot toolbar above to save the visualization as an image.")
 
     def create_complete_visualization(self, use_professional=True, show_3d=False):
-        """Create complete visualization with modern professional styling"""
+        """Create complete visualization matching your reference images"""
         result = st.session_state.analysis_results
         ilots = st.session_state.placed_ilots
         corridors = st.session_state.corridors
         
-        if use_professional:
-            # Use professional visualizer for modern styling matching reference images
+        if show_3d:
+            # Use professional visualizer for 3D view
             fig = self.professional_visualizer.create_professional_floor_plan(
                 analysis_data=result,
                 ilots=ilots,
                 corridors=corridors,
-                show_3d=show_3d
+                show_3d=True
             )
         else:
-            # Use client expected visualizer for exact match to original requirements
-            fig = self.visualizer.create_client_expected_visualization(
-                analysis_data=result,
-                ilots=ilots,
-                corridors=corridors,
-                show_measurements=True
-            )
+            # Use reference style visualizer to match your exact images
+            if corridors:
+                # Image 3: With corridors
+                fig = self.reference_visualizer.create_floor_plan_with_corridors(
+                    analysis_data=result,
+                    ilots=ilots,
+                    corridors=corridors
+                )
+            elif ilots:
+                # Image 2: With îlots
+                fig = self.reference_visualizer.create_floor_plan_with_ilots(
+                    analysis_data=result,
+                    ilots=ilots
+                )
+            else:
+                # Image 1: Empty plan
+                fig = self.reference_visualizer.create_empty_floor_plan(result)
         
         return fig
 
