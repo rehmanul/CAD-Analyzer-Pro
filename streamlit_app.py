@@ -34,6 +34,7 @@ from architectural_floor_plan_visualizer import ArchitecturalFloorPlanVisualizer
 from architectural_room_visualizer import ArchitecturalRoomVisualizer
 from exact_reference_visualizer import ExactReferenceVisualizer
 from proper_dxf_processor import ProperDXFProcessor
+from fast_dxf_processor import FastDXFProcessor
 from data_validator import DataValidator
 
 # Page configuration
@@ -247,6 +248,7 @@ class CADAnalyzerApp:
         self.floor_analyzer = UltraHighPerformanceAnalyzer()
         self.dxf_processor = OptimizedDXFProcessor()
         self.proper_dxf_processor = ProperDXFProcessor()  # For proper architectural extraction
+        self.fast_dxf_processor = FastDXFProcessor(timeout_seconds=15)  # For large files
         self.ilot_placer = OptimizedIlotPlacer()
         self.simple_placer = SimpleIlotPlacer()  # Backup placer
         self.corridor_generator = OptimizedCorridorGenerator()
@@ -380,9 +382,14 @@ class CADAnalyzerApp:
                 try:
                     file_content = uploaded_file.read()
                     
-                    # Process using proper DXF processor for architectural structure
+                    # Process using fast DXF processor for large files
                     if uploaded_file.name.lower().endswith('.dxf'):
-                        result = self.proper_dxf_processor.process_dxf_file(file_content, uploaded_file.name)
+                        file_size_mb = len(file_content) / (1024 * 1024)
+                        if file_size_mb > 10:  # Large file (>10MB)
+                            st.info(f"Processing large DXF file ({file_size_mb:.1f}MB) with timeout protection...")
+                            result = self.fast_dxf_processor.process_dxf_file(file_content, uploaded_file.name)
+                        else:
+                            result = self.proper_dxf_processor.process_dxf_file(file_content, uploaded_file.name)
                     else:
                         # Use ultra-high performance analyzer for other files
                         result = self.floor_analyzer.process_file_ultra_fast(file_content, uploaded_file.name)
