@@ -220,26 +220,83 @@ class FastArchitecturalVisualizer:
             )
     
     def create_floor_plan_with_ilots(self, analysis_data: Dict, ilots: List[Dict]) -> go.Figure:
-        """Create floor plan with îlots"""
+        """Create floor plan with red rectangular îlots like your reference image"""
         fig = self.create_fast_floor_plan(analysis_data)
         
-        # Add îlots as shapes (faster than scatter)
+        # Add red rectangular îlots exactly like your printed floor plan
         for ilot in ilots:
             x = ilot.get('x', 0)
-            y = ilot.get('y', 0)
+            y = ilot.get('y', 0)  
             width = ilot.get('width', 2)
             height = ilot.get('height', 2)
             
+            # Create red rectangle with thin border
             fig.add_shape(
                 type="rect",
                 x0=x, y0=y,
                 x1=x + width, y1=y + height,
-                fillcolor=self.colors['ilots'],
+                fillcolor=self.colors['ilots'],  # Red color
                 line=dict(color=self.colors['ilots'], width=1),
-                opacity=0.7
+                opacity=0.8
             )
         
+        # Update legend to include îlots
+        self._add_legend_with_ilots(fig)
+        
         return fig
+    
+    def _add_legend_with_ilots(self, fig: go.Figure):
+        """Add legend with îlots included"""
+        # Clear existing legend annotations
+        fig.layout.annotations = []
+        
+        # Add legend as annotations positioned in top-right
+        legend_x = 0.98
+        legend_y = 0.98
+        
+        # Legend title
+        fig.add_annotation(
+            x=legend_x, y=legend_y,
+            text="<b>LÉGENDE</b>",
+            showarrow=False,
+            xref="paper", yref="paper",
+            xanchor="right", yanchor="top",
+            font=dict(size=14, color="black"),
+            bgcolor="white",
+            bordercolor="black",
+            borderwidth=1
+        )
+        
+        # Legend items including îlots
+        legend_items = [
+            {"color": "#4285F4", "text": "NO ENTREE", "y_offset": -0.05},
+            {"color": "#EA4335", "text": "ENTRÉE/SORTIE", "y_offset": -0.08},
+            {"color": "#EA4335", "text": "ÎLOTS", "y_offset": -0.11},
+            {"color": "#2C2C2C", "text": "MUR", "y_offset": -0.14}
+        ]
+        
+        for item in legend_items:
+            # Color box
+            fig.add_annotation(
+                x=legend_x - 0.08, y=legend_y + item["y_offset"],
+                text="■",
+                showarrow=False,
+                xref="paper", yref="paper",
+                xanchor="center", yanchor="middle",
+                font=dict(size=16, color=item["color"]),
+                bgcolor="white"
+            )
+            
+            # Text label
+            fig.add_annotation(
+                x=legend_x - 0.02, y=legend_y + item["y_offset"],
+                text=item["text"],
+                showarrow=False,
+                xref="paper", yref="paper",
+                xanchor="left", yanchor="middle",
+                font=dict(size=11, color="black"),
+                bgcolor="white"
+            )
     
     def create_complete_floor_plan(self, analysis_data: Dict, ilots: List[Dict], corridors: List[Dict]) -> go.Figure:
         """Create complete floor plan with corridors"""
