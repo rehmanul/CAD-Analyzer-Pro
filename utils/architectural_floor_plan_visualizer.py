@@ -219,16 +219,16 @@ class ArchitecturalFloorPlanVisualizer:
         fig.update_layout(
             title="Floor Plan Visualization",
             title_x=0.5,
-            title_font=dict(size=18, color='#2D3748', family="Arial"),
-            plot_bgcolor='#F8FAFC',  # Perfect light background like reference
+            title_font=dict(size=18, family="Arial"),
+            plot_bgcolor='#F8FAFC',  # Light background that works well in both themes
             paper_bgcolor='white',
             showlegend=True,
             legend=dict(
                 x=1.02, y=1,
-                bgcolor='rgba(255, 255, 255, 0.9)',
+                bgcolor='rgba(255, 255, 255, 0.95)',
                 bordercolor='#E2E8F0',
                 borderwidth=1,
-                font=dict(size=11, family="Arial")
+                font=dict(size=11, family="Arial", color='#2D3748')
             ),
             xaxis=dict(
                 range=[bounds.get('min_x', 0) - padding, bounds.get('max_x', 100) + padding],
@@ -246,7 +246,9 @@ class ArchitecturalFloorPlanVisualizer:
             ),
             width=1200,
             height=800,
-            margin=dict(l=40, r=120, t=60, b=40)
+            margin=dict(l=40, r=120, t=60, b=40),
+            # Ensure good contrast in both light and dark themes
+            font=dict(color='#2D3748')
         )
 
     def _add_perfect_ilots(self, fig: go.Figure, ilots: List[Dict]):

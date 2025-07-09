@@ -66,6 +66,25 @@ st.markdown("""
         font-family: 'Inter', sans-serif;
     }
 
+    /* Theme-aware text colors */
+    :root {
+        --text-primary: #1f2937;
+        --text-secondary: #6b7280;
+        --text-light: #9ca3af;
+        --bg-primary: #ffffff;
+        --bg-secondary: #f9fafb;
+        --border-color: #e5e7eb;
+    }
+
+    [data-theme="dark"] {
+        --text-primary: #f9fafb;
+        --text-secondary: #d1d5db;
+        --text-light: #9ca3af;
+        --bg-primary: #1f2937;
+        --bg-secondary: #374151;
+        --border-color: #4b5563;
+    }
+
     /* Modern Hero Section */
     .hero-section {
         background: linear-gradient(135deg, rgba(67, 56, 202, 0.9), rgba(99, 102, 241, 0.9)), 
@@ -86,6 +105,7 @@ st.markdown("""
         margin-bottom: 1rem;
         text-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
         letter-spacing: -0.02em;
+        color: white !important;
     }
 
     .hero-subtitle {
@@ -94,6 +114,7 @@ st.markdown("""
         opacity: 0.9;
         margin-bottom: 0;
         line-height: 1.6;
+        color: white !important;
     }
 
     /* Modern Upload Section */
@@ -116,33 +137,34 @@ st.markdown("""
 
     /* Enhanced Sidebar */
     .sidebar-section {
-        background: rgba(255, 255, 255, 0.95);
+        background: var(--bg-primary);
         backdrop-filter: blur(10px);
         border-radius: 12px;
         padding: 1.5rem;
         margin: 1rem 0;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        border: 1px solid rgba(229, 231, 235, 0.5);
+        border: 1px solid var(--border-color);
     }
 
     .sidebar-header {
         font-size: 1.1rem;
         font-weight: 600;
-        color: #374151;
+        color: var(--text-primary);
         margin-bottom: 1rem;
         padding-bottom: 0.5rem;
-        border-bottom: 2px solid #e5e7eb;
+        border-bottom: 2px solid var(--border-color);
     }
 
     /* Modern Cards and Metrics */
     .metric-card {
-        background: linear-gradient(145deg, #ffffff, #f9fafb);
+        background: var(--bg-primary);
         padding: 1.5rem;
         border-radius: 12px;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        border: 1px solid #e5e7eb;
+        border: 1px solid var(--border-color);
         margin: 1rem 0;
         transition: transform 0.2s ease;
+        color: var(--text-primary);
     }
 
     .metric-card:hover {
@@ -152,9 +174,9 @@ st.markdown("""
 
     /* Success and Error Messages */
     .success-message {
-        background: linear-gradient(145deg, #ecfdf5, #d1fae5);
+        background: linear-gradient(145deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.2));
         border: 2px solid #10b981;
-        color: #065f46;
+        color: var(--text-primary);
         padding: 1rem 1.5rem;
         border-radius: 12px;
         margin: 1rem 0;
@@ -163,9 +185,9 @@ st.markdown("""
     }
 
     .warning-message {
-        background: linear-gradient(145deg, #fffbeb, #fef3c7);
+        background: linear-gradient(145deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.2));
         border: 2px solid #f59e0b;
-        color: #92400e;
+        color: var(--text-primary);
         padding: 1rem 1.5rem;
         border-radius: 12px;
         margin: 1rem 0;
@@ -174,9 +196,9 @@ st.markdown("""
     }
 
     .error-message {
-        background: linear-gradient(145deg, #fef2f2, #fecaca);
+        background: linear-gradient(145deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.2));
         border: 2px solid #ef4444;
-        color: #991b1b;
+        color: var(--text-primary);
         padding: 1rem 1.5rem;
         border-radius: 12px;
         margin: 1rem 0;
@@ -229,17 +251,31 @@ st.markdown("""
     h1, h2, h3 {
         font-family: 'Inter', sans-serif;
         font-weight: 600;
-        color: #1f2937;
+        color: var(--text-primary) !important;
     }
 
     .section-title {
         font-size: 1.5rem;
         font-weight: 600;
-        color: #1f2937;
+        color: var(--text-primary) !important;
         margin-bottom: 1rem;
         display: flex;
         align-items: center;
         gap: 0.5rem;
+    }
+
+    /* Fix Streamlit default text colors */
+    .stMarkdown, .stText, p, span, div {
+        color: var(--text-primary);
+    }
+
+    /* Fix metric labels and values */
+    [data-testid="metric-container"] {
+        color: var(--text-primary) !important;
+    }
+
+    [data-testid="metric-container"] > div {
+        color: var(--text-primary) !important;
     }
 
     /* Modern Plotly Container */
