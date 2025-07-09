@@ -343,15 +343,7 @@ class CADAnalyzerApp:
         """Render floor plan analysis interface"""
         st.markdown('<div class="section-header"><h2>📋 Floor Plan Analysis</h2></div>', unsafe_allow_html=True)
 
-        # Modern File Upload Section
-        st.markdown("""
-        <div class="upload-section">
-            <h3 style="color: #374151; margin-bottom: 1rem;">📁 Upload Floor Plan</h3>
-            <p style="color: #6b7280; margin-bottom: 1.5rem;">
-                Drop your DXF, DWG, PDF, or image files here for professional analysis
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
+
         
         uploaded_file = st.file_uploader(
             "Choose a floor plan file",
