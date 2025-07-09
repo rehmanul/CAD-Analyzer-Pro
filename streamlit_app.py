@@ -462,11 +462,63 @@ class CADAnalyzerApp:
         
         # Get data
         walls = result.get('walls', [])
+        restricted_areas = result.get('restricted_areas', [])
+        entrances = result.get('entrances', [])
         bounds = result.get('bounds', {})
         
-        print(f"DEBUG: Creating visualization in mode '{mode}' with {len(walls)} walls")
+        print(f"DEBUG: Creating visualization in mode '{mode}' with {len(walls)} walls, {len(restricted_areas)} restricted areas, {len(entrances)} entrances")
         
-        # Add walls first (always show in all modes)
+        # Add background
+        min_x = bounds.get('min_x', 0)
+        max_x = bounds.get('max_x', 100)
+        min_y = bounds.get('min_y', 0)
+        max_y = bounds.get('max_y', 100)
+        
+        # Add light background
+        fig.add_shape(
+            type="rect",
+            x0=min_x, y0=min_y,
+            x1=max_x, y1=max_y,
+            fillcolor='#F5F5F5',
+            line=dict(color='#F5F5F5', width=0),
+            layer="below"
+        )
+        
+        # Add restricted areas (blue zones like your reference)
+        if restricted_areas:
+            for area in restricted_areas:
+                if isinstance(area, dict) and 'bounds' in area:
+                    bounds_data = area['bounds']
+                    fig.add_shape(
+                        type="rect",
+                        x0=bounds_data.get('min_x', 0),
+                        y0=bounds_data.get('min_y', 0),
+                        x1=bounds_data.get('max_x', 10),
+                        y1=bounds_data.get('max_y', 10),
+                        fillcolor='#3B82F6',
+                        line=dict(color='#3B82F6', width=2),
+                        opacity=0.8
+                    )
+        
+        # Add entrance areas (red curves like your reference)
+        if entrances:
+            for entrance in entrances:
+                if isinstance(entrance, dict):
+                    x = entrance.get('x', 0)
+                    y = entrance.get('y', 0)
+                    radius = entrance.get('radius', 5)
+                    
+                    # Create circular entrance marking
+                    fig.add_shape(
+                        type="circle",
+                        x0=x-radius, y0=y-radius,
+                        x1=x+radius, y1=y+radius,
+                        fillcolor='#EF4444',
+                        line=dict(color='#EF4444', width=3),
+                        opacity=0.8
+                    )
+        
+        # Add walls (gray like your reference)
         if walls:
             walls_added = 0
             for wall in walls:
@@ -478,7 +530,7 @@ class CADAnalyzerApp:
                         x=x_coords,
                         y=y_coords,
                         mode='lines',
-                        line=dict(color='#000000', width=3),  # Increased line width
+                        line=dict(color='#6B7280', width=4),  # Gray walls like reference
                         showlegend=False,
                         hoverinfo='skip'
                     ))
@@ -519,11 +571,7 @@ class CADAnalyzerApp:
                         hoverinfo='skip'
                     ))
         
-        # Set up layout
-        min_x = bounds.get('min_x', 0)
-        max_x = bounds.get('max_x', 100)
-        min_y = bounds.get('min_y', 0)
-        max_y = bounds.get('max_y', 100)
+        # Layout is already calculated above for background
         
         # Calculate padding - fix for small coordinate ranges
         width = max_x - min_x if max_x > min_x else 100
@@ -540,32 +588,43 @@ class CADAnalyzerApp:
         fig.update_layout(
             title="Floor Plan Analysis",
             title_x=0.5,
+            title_font_size=18,
             xaxis=dict(
                 range=[min_x - padding, max_x + padding],
                 showgrid=False,
                 showticklabels=False,
-                zeroline=False
+                zeroline=False,
+                visible=False
             ),
             yaxis=dict(
                 range=[min_y - padding, max_y + padding],
                 showgrid=False,
                 showticklabels=False,
                 zeroline=False,
+                visible=False,
                 scaleanchor="x",
                 scaleratio=1
             ),
-            plot_bgcolor='white',
+            plot_bgcolor='#F8F9FA',
             paper_bgcolor='white',
             showlegend=True,
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=1.02,
+                xanchor="right",
+                x=1,
+                font=dict(size=12)
+            ),
             height=600,
-            margin=dict(l=20, r=20, t=60, b=20)
+            margin=dict(l=20, r=20, t=80, b=20)
         )
         
-        # Add legend
+        # Add legend exactly like your reference
         fig.add_trace(go.Scatter(
             x=[None], y=[None],
             mode='markers',
-            marker=dict(color='#3B82F6', size=10),
+            marker=dict(color='#3B82F6', size=12, symbol='square'),
             name='NO ENTREE',
             showlegend=True
         ))
@@ -573,7 +632,7 @@ class CADAnalyzerApp:
         fig.add_trace(go.Scatter(
             x=[None], y=[None],
             mode='markers',
-            marker=dict(color='#EF4444', size=10),
+            marker=dict(color='#EF4444', size=12, symbol='square'),
             name='ENTREE/SORTIE',
             showlegend=True
         ))
@@ -581,7 +640,7 @@ class CADAnalyzerApp:
         fig.add_trace(go.Scatter(
             x=[None], y=[None],
             mode='markers',
-            marker=dict(color='#000000', size=10),
+            marker=dict(color='#6B7280', size=12, symbol='square'),
             name='MUR',
             showlegend=True
         ))
