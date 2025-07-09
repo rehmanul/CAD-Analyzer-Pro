@@ -453,24 +453,133 @@ class CADAnalyzerApp:
 
     def create_floor_plan_visualization(self, result):
         """Create floor plan visualization matching your reference images - Step by step approach"""
+        import plotly.graph_objects as go
+        
         mode = st.session_state.get('visualization_mode', 'base')
         
-        if mode == "base":
-            # Image 1: Empty floor plan (walls, entrances, restricted areas only)
-            fig = self.reference_visualizer.create_empty_floor_plan(result)
-        elif mode == "with_ilots":
-            # Image 2: Floor plan with îlots placed
-            fig = self.reference_visualizer.create_floor_plan_with_ilots(
-                result, st.session_state.placed_ilots
-            )
-        elif mode == "detailed":
-            # Image 3: Complete floor plan with îlots and corridors
-            fig = self.reference_visualizer.create_complete_floor_plan(
-                result, st.session_state.placed_ilots, st.session_state.corridors
-            )
-        else:
-            # Default to base mode
-            fig = self.reference_visualizer.create_empty_floor_plan(result)
+        # Create simplified but effective visualization
+        fig = go.Figure()
+        
+        # Get data
+        walls = result.get('walls', [])
+        bounds = result.get('bounds', {})
+        
+        print(f"DEBUG: Creating visualization in mode '{mode}' with {len(walls)} walls")
+        
+        # Add walls first (always show in all modes)
+        if walls:
+            walls_added = 0
+            for wall in walls:
+                if len(wall) >= 2:
+                    x_coords = [point[0] for point in wall]
+                    y_coords = [point[1] for point in wall]
+                    
+                    fig.add_trace(go.Scatter(
+                        x=x_coords,
+                        y=y_coords,
+                        mode='lines',
+                        line=dict(color='#000000', width=2),
+                        showlegend=False,
+                        hoverinfo='skip'
+                    ))
+                    walls_added += 1
+            print(f"DEBUG: Added {walls_added} wall traces to figure")
+        
+        # Add îlots if in appropriate mode
+        if mode in ['with_ilots', 'detailed'] and st.session_state.placed_ilots:
+            for ilot in st.session_state.placed_ilots:
+                x = ilot.get('x', 0)
+                y = ilot.get('y', 0)
+                width = ilot.get('width', 2)
+                height = ilot.get('height', 2)
+                
+                fig.add_shape(
+                    type="rect",
+                    x0=x, y0=y,
+                    x1=x + width, y1=y + height,
+                    fillcolor='#EF4444',
+                    line=dict(color='#EF4444', width=2),
+                    opacity=0.7
+                )
+        
+        # Add corridors if in detailed mode
+        if mode == 'detailed' and st.session_state.corridors:
+            for corridor in st.session_state.corridors:
+                path = corridor.get('path', [])
+                if len(path) >= 2:
+                    x_coords = [point[0] for point in path]
+                    y_coords = [point[1] for point in path]
+                    
+                    fig.add_trace(go.Scatter(
+                        x=x_coords,
+                        y=y_coords,
+                        mode='lines',
+                        line=dict(color='#EF4444', width=4),
+                        showlegend=False,
+                        hoverinfo='skip'
+                    ))
+        
+        # Set up layout
+        min_x = bounds.get('min_x', 0)
+        max_x = bounds.get('max_x', 100)
+        min_y = bounds.get('min_y', 0)
+        max_y = bounds.get('max_y', 100)
+        
+        # Calculate padding
+        width = max_x - min_x if max_x > min_x else 1000
+        height = max_y - min_y if max_y > min_y else 1000
+        padding = max(width * 0.05, height * 0.05, 500)
+        
+        print(f"DEBUG: Layout bounds - X: [{min_x:.1f}, {max_x:.1f}], Y: [{min_y:.1f}, {max_y:.1f}], Padding: {padding:.1f}")
+        
+        fig.update_layout(
+            title="Floor Plan Analysis",
+            title_x=0.5,
+            xaxis=dict(
+                range=[min_x - padding, max_x + padding],
+                showgrid=False,
+                showticklabels=False,
+                zeroline=False
+            ),
+            yaxis=dict(
+                range=[min_y - padding, max_y + padding],
+                showgrid=False,
+                showticklabels=False,
+                zeroline=False,
+                scaleanchor="x",
+                scaleratio=1
+            ),
+            plot_bgcolor='white',
+            paper_bgcolor='white',
+            showlegend=True,
+            height=600,
+            margin=dict(l=20, r=20, t=60, b=20)
+        )
+        
+        # Add legend
+        fig.add_trace(go.Scatter(
+            x=[None], y=[None],
+            mode='markers',
+            marker=dict(color='#3B82F6', size=10),
+            name='NO ENTREE',
+            showlegend=True
+        ))
+        
+        fig.add_trace(go.Scatter(
+            x=[None], y=[None],
+            mode='markers',
+            marker=dict(color='#EF4444', size=10),
+            name='ENTREE/SORTIE',
+            showlegend=True
+        ))
+        
+        fig.add_trace(go.Scatter(
+            x=[None], y=[None],
+            mode='markers',
+            marker=dict(color='#000000', size=10),
+            name='MUR',
+            showlegend=True
+        ))
         
         return fig
 

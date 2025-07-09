@@ -110,29 +110,40 @@ class ReferenceStyleVisualizer:
         print(f"DEBUG: Adding {len(walls)} walls")
         walls_added = 0
         
+        # Group all wall coordinates to create connected floor plan
+        all_x_coords = []
+        all_y_coords = []
+        
         for wall in walls:
             if len(wall) >= 2:
                 x_coords = [point[0] for point in wall]
                 y_coords = [point[1] for point in wall]
                 
-                print(f"DEBUG: Wall coordinates: {x_coords}, {y_coords}")
-                
-                # Add wall trace with guaranteed visibility
+                # Add individual wall segments
                 fig.add_trace(go.Scatter(
                     x=x_coords,
                     y=y_coords,
                     mode='lines',
                     line=dict(
                         color=self.colors['walls'],
-                        width=4  # Increased width for visibility
+                        width=3
                     ),
                     showlegend=False,
                     hoverinfo='skip',
-                    name='wall'  # Add name for debugging
+                    name='wall'
                 ))
                 walls_added += 1
+                
+                # Collect all coordinates for bounds calculation
+                all_x_coords.extend(x_coords)
+                all_y_coords.extend(y_coords)
         
         print(f"DEBUG: Successfully added {walls_added} wall traces to figure")
+        
+        # Print coordinate ranges for debugging
+        if all_x_coords and all_y_coords:
+            print(f"DEBUG: X range: [{min(all_x_coords):.1f}, {max(all_x_coords):.1f}]")
+            print(f"DEBUG: Y range: [{min(all_y_coords):.1f}, {max(all_y_coords):.1f}]")
     
     def _add_restricted_areas(self, fig: go.Figure, restricted_areas: List):
         """Add blue restricted areas (NO ENTREE)"""
@@ -327,20 +338,20 @@ class ReferenceStyleVisualizer:
             title_font_size=20,
             title_x=0.5,
             xaxis=dict(
-                showgrid=True,  # Enable grid temporarily for debugging
-                gridcolor='lightgray',
+                showgrid=False,
                 zeroline=False,
-                showticklabels=True,  # Show tick labels for debugging
-                range=[min_x - padding, max_x + padding]
+                showticklabels=False,
+                range=[min_x - padding, max_x + padding],
+                visible=True
             ),
             yaxis=dict(
-                showgrid=True,  # Enable grid temporarily for debugging
-                gridcolor='lightgray',
+                showgrid=False,
                 zeroline=False,
-                showticklabels=True,  # Show tick labels for debugging
+                showticklabels=False,
                 range=[min_y - padding, max_y + padding],
                 scaleanchor="x",
-                scaleratio=1
+                scaleratio=1,
+                visible=True
             ),
             plot_bgcolor='white',
             paper_bgcolor='white',
