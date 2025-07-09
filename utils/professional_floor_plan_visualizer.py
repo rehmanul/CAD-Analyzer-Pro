@@ -383,7 +383,7 @@ class ProfessionalFloorPlanVisualizer:
             )
     
     def _add_realistic_3d_room(self, fig: go.Figure, room: Dict, index: int):
-        """Add realistic 3D room with detailed interior styling"""
+        """Add realistic 3D room with solid architectural structures"""
         x = room.get('x', 0)
         y = room.get('y', 0)
         width = room.get('width', 3)
@@ -394,88 +394,68 @@ class ProfessionalFloorPlanVisualizer:
         
         # Realistic color scheme based on room type
         room_colors = {
-            'small': '#f8f6f0',      # Warm cream for small rooms
-            'medium': '#fff8e7',     # Light warm white for medium
-            'large': '#f0f8f0',      # Very light green for large
-            'xlarge': '#f5f0ff'      # Very light lavender for xlarge
+            'small': '#fed7d7',      # Light red/pink for small rooms
+            'medium': '#fefcbf',     # Light yellow for medium
+            'large': '#c6f6d5',      # Light green for large
+            'xlarge': '#e9d8fd'      # Light purple for xlarge
         }
         
         # Floor colors for variety
         floor_colors = {
-            'small': '#d4af37',      # Light wood tone
-            'medium': '#deb887',     # Burlywood
-            'large': '#c8b99c',      # Light taupe
-            'xlarge': '#d3d3d3'      # Light gray
+            'small': '#f7fafc',      # Very light gray
+            'medium': '#f7fafc',     # Very light gray
+            'large': '#f7fafc',      # Very light gray
+            'xlarge': '#f7fafc'      # Very light gray
         }
         
-        room_color = room_colors.get(size_cat, '#fff8e7')
-        floor_color = floor_colors.get(size_cat, '#deb887')
+        room_color = room_colors.get(size_cat, '#fefcbf')
+        floor_color = floor_colors.get(size_cat, '#f7fafc')
         
-        # Floor surface
+        # Create room as solid 3D box structure
+        vertices_x = [x, x+width, x+width, x, x, x+width, x+width, x]
+        vertices_y = [y, y, y+height, y+height, y, y, y+height, y+height]
+        vertices_z = [0, 0, 0, 0, z_height, z_height, z_height, z_height]
+        
+        # Define faces for proper 3D room structure
+        i = [0, 0, 0, 4, 4, 2]  # Face indices
+        j = [1, 2, 3, 5, 6, 6]
+        k = [2, 3, 0, 6, 7, 3]
+        
+        # Add room structure as 3D mesh
         fig.add_trace(go.Mesh3d(
-            x=[x, x+width, x+width, x, x],
-            y=[y, y, y+height, y+height, y],
-            z=[0, 0, 0, 0, 0],
+            x=vertices_x,
+            y=vertices_y,
+            z=vertices_z,
+            i=i,
+            j=j,
+            k=k,
+            color=room_color,
+            opacity=0.8,
+            showlegend=False,
+            hoverinfo='skip'
+        ))
+        
+        # Add floor surface
+        fig.add_trace(go.Mesh3d(
+            x=[x, x+width, x+width, x],
+            y=[y, y, y+height, y+height],
+            z=[0, 0, 0, 0],
+            i=[0, 0],
+            j=[1, 2],
+            k=[2, 3],
             color=floor_color,
             opacity=0.9,
             showlegend=False,
             hoverinfo='skip'
         ))
         
-        # Ceiling surface
-        fig.add_trace(go.Mesh3d(
-            x=[x, x+width, x+width, x, x],
-            y=[y, y, y+height, y+height, y],
-            z=[z_height, z_height, z_height, z_height, z_height],
-            color='white',
-            opacity=0.3,
-            showlegend=False,
-            hoverinfo='skip'
-        ))
-        
-        # Room walls (interior surfaces)
-        wall_color = room_color
-        
-        # Front wall
-        fig.add_trace(go.Mesh3d(
-            x=[x, x+width, x+width, x],
-            y=[y, y, y, y],
-            z=[0, 0, z_height, z_height],
-            color=wall_color,
-            opacity=0.7,
-            showlegend=False,
-            hoverinfo='skip'
-        ))
-        
-        # Back wall  
-        fig.add_trace(go.Mesh3d(
-            x=[x, x+width, x+width, x],
-            y=[y+height, y+height, y+height, y+height],
-            z=[0, 0, z_height, z_height],
-            color=wall_color,
-            opacity=0.7,
-            showlegend=False,
-            hoverinfo='skip'
-        ))
-        
-        # Left wall
-        fig.add_trace(go.Mesh3d(
-            x=[x, x, x, x],
-            y=[y, y+height, y+height, y],
-            z=[0, 0, z_height, z_height],
-            color=wall_color,
-            opacity=0.7,
-            showlegend=False,
-            hoverinfo='skip'
-        ))
-        
-        # Right wall
-        fig.add_trace(go.Mesh3d(
-            x=[x+width, x+width, x+width, x+width],
-            y=[y, y+height, y+height, y],
-            z=[0, 0, z_height, z_height],
-            color=wall_color,
-            opacity=0.7,
+        # Add room outline for better definition
+        fig.add_trace(go.Scatter3d(
+            x=[x, x+width, x+width, x, x, x, x+width, x+width, x, x, x+width, x+width, x+width, x, x],
+            y=[y, y, y+height, y+height, y, y, y, y+height, y+height, y, y, y+height, y+height, y+height, y],
+            z=[0, 0, 0, 0, 0, z_height, z_height, z_height, z_height, z_height, 0, 0, z_height, z_height, 0],
+            mode='lines',
+            line=dict(color='#2d3748', width=2),
             showlegend=False,
             hoverinfo='skip'
         ))
@@ -484,10 +464,10 @@ class ProfessionalFloorPlanVisualizer:
         fig.add_trace(go.Scatter3d(
             x=[x + width/2],
             y=[y + height/2],
-            z=[z_height + 0.3],
+            z=[z_height + 0.2],
             mode='text',
             text=[f"{room.get('area', width*height):.1f}m²"],
-            textfont=dict(size=12, color='#2d3748'),
+            textfont=dict(size=14, color='#2d3748', family='Arial'),
             showlegend=False,
             hoverinfo='skip'
         ))
@@ -536,9 +516,9 @@ class ProfessionalFloorPlanVisualizer:
         ))
         
     def _add_realistic_3d_walls(self, fig: go.Figure, walls: List):
-        """Add realistic 3D walls with proper thickness"""
+        """Add realistic 3D walls with proper thickness and structure"""
         wall_height = 3.2
-        wall_thickness = 0.2
+        wall_thickness = 0.3
         
         for wall in walls:
             if len(wall) >= 2:
@@ -554,16 +534,24 @@ class ProfessionalFloorPlanVisualizer:
                         nx = -dy / length * wall_thickness
                         ny = dx / length * wall_thickness
                         
-                        # Create wall volume
+                        # Create wall volume with proper faces
                         wall_vertices_x = [x1, x2, x2+nx, x1+nx, x1, x2, x2+nx, x1+nx]
                         wall_vertices_y = [y1, y2, y2+ny, y1+ny, y1, y2, y2+ny, y1+ny]
                         wall_vertices_z = [0, 0, 0, 0, wall_height, wall_height, wall_height, wall_height]
+                        
+                        # Define faces for proper 3D wall structure
+                        i_faces = [0, 0, 0, 4, 4, 2]
+                        j_faces = [1, 2, 3, 5, 6, 6]
+                        k_faces = [2, 3, 0, 6, 7, 3]
                         
                         fig.add_trace(go.Mesh3d(
                             x=wall_vertices_x,
                             y=wall_vertices_y,
                             z=wall_vertices_z,
-                            color='#d4d4aa',
+                            i=i_faces,
+                            j=j_faces,
+                            k=k_faces,
+                            color='#8b7355',  # Realistic wall color
                             opacity=0.9,
                             showlegend=False,
                             hoverinfo='skip'
