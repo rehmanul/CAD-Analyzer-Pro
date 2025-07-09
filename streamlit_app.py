@@ -659,7 +659,7 @@ class CADAnalyzerApp:
 
             st.subheader("Floor Plan Visualization")
             fig = self.create_architectural_floor_plan_visualization(result)
-            st.plotly_chart(fig, use_container_width=True, height=600)
+            st.plotly_chart(fig, use_container_width=True, height=1800)
 
     def create_architectural_floor_plan_visualization(self, result):
         """Create advanced floor plan visualization with 3D rendering capabilities"""
@@ -702,7 +702,7 @@ class CADAnalyzerApp:
                         'xanchor': 'center',
                         'font': {'size': 20}
                     },
-                    height=800
+                    height=1800
                 )
                 
                 return fig
@@ -1006,7 +1006,7 @@ class CADAnalyzerApp:
         # Display the updated visualization based on current mode
         if st.session_state.analysis_results:
             fig = self.create_architectural_floor_plan_visualization(st.session_state.analysis_results)
-            st.plotly_chart(fig, use_container_width=True, height=700)
+            st.plotly_chart(fig, use_container_width=True, height=1800)
 
     def render_corridor_generation_tab(self):
         """Render corridor generation interface"""
@@ -1061,7 +1061,7 @@ class CADAnalyzerApp:
             st.subheader("Complete Floor Plan with Corridors")
             if st.session_state.analysis_results:
                 fig = self.create_architectural_floor_plan_visualization(st.session_state.analysis_results)
-                st.plotly_chart(fig, use_container_width=True, height=700)
+                st.plotly_chart(fig, use_container_width=True, height=1800)
 
     def generate_corridors(self, config):
         """Generate corridors based on configuration"""
@@ -1135,7 +1135,7 @@ class CADAnalyzerApp:
         
         if viz_mode == "2D Professional":
             fig = self.create_complete_visualization(use_professional=True, show_3d=False)
-            st.plotly_chart(fig, use_container_width=True, height=800)
+            st.plotly_chart(fig, use_container_width=True, height=1800)
             
         elif viz_mode == "3D Interactive (Plotly)":
             advanced_3d = Advanced3DRenderer()
@@ -1146,7 +1146,7 @@ class CADAnalyzerApp:
                 show_wireframe=st.checkbox("Show Wireframe", value=False, key="results_wireframe"),
                 enable_shadows=st.checkbox("Enable Shadows", value=True, key="results_shadows")
             )
-            st.plotly_chart(fig, use_container_width=True, height=800)
+            st.plotly_chart(fig, use_container_width=True, height=1800)
             
         elif viz_mode == "3D WebGL Real-Time":
             st.markdown("#### 🎛️ Real-Time 3D WebGL Visualization")
@@ -1163,7 +1163,7 @@ class CADAnalyzerApp:
         elif viz_mode == "All Views":
             st.markdown("#### 📋 2D Professional View")
             fig_2d = self.create_complete_visualization(use_professional=True, show_3d=False)
-            st.plotly_chart(fig_2d, use_container_width=True, height=600)
+            st.plotly_chart(fig_2d, use_container_width=True, height=1200)
             
             st.markdown("#### 🎛️ 3D Interactive View")
             advanced_3d = Advanced3DRenderer()
@@ -1174,7 +1174,7 @@ class CADAnalyzerApp:
                 show_wireframe=False,
                 enable_shadows=True
             )
-            st.plotly_chart(fig_3d, use_container_width=True, height=600)
+            st.plotly_chart(fig_3d, use_container_width=True, height=1200)
             
             st.markdown("#### 🎮 WebGL Real-Time View")
             webgl_renderer = WebGL3DRenderer()

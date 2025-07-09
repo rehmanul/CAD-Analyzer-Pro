@@ -33,6 +33,11 @@ Preferred communication style: Simple, everyday language.
 ### Current Issues
 - Dark theme text visibility in file uploader still needs resolution
 
+### Canvas Improvements
+- Tripled visualization canvas size from 600px to 1800px for better floor plan visibility
+- Enhanced 3D visualization canvas size for improved detail viewing
+- All floor plan charts now use larger display area for better user experience
+
 ## System Architecture
 
 ### Frontend Architecture
