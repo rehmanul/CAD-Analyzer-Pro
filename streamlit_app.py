@@ -530,7 +530,7 @@ class CADAnalyzerApp:
                         x=x_coords,
                         y=y_coords,
                         mode='lines',
-                        line=dict(color='#6B7280', width=4),  # Gray walls like reference
+                        line=dict(color='#6B7280', width=6),  # Thicker walls for better visibility
                         showlegend=False,
                         hoverinfo='skip'
                     ))

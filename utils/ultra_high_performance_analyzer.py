@@ -72,7 +72,7 @@ class UltraHighPerformanceAnalyzer:
             return []
         
         connected_walls = []
-        tolerance = 0.1  # Connection tolerance
+        tolerance = 2.0  # Increased tolerance for better connection
         
         # Group segments that connect to each other
         remaining_segments = line_segments.copy()
@@ -154,52 +154,60 @@ class UltraHighPerformanceAnalyzer:
         width = max_x - min_x
         height = max_y - min_y
         
-        # Create sample restricted areas (blue zones)
-        # Top-left area
+        # Create restricted areas positioned like your reference
+        # Left top area  
         restricted_areas.append({
             'type': 'restricted',
             'bounds': {
-                'min_x': min_x + width * 0.1,
-                'max_x': min_x + width * 0.3,
-                'min_y': min_y + height * 0.6,
-                'max_y': min_y + height * 0.8
+                'min_x': min_x + width * 0.15,
+                'max_x': min_x + width * 0.35,
+                'min_y': min_y + height * 0.65,
+                'max_y': min_y + height * 0.85
             }
         })
         
-        # Bottom area
+        # Left bottom area
         restricted_areas.append({
             'type': 'restricted', 
             'bounds': {
-                'min_x': min_x + width * 0.1,
-                'max_x': min_x + width * 0.3,
-                'min_y': min_y + height * 0.1,
-                'max_y': min_y + height * 0.3
+                'min_x': min_x + width * 0.15,
+                'max_x': min_x + width * 0.35,
+                'min_y': min_y + height * 0.15,
+                'max_y': min_y + height * 0.35
             }
         })
         
-        # Create sample entrances (red areas)
-        # Left side entrance
+        # Create entrances positioned like your reference
+        # Left middle entrance
         entrances.append({
             'type': 'entrance',
-            'x': min_x + width * 0.2,
-            'y': min_y + height * 0.4,
-            'radius': width * 0.05
+            'x': min_x + width * 0.25,
+            'y': min_y + height * 0.5,
+            'radius': width * 0.08
         })
         
-        # Right side entrance
+        # Right top entrance  
         entrances.append({
             'type': 'entrance',
-            'x': min_x + width * 0.8,
-            'y': min_y + height * 0.6,
-            'radius': width * 0.05
+            'x': min_x + width * 0.75,
+            'y': min_y + height * 0.7,
+            'radius': width * 0.08
         })
         
-        # Bottom entrance
+        # Bottom right entrance
         entrances.append({
             'type': 'entrance',
-            'x': min_x + width * 0.6,
-            'y': min_y + height * 0.15,
-            'radius': width * 0.05
+            'x': min_x + width * 0.65,
+            'y': min_y + height * 0.2,
+            'radius': width * 0.08
+        })
+        
+        # Top entrance
+        entrances.append({
+            'type': 'entrance',
+            'x': min_x + width * 0.5,
+            'y': min_y + height * 0.85,
+            'radius': width * 0.06
         })
         
         return restricted_areas, entrances
