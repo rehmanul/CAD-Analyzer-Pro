@@ -746,16 +746,8 @@ class ProductionCADAnalyzer:
             # Emergency cleanup and minimal fallback
             render_optimizer.emergency_memory_cleanup()
 
-            # Generate minimal fallback
-            try:
-                fallback_ilots = render_optimizer.create_memory_efficient_ilots(
-                    {'min_x': 0, 'max_x': 100, 'min_y': 0, 'max_y': 80}, 
-                    target_count=15  # Minimal count
-                )
-                st.session_state.placed_ilots = fallback_ilots
-                st.warning(f"Used emergency fallback: {len(fallback_ilots)} îlots generated")
-            except:
-                st.error("Complete placement failure - please refresh page")
+            # No fallback - show error only
+            st.error("Complete placement failure - please refresh page")
 
     def _fast_place_ilots(self, bounds, config):
         """Fast îlot placement algorithm"""

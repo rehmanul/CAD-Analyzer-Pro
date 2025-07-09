@@ -93,7 +93,7 @@ class CrashProofIlotPlacer:
         except Exception as e:
             logger.error(f"Îlot placement failed: {str(e)}")
             st.error(f"Placement error: {str(e)}")
-            return self._generate_fallback_ilots()
+            return []
     
     def _extract_bounds_safely(self, analysis_data: Dict) -> Optional[Dict]:
         """Extract bounds with error handling"""
@@ -190,47 +190,7 @@ class CrashProofIlotPlacer:
             logger.error(f"Îlot creation failed: {str(e)}")
             return None
     
-    def _generate_fallback_ilots(self) -> List[SafeIlot]:
-        """Generate fallback îlots for demo"""
-        try:
-            fallback_ilots = []
-            
-            # Generate a simple grid of îlots
-            for i in range(20):
-                x = 20 + (i % 5) * 15
-                y = 20 + (i // 5) * 15
-                
-                # Distribute by size
-                if i < 2:
-                    category = 'size_0_1'
-                    size = 2.5
-                elif i < 7:
-                    category = 'size_1_3'
-                    size = 4.0
-                elif i < 13:
-                    category = 'size_3_5'
-                    size = 6.0
-                else:
-                    category = 'size_5_10'
-                    size = 9.0
-                
-                ilot = SafeIlot(
-                    id=f"fallback_{i}",
-                    x=x,
-                    y=y,
-                    width=size,
-                    height=size,
-                    size_category=category,
-                    area=size * size
-                )
-                fallback_ilots.append(ilot)
-            
-            logger.info("Generated fallback îlots")
-            return fallback_ilots
-            
-        except Exception as e:
-            logger.error(f"Fallback generation failed: {str(e)}")
-            return []
+
     
     def get_placement_metrics(self, ilots: List[SafeIlot]) -> Dict:
         """Get placement metrics safely"""

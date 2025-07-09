@@ -144,16 +144,9 @@ class OptimizedIlotPlacer:
         # Sort îlots by size (largest first for better packing)
         ilot_specs.sort(key=lambda x: x['area'], reverse=True)
         
-        # Always ensure we have grid points and specs
-        if not grid_points:
-            grid_points = self._create_fallback_grid(bounds)
-        
-        # Ensure we have îlot specs
-        if not ilot_specs:
-            total_area = (bounds.get('max_x', 100) - bounds.get('min_x', 0)) * (bounds.get('max_y', 100) - bounds.get('min_y', 0))
-            # Always try to generate some îlots, even for small areas
-            target_count = max(5, min(50, int(total_area / 8)))  # More flexible target
-            ilot_specs = self._generate_fallback_ilot_specs(target_count)
+        # Only proceed if we have valid grid points and specs
+        if not grid_points or not ilot_specs:
+            return []
         
         for i, spec in enumerate(ilot_specs):
             best_position = None

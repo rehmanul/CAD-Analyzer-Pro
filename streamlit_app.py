@@ -524,10 +524,8 @@ class CADAnalyzerApp:
                     
             except Exception as e:
                 st.error(f"Error placing îlots: {str(e)}")
-                # Last resort: create minimal test îlots
-                bounds = result.get('bounds', {'min_x': 0, 'max_x': 100, 'min_y': 0, 'max_y': 100})
-                st.session_state.placed_ilots = self._create_fallback_ilots(bounds)
-                st.info("Using minimal test îlots for demonstration.")
+                # No fallback - show error message
+                st.error("Unable to place îlots. Please check that the uploaded file contains valid floor plan data.")
 
     def display_ilot_results(self):
         """Display îlot placement results"""
@@ -819,36 +817,7 @@ SIZE DISTRIBUTION:
             mime="text/plain"
         )
 
-    def _create_fallback_ilots(self, bounds):
-        """Create fallback îlots for demonstration"""
-        fallback_ilots = []
-        
-        # Create a grid of îlots
-        width = bounds.get('max_x', 100) - bounds.get('min_x', 0)
-        height = bounds.get('max_y', 100) - bounds.get('min_y', 0)
-        
-        for i in range(10):  # Create 10 sample îlots
-            x = bounds.get('min_x', 0) + (i % 3) * width / 3 + width / 6
-            y = bounds.get('min_y', 0) + (i // 3) * height / 4 + height / 8
-            
-            size_categories = ['small', 'medium', 'large', 'xlarge']
-            size_cat = size_categories[i % 4]
-            
-            ilot = {
-                'id': f'fallback_{i}',
-                'x': x,
-                'y': y,
-                'position': [x, y],
-                'width': 3.0,
-                'height': 2.0,
-                'area': 6.0,
-                'size_category': size_cat,
-                'color': '#FFFF00' if size_cat == 'small' else '#FFA500' if size_cat == 'medium' else '#008000' if size_cat == 'large' else '#800080'
-            }
-            
-            fallback_ilots.append(ilot)
-        
-        return fallback_ilots
+
 
 # Initialize and run the app
 if __name__ == "__main__":
