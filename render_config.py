@@ -1,6 +1,7 @@
+
 """
 Render Configuration for CAD Analyzer Pro
-Production-ready configuration for Render deployment
+Single clean configuration file for Render deployment
 """
 
 import os
@@ -8,63 +9,66 @@ import logging
 from typing import Dict, Any
 
 class RenderConfig:
-    """Configuration class for Render deployment"""
+    """Production configuration for Render deployment"""
     
     def __init__(self):
+        self.environment = os.getenv('RENDER_ENVIRONMENT', 'production')
+        self.debug = os.getenv('DEBUG', 'false').lower() == 'true'
+        self.port = int(os.getenv('PORT', 5000))
+        self.host = '0.0.0.0'
+        
+        # Memory limits for Render
+        self.max_file_size = 20 * 1024 * 1024  # 20MB
+        self.max_entities = 1000
+        self.max_ilots = 100
+        
+        # Database configuration
+        self.database_url = os.getenv('DATABASE_URL', 'sqlite:///app.db')
+        
+        # Logging configuration
         self.setup_logging()
-        self.setup_environment()
     
     def setup_logging(self):
-        """Setup logging for production"""
+        """Setup logging configuration"""
+        log_level = logging.DEBUG if self.debug else logging.INFO
         logging.basicConfig(
-            level=logging.INFO,
-            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-            handlers=[
-                logging.StreamHandler(),
-                logging.FileHandler('app.log')
-            ]
+            level=log_level,
+            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
         )
     
-    def setup_environment(self):
-        """Setup environment variables for Render"""
-        
-        # Render-specific settings
-        os.environ.setdefault('PYTHONPATH', '/opt/render/project/src')
-        os.environ.setdefault('STREAMLIT_SERVER_HEADLESS', 'true')
-        os.environ.setdefault('STREAMLIT_SERVER_PORT', '10000')
-        os.environ.setdefault('STREAMLIT_SERVER_ADDRESS', '0.0.0.0')
-        os.environ.setdefault('STREAMLIT_BROWSER_GATHER_USAGE_STATS', 'false')
-        
-        # Performance settings
-        os.environ.setdefault('STREAMLIT_SERVER_MAX_UPLOAD_SIZE', '200')
-        os.environ.setdefault('STREAMLIT_SERVER_MAX_MESSAGE_SIZE', '200')
-        os.environ.setdefault('STREAMLIT_SERVER_ENABLE_CORS', 'false')
-        
-        # Security settings
-        os.environ.setdefault('STREAMLIT_SERVER_ENABLE_XSRF_PROTECTION', 'false')
-        os.environ.setdefault('STREAMLIT_CLIENT_TOOLBAR_MODE', 'minimal')
-    
-    def get_database_config(self) -> Dict[str, Any]:
-        """Get database configuration for Render"""
+    def get_streamlit_config(self) -> Dict[str, Any]:
+        """Get Streamlit configuration"""
         return {
-            'host': os.environ.get('DATABASE_HOST', 'localhost'),
-            'port': int(os.environ.get('DATABASE_PORT', '5432')),
-            'database': os.environ.get('DATABASE_NAME', 'cad_analyzer_prod'),
-            'username': os.environ.get('DATABASE_USER', 'cad_analyzer_user'),
-            'password': os.environ.get('DATABASE_PASSWORD', ''),
-            'url': os.environ.get('DATABASE_URL', ''),
-            'ssl_mode': 'require' if os.environ.get('RENDER_ENV') == 'production' else 'prefer'
+            'server': {
+                'address': self.host,
+                'port': self.port,
+                'headless': True,
+                'enableCORS': False,
+                'enableXsrfProtection': False
+            },
+            'browser': {
+                'gatherUsageStats': False,
+                'serverAddress': self.host,
+                'serverPort': self.port
+            },
+            'theme': {
+                'primaryColor': '#6366f1',
+                'backgroundColor': '#ffffff',
+                'secondaryBackgroundColor': '#f0f2f6',
+                'textColor': '#262730'
+            }
         }
     
-    def get_app_config(self) -> Dict[str, Any]:
-        """Get application configuration"""
+    def is_production(self) -> bool:
+        """Check if running in production"""
+        return self.environment == 'production'
+    
+    def get_memory_limits(self) -> Dict[str, int]:
+        """Get memory limits"""
         return {
-            'debug': os.environ.get('RENDER_ENV') != 'production',
-            'max_file_size': int(os.environ.get('MAX_FILE_SIZE', '200')),
-            'cache_enabled': os.environ.get('CACHE_ENABLED', 'true').lower() == 'true',
-            'psutil_available': os.environ.get('PSUTIL_AVAILABLE', 'true').lower() == 'true',
-            'redis_enabled': os.environ.get('REDIS_ENABLED', 'false').lower() == 'true',
-            'redis_url': os.environ.get('REDIS_URL', '')
+            'max_file_size': self.max_file_size,
+            'max_entities': self.max_entities,
+            'max_ilots': self.max_ilots
         }
 
 # Global configuration instance
