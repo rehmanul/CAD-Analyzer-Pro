@@ -454,9 +454,6 @@ class CADAnalyzerApp:
                 st.metric("Height", f"{height:.1f} m")
             with col3:
                 st.metric("Total Area", f"{area:.1f} m²")
-                st.metric("Height", f"{height:.1f} m")
-            with col3:
-                st.metric("Total Area", f"{area:.1f} m²")
 
         # Visualization with status indicator
         if result.get('walls') or result.get('entities'):
@@ -479,25 +476,30 @@ class CADAnalyzerApp:
             st.plotly_chart(fig, use_container_width=True, height=600)
 
     def create_architectural_floor_plan_visualization(self, result):
-        """Create authentic architectural floor plan visualization from real DXF data"""
+        """Create clean floor plan visualization matching reference images"""
         mode = st.session_state.get('visualization_mode', 'base')
         
-        # Use reference visualizer for clean floor plan matching your reference images
-        if mode == 'base':
-            # Clean empty floor plan with gray walls, blue restricted areas, red entrances
-            fig = self.reference_floor_plan_visualizer.create_empty_floor_plan(result)
-        elif mode == 'with_ilots':
-            # Floor plan with green rectangular îlots
-            ilots = st.session_state.get('placed_ilots', [])
-            fig = self.reference_floor_plan_visualizer.create_floor_plan_with_ilots(result, ilots)
-        elif mode == 'detailed':
-            # Complete layout with corridors
-            ilots = st.session_state.get('placed_ilots', [])
-            corridors = st.session_state.get('corridors', [])
-            fig = self.reference_floor_plan_visualizer.create_complete_floor_plan(result, ilots, corridors)
-        else:
-            # Default to clean reference visualization
-            fig = self.reference_floor_plan_visualizer.create_empty_floor_plan(result)
+        try:
+            # Use reference visualizer for clean floor plan matching your reference images
+            if mode == 'base':
+                # Clean empty floor plan with gray walls, blue restricted areas, red entrances
+                fig = self.reference_floor_plan_visualizer.create_empty_floor_plan(result)
+            elif mode == 'with_ilots':
+                # Floor plan with green rectangular îlots
+                ilots = st.session_state.get('placed_ilots', [])
+                fig = self.reference_floor_plan_visualizer.create_floor_plan_with_ilots(result, ilots)
+            elif mode == 'detailed':
+                # Complete layout with corridors
+                ilots = st.session_state.get('placed_ilots', [])
+                corridors = st.session_state.get('corridors', [])
+                fig = self.reference_floor_plan_visualizer.create_complete_floor_plan(result, ilots, corridors)
+            else:
+                # Default to clean reference visualization
+                fig = self.reference_floor_plan_visualizer.create_empty_floor_plan(result)
+        except Exception as e:
+            st.error(f"Visualization error: {str(e)}")
+            # Fallback to basic visualization
+            fig = self.fast_visualizer.create_fast_floor_plan(result)
         
         return fig
 
