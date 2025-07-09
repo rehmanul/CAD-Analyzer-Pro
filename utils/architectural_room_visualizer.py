@@ -118,7 +118,7 @@ class ArchitecturalRoomVisualizer:
                         type="line",
                         x0=points[0][0], y0=points[0][1],
                         x1=points[1][0], y1=points[1][1],
-                        line=dict(color=self.colors['walls'], width=3)
+                        line=dict(color=self.colors['walls'], width=4)
                     )
                 elif wall.get('type') == 'POLYLINE':
                     # Add polyline wall
@@ -129,7 +129,7 @@ class ArchitecturalRoomVisualizer:
                         x=x_coords,
                         y=y_coords,
                         mode='lines',
-                        line=dict(color=self.colors['walls'], width=3),
+                        line=dict(color=self.colors['walls'], width=4),
                         showlegend=False
                     ))
     
@@ -167,7 +167,7 @@ class ArchitecturalRoomVisualizer:
                 type="line",
                 x0=wall[0][0], y0=wall[0][1],
                 x1=wall[1][0], y1=wall[1][1],
-                line=dict(color=self.colors['walls'], width=3)
+                line=dict(color=self.colors['walls'], width=4)
             )
     
     def _add_restricted_areas(self, fig: go.Figure, restricted_areas: List[Dict]):
