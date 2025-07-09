@@ -12,8 +12,8 @@ Preferred communication style: Simple, everyday language.
 
 ### Migration from Replit Agent
 - Successfully migrated from Replit Agent to standard Replit environment
-- Fixed theme-aware CSS styling for dark/light mode compatibility
-- Enhanced text color rendering for all UI elements
+- Ongoing dark theme text visibility fixes for file uploader component
+- Enhanced text color rendering issues being resolved
 - Improved button styling with gradient backgrounds and hover effects
 
 ### Advanced 3D Visualization System
@@ -29,6 +29,9 @@ Preferred communication style: Simple, everyday language.
 - Added professional metrics containers
 - Implemented advanced button styling with hover effects
 - Added WebGL container styling for 3D views
+
+### Current Issues
+- Dark theme text visibility in file uploader still needs resolution
 
 ## System Architecture
 

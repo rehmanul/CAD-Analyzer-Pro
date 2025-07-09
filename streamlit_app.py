@@ -78,54 +78,8 @@ st.markdown("""
         --border-color: #e5e7eb;
     }
 
-    /* TARGETED DARK THEME TEXT FIXES */
-    /* Only target specific problematic elements in dark theme */
-    
-    /* File uploader text - the main issue */
-    .stApp[data-theme="dark"] .stFileUploader label,
-    .stApp[data-theme="dark"] div[data-testid="stFileUploader"] label,
-    .stApp[data-theme="dark"] div[data-testid="stFileUploader"] span,
-    .stApp[data-theme="dark"] div[data-testid="stFileUploader"] small,
-    .stApp[data-theme="dark"] div[data-testid="stFileUploader"] p {
-        color: #ffffff !important;
-    }
-    
-    /* Sidebar text in dark theme */
-    .stApp[data-theme="dark"] section[data-testid="stSidebar"] label,
-    .stApp[data-theme="dark"] section[data-testid="stSidebar"] span,
-    .stApp[data-theme="dark"] section[data-testid="stSidebar"] p,
-    .stApp[data-theme="dark"] section[data-testid="stSidebar"] h1,
-    .stApp[data-theme="dark"] section[data-testid="stSidebar"] h2,
-    .stApp[data-theme="dark"] section[data-testid="stSidebar"] h3 {
-        color: #ffffff !important;
-    }
-    
-    /* Main content labels and text */
-    .stApp[data-theme="dark"] .main label,
-    .stApp[data-theme="dark"] .main span:not(.hero-section span):not(.section-header span),
-    .stApp[data-theme="dark"] .main p:not(.hero-section p):not(.section-header p) {
-        color: #ffffff !important;
-    }
-    
-    /* Input field labels specifically */
-    .stApp[data-theme="dark"] .stTextInput > label,
-    .stApp[data-theme="dark"] .stSelectbox > label,
-    .stApp[data-theme="dark"] .stNumberInput > label,
-    .stApp[data-theme="dark"] .stSlider > label,
-    .stApp[data-theme="dark"] .stCheckbox > label,
-    .stApp[data-theme="dark"] .stRadio > label {
-        color: #ffffff !important;
-    }
-    
-    /* Tab labels */
-    .stApp[data-theme="dark"] .stTabs [data-baseweb="tab-list"] button p,
-    .stApp[data-theme="dark"] .stTabs [data-baseweb="tab-list"] button span {
-        color: #ffffff !important;
-    }
-    
-    /* Metric labels */
-    .stApp[data-theme="dark"] div[data-testid="metric-container"] label,
-    .stApp[data-theme="dark"] div[data-testid="metric-container"] span {
+    /* SIMPLE DARK THEME FIX - Only file uploader */
+    .stApp[data-theme="dark"] .stFileUploader small {
         color: #ffffff !important;
     }
 
