@@ -103,10 +103,14 @@ class ReferenceStyleVisualizer:
     
     def _add_walls(self, fig: go.Figure, walls: List):
         """Add black walls exactly like your reference"""
+        print(f"DEBUG: Adding {len(walls)} walls")
+        
         for wall in walls:
             if len(wall) >= 2:
                 x_coords = [point[0] for point in wall]
                 y_coords = [point[1] for point in wall]
+                
+                print(f"DEBUG: Wall coordinates: {x_coords}, {y_coords}")
                 
                 fig.add_trace(go.Scatter(
                     x=x_coords,
@@ -292,11 +296,15 @@ class ReferenceStyleVisualizer:
     
     def _add_walls_from_entities(self, fig: go.Figure, entities: List, bounds: Dict):
         """Create walls from DXF entities"""
+        print(f"DEBUG: Processing {len(entities)} entities for walls")
+        
         # Extract LINE entities as walls
         for entity in entities:
             if entity.get('type') == 'LINE':
                 start = entity.get('start', [0, 0])
                 end = entity.get('end', [100, 100])
+                
+                print(f"DEBUG: Adding wall from {start} to {end}")
                 
                 fig.add_trace(go.Scatter(
                     x=[start[0], end[0]],
@@ -306,4 +314,34 @@ class ReferenceStyleVisualizer:
                     showlegend=False,
                     hoverinfo='skip'
                 ))
+            elif entity.get('type') == 'POLYLINE':
+                # Handle polylines as walls
+                points = entity.get('points', [])
+                if len(points) >= 2:
+                    x_coords = [p[0] for p in points]
+                    y_coords = [p[1] for p in points]
+                    
+                    fig.add_trace(go.Scatter(
+                        x=x_coords,
+                        y=y_coords,
+                        mode='lines',
+                        line=dict(color=self.colors['walls'], width=3),
+                        showlegend=False,
+                        hoverinfo='skip'
+                    ))
+            elif entity.get('type') == 'LWPOLYLINE':
+                # Handle lightweight polylines
+                points = entity.get('points', [])
+                if len(points) >= 2:
+                    x_coords = [p[0] for p in points]
+                    y_coords = [p[1] for p in points]
+                    
+                    fig.add_trace(go.Scatter(
+                        x=x_coords,
+                        y=y_coords,
+                        mode='lines',
+                        line=dict(color=self.colors['walls'], width=3),
+                        showlegend=False,
+                        hoverinfo='skip'
+                    ))
     
