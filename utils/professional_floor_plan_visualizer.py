@@ -511,12 +511,19 @@ class ProfessionalFloorPlanVisualizer:
             ))
     
     def _add_3d_foundation(self, fig: go.Figure, bounds: Dict):
-        """Add realistic foundation/ground plane"""
+        """Add realistic foundation/ground plane based on actual floor plan bounds"""
         min_x, max_x = bounds.get('min_x', 0), bounds.get('max_x', 100)
         min_y, max_y = bounds.get('min_y', 0), bounds.get('max_y', 100)
         
-        # Extend foundation beyond building
-        padding = 10
+        # Use actual dimensions, not fixed mock values
+        width = max_x - min_x
+        height = max_y - min_y
+        
+        if width <= 0 or height <= 0:
+            return  # Skip if invalid bounds
+        
+        # Proportional padding based on actual size
+        padding = max(1.0, min(width, height) * 0.1)
         
         fig.add_trace(go.Mesh3d(
             x=[min_x-padding, max_x+padding, max_x+padding, min_x-padding],

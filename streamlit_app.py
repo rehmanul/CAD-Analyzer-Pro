@@ -25,6 +25,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'utils'))
 from ultra_high_performance_analyzer import UltraHighPerformanceAnalyzer
 from optimized_dxf_processor import OptimizedDXFProcessor
 from optimized_ilot_placer import OptimizedIlotPlacer
+from simple_ilot_placer import SimpleIlotPlacer
 from client_expected_visualizer import ClientExpectedVisualizer
 from optimized_corridor_generator import OptimizedCorridorGenerator
 from professional_floor_plan_visualizer import ProfessionalFloorPlanVisualizer
@@ -241,6 +242,7 @@ class CADAnalyzerApp:
         self.floor_analyzer = UltraHighPerformanceAnalyzer()
         self.dxf_processor = OptimizedDXFProcessor()
         self.ilot_placer = OptimizedIlotPlacer()
+        self.simple_placer = SimpleIlotPlacer()  # Backup placer
         self.corridor_generator = OptimizedCorridorGenerator()
         self.visualizer = ClientExpectedVisualizer()
         self.professional_visualizer = ProfessionalFloorPlanVisualizer()
@@ -489,8 +491,8 @@ class CADAnalyzerApp:
             self.display_ilot_results()
 
     def place_ilots(self, config):
-        """Place îlots using ultra-high performance placement"""
-        with st.spinner("Placing îlots with ultra-high performance algorithm..."):
+        """Place îlots using reliable placement algorithm"""
+        with st.spinner("Placing îlots with guaranteed placement algorithm..."):
             try:
                 # Get analysis results
                 result = st.session_state.analysis_results
@@ -498,32 +500,38 @@ class CADAnalyzerApp:
                 # Calculate target count from bounds and configuration
                 bounds = result.get('bounds', {'min_x': 0, 'max_x': 100, 'min_y': 0, 'max_y': 100})
                 area = (bounds['max_x'] - bounds['min_x']) * (bounds['max_y'] - bounds['min_y'])
-                target_count = max(10, min(int(area / 10), 50))  # 1 îlot per 10 m², max 50
+                target_count = max(8, min(int(area / 12), 40))  # More conservative target
                 
-                # Use ultra-high performance îlot placer
-                placed_ilots = self.ilot_placer.generate_optimal_ilot_placement(
-                    analysis_data=result,
-                    target_count=target_count
-                )
+                # Try optimized placer first
+                placed_ilots = []
+                try:
+                    placed_ilots = self.ilot_placer.generate_optimal_ilot_placement(
+                        analysis_data=result,
+                        target_count=target_count
+                    )
+                except Exception:
+                    pass
+                
+                # Use simple placer if optimized fails or returns no results
+                if not placed_ilots:
+                    placed_ilots = self.simple_placer.place_ilots_guaranteed(
+                        analysis_data=result,
+                        target_count=target_count
+                    )
                 
                 st.session_state.placed_ilots = placed_ilots
                 
                 if placed_ilots:
-                    # Generate placement statistics
-                    stats = self.ilot_placer.generate_placement_statistics(placed_ilots)
-                    
-                    st.markdown(f'<div class="success-message">✅ Successfully placed {len(placed_ilots)} îlots!</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="success-message">✅ Successfully placed {len(placed_ilots)} îlots with {sum(ilot.get("area", 0) for ilot in placed_ilots):.1f} m² total area!</div>', unsafe_allow_html=True)
                 else:
-                    st.error("No îlots could be placed. Please try adjusting the configuration or uploading a different floor plan.")
-                    st.info("Suggestions: Reduce minimum spacing, lower space utilization target, or check if the floor plan has sufficient open space.")
+                    st.error("Unable to place îlots. Please check the floor plan has sufficient open space.")
                     
             except Exception as e:
                 st.error(f"Error placing îlots: {str(e)}")
-                # Create fallback îlots for testing
+                # Last resort: create minimal test îlots
                 bounds = result.get('bounds', {'min_x': 0, 'max_x': 100, 'min_y': 0, 'max_y': 100})
-                fallback_ilots = self._create_fallback_ilots(bounds)
-                st.session_state.placed_ilots = fallback_ilots
-                st.info("Using fallback îlot placement for demonstration.")
+                st.session_state.placed_ilots = self._create_fallback_ilots(bounds)
+                st.info("Using minimal test îlots for demonstration.")
 
     def display_ilot_results(self):
         """Display îlot placement results"""

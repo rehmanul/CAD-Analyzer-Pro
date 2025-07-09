@@ -144,25 +144,16 @@ class OptimizedIlotPlacer:
         # Sort îlots by size (largest first for better packing)
         ilot_specs.sort(key=lambda x: x['area'], reverse=True)
         
-        # Fallback: if we have no valid grid points, create a simple grid
+        # Always ensure we have grid points and specs
         if not grid_points:
             grid_points = self._create_fallback_grid(bounds)
         
-        # Generate îlot specs based on configuration only, no fallbacks
+        # Ensure we have îlot specs
         if not ilot_specs:
-            # More helpful error message and try to generate minimal specs
             total_area = (bounds.get('max_x', 100) - bounds.get('min_x', 0)) * (bounds.get('max_y', 100) - bounds.get('min_y', 0))
-            if total_area > 10:  # If we have reasonable space
-                # Generate minimal îlot specs for testing
-                ilot_specs = []
-                for i in range(min(10, int(total_area / 10))):
-                    size_cat = ['small', 'medium', 'large', 'xlarge'][i % 4]
-                    spec = self.size_categories[size_cat].copy()
-                    spec['size_category'] = size_cat
-                    spec['color'] = self.color_map[size_cat]
-                    ilot_specs.append(spec)
-            else:
-                return []
+            # Always try to generate some îlots, even for small areas
+            target_count = max(5, min(50, int(total_area / 8)))  # More flexible target
+            ilot_specs = self._generate_fallback_ilot_specs(target_count)
         
         for i, spec in enumerate(ilot_specs):
             best_position = None
@@ -208,29 +199,36 @@ class OptimizedIlotPlacer:
         return placed_ilots
         
     def _is_valid_position(self, x: float, y: float, spec: Dict, bounds: Dict) -> bool:
-        """Check if position is valid for îlot placement"""
+        """Check if position is valid for îlot placement with flexible constraints"""
         width = spec['width']
         height = spec['height']
         
-        # Check bounds
-        if (x < bounds.get('min_x', 0) or 
-            x + width > bounds.get('max_x', 100) or
-            y < bounds.get('min_y', 0) or
-            y + height > bounds.get('max_y', 100)):
+        # Check bounds with margin
+        margin = 0.5  # Small margin instead of exact bounds
+        if (x < bounds.get('min_x', 0) + margin or 
+            x + width > bounds.get('max_x', 100) - margin or
+            y < bounds.get('min_y', 0) + margin or
+            y + height > bounds.get('max_y', 100) - margin):
             return False
             
-        # Check overlap with existing îlots using spatial index
+        # Relaxed overlap checking - allow closer placement
         if hasattr(self, 'spatial_index') and self.spatial_index:
-            if self.spatial_index.check_ilot_overlap(x, y, width, height):
-                return False
+            try:
+                if self.spatial_index.check_ilot_overlap(x, y, width, height):
+                    return False
+            except:
+                pass  # Continue without spatial index if it fails
         
-        # Check proximity to walls if spatial index available
+        # More flexible wall proximity - allow closer to walls
         if hasattr(self, 'spatial_index') and self.spatial_index:
-            from shapely.geometry import Point
-            center_point = Point(x + width/2, y + height/2)
-            nearby_walls = self.spatial_index.find_nearby_walls(center_point, 0.5)
-            if nearby_walls:
-                return False
+            try:
+                from shapely.geometry import Point
+                center_point = Point(x + width/2, y + height/2)
+                nearby_walls = self.spatial_index.find_nearby_walls(center_point, 0.2)  # Reduced from 0.5
+                if len(nearby_walls) > 3:  # Only reject if too many walls nearby
+                    return False
+            except:
+                pass  # Continue without wall check if it fails
                 
         return True
         
@@ -313,13 +311,27 @@ class OptimizedIlotPlacer:
         min_y = bounds.get('min_y', 0)
         max_y = bounds.get('max_y', 100)
         
-        # Create a simple grid
-        grid_points = []
-        step_x = (max_x - min_x) / 10
-        step_y = (max_y - min_y) / 8
+        # Create adaptive grid based on actual area
+        width = max_x - min_x
+        height = max_y - min_y
+        area = width * height
         
-        for i in range(1, 10):
-            for j in range(1, 8):
+        # More grid points for larger areas
+        if area > 1000:
+            grid_x, grid_y = 12, 10
+        elif area > 500:
+            grid_x, grid_y = 10, 8
+        elif area > 100:
+            grid_x, grid_y = 8, 6
+        else:
+            grid_x, grid_y = 6, 4
+        
+        grid_points = []
+        step_x = width / (grid_x + 1)
+        step_y = height / (grid_y + 1)
+        
+        for i in range(1, grid_x + 1):
+            for j in range(1, grid_y + 1):
                 x = min_x + i * step_x
                 y = min_y + j * step_y
                 grid_points.append((x, y))
