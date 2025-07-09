@@ -393,8 +393,6 @@ class CADAnalyzerApp:
         """Render floor plan analysis interface"""
         st.markdown('<div class="section-header"><h2>📋 Floor Plan Analysis</h2></div>', unsafe_allow_html=True)
 
-
-        
         uploaded_file = st.file_uploader(
             "Choose a floor plan file",
             type=['dxf', 'dwg', 'pdf', 'png', 'jpg', 'jpeg'],
@@ -429,19 +427,9 @@ class CADAnalyzerApp:
                     # Set visualization mode to show base floor plan (Image 1 style)
                     st.session_state.visualization_mode = "base"
                     
-                    st.markdown('<div class="success-message">✅ Plan traité avec succès! Rendu CAD professionnel avec contrôles avancés.</div>', unsafe_allow_html=True)
+                    st.markdown('<div class="success-message">✅ Plan traité avec succès! Clean floor plan visualization ready.</div>', unsafe_allow_html=True)
                     
-                    # Create final production SVG rendering
-                    target_bounds = result.get('bounds')
-                    svg_code = self.final_renderer.process_dxf_to_professional_svg(file_content, uploaded_file.name, target_bounds)
-                    
-                    # Display final interactive SVG with professional controls
-                    self.final_renderer.embed_final_interactive_svg(svg_code, height=700)
-                    
-                    # Add professional export options
-                    self.final_renderer.create_export_options(svg_code, uploaded_file.name)
-                    
-                    # Display analysis results
+                    # Display analysis results with proper visualization
                     self.display_analysis_results(result)
                 else:
                     st.error(f"Error processing file: {result.get('error', 'Unknown error')}")
@@ -506,26 +494,41 @@ class CADAnalyzerApp:
         mode = st.session_state.get('visualization_mode', 'base')
         
         try:
-            # Use the working visualizer that achieved the clean result shown in your image
+            # Use the exact reference visualizer to match your expected output
             if mode == 'base':
                 # Clean empty floor plan with gray walls, blue restricted areas, red entrances
-                fig = self.empty_plan_visualizer.create_empty_plan(result)
+                fig = self.architectural_visualizer.create_empty_floor_plan(result)
             elif mode == 'with_ilots':
-                # Floor plan with green rectangular îlots
+                # Floor plan with red rectangular îlots
                 ilots = st.session_state.get('placed_ilots', [])
-                fig = self.empty_plan_visualizer.create_plan_with_ilots(result, ilots)
+                fig = self.architectural_visualizer.create_floor_plan_with_ilots(result, ilots)
             elif mode == 'detailed':
                 # Complete layout with corridors
                 ilots = st.session_state.get('placed_ilots', [])
                 corridors = st.session_state.get('corridors', [])
-                fig = self.empty_plan_visualizer.create_complete_plan(result, ilots, corridors)
+                fig = self.architectural_visualizer.create_complete_floor_plan(result, ilots, corridors)
             else:
                 # Default to clean visualization that works
-                fig = self.empty_plan_visualizer.create_empty_plan(result)
+                fig = self.architectural_visualizer.create_empty_floor_plan(result)
         except Exception as e:
             st.error(f"Visualization error: {str(e)}")
-            # Fallback to basic visualization
-            fig = self.fast_visualizer.create_fast_floor_plan(result)
+            # Fallback to reference style visualizer
+            try:
+                fig = self.reference_visualizer.create_empty_floor_plan(result)
+            except:
+                # Final fallback
+                fig = go.Figure()
+                fig.add_annotation(
+                    text="Unable to render floor plan visualization",
+                    xref="paper", yref="paper",
+                    x=0.5, y=0.5, showarrow=False,
+                    font=dict(size=16, color="red")
+                )
+                fig.update_layout(
+                    title="Visualization Error",
+                    xaxis=dict(showgrid=False, showticklabels=False),
+                    yaxis=dict(showgrid=False, showticklabels=False)
+                )
         
         return fig
 
@@ -863,23 +866,23 @@ class CADAnalyzerApp:
                 show_3d=True
             )
         else:
-            # Use reference style visualizer to match your exact images
+            # Use architectural visualizer to match your exact images
             if corridors:
                 # Image 3: With corridors
-                fig = self.reference_visualizer.create_floor_plan_with_corridors(
+                fig = self.architectural_visualizer.create_complete_floor_plan(
                     analysis_data=result,
                     ilots=ilots,
                     corridors=corridors
                 )
             elif ilots:
                 # Image 2: With îlots
-                fig = self.reference_visualizer.create_floor_plan_with_ilots(
+                fig = self.architectural_visualizer.create_floor_plan_with_ilots(
                     analysis_data=result,
                     ilots=ilots
                 )
             else:
                 # Image 1: Empty plan
-                fig = self.reference_visualizer.create_empty_floor_plan(result)
+                fig = self.architectural_visualizer.create_empty_floor_plan(result)
         
         return fig
 
