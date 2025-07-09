@@ -1,0 +1,111 @@
+Rendering CAD Floor Plans in Streamlit With Accurate SVG Visuals
+Key takeaway: convert DXF/DWG → clean SVG with ezdxf + SVGBackend, then embed the SVG in Streamlit with a small JavaScript pan-zoom/drag component instead of st.image. This keeps true CAD dimensions, preserves text, and reproduces the legend/colour-coding exactly like your “expected” screenshots.
+
+1 Why the current app distorts your visual
+Symptom	Root cause	Evidence
+Walls too thin / colours wrong	st.image() rasterises the SVG to PNG at upload; line-weights collapse	Known Streamlit issue 
+Text converted to outlines	Using Matplotlib backend in ezdxf; it flattens fonts into paths	ezdxf docs (MatplotlibBackend) 
+No pan/zoom, legend overlaps drawing	PNG is a bitmap; you lose interactivity and fixed size	svg-pan-zoom docs 
+2 End-to-end architecture that matches your reference visuals
+2.1 Processing pipeline
+CAD ingestion
+
+python
+import ezdxf
+doc = ezdxf.readfile(uploaded_file)
+msp = doc.modelspace()
+Legend & semantic layers
+
+python
+layer_map = {
+    "WALL":  "mur",                # grey
+    "ENTRY": "entree_sortie",      # red
+    "BLOCK": "no_entree",          # blue
+}
+for e in msp:
+    e.dxf.layer = layer_map.get(e.dxf.layer, e.dxf.layer)
+SVG export with text preserved
+
+python
+from ezdxf.addons.drawing import RenderContext, Frontend, svg
+ctx = RenderContext(doc)
+backend = svg.SVGBackend()                # keeps <text> nodes
+Frontend(ctx, backend).draw_layout(msp, finalize=True)
+svg_code = backend.get_string()
+Optional clean-up (remove outer <svg> size)
+
+python
+# remove width/height so SVG scales 100 %
+svg_code = re.sub(r' (width|height)="[^"]+"', '', svg_code, count=2)
+2.2 Front-end embedding in Streamlit
+python
+import streamlit as st
+from streamlit.components.v1 import html
+
+# panzoom library (CDN)
+PANZOOM_JS = "https://unpkg.com/panzoom@9.4.0/dist/panzoom.min.js"
+
+html(f"""
+<div id="wrap" style="border:1px solid #999; overflow:hidden">
+  {svg_code}
+</div>
+<script src="{PANZOOM_JS}"></script>
+<script>
+  const svg = document.querySelector("#wrap svg");
+  panzoom(svg, {{
+     zoomDoubleClickSpeed: 1,
+     maxZoom: 10,
+     minZoom: 0.5
+  }});
+</script>
+""", height=600)
+Result:
+
+Vector rendering → crisp at any zoom
+
+Text remains selectable/searchable
+
+Pan/zoom like AutoCAD
+
+Colours exactly as DXF layers
+
+3 Features checklist
+Feature	Library	Implementation hint
+DXF/DWG import	ezdxf	For DWG convert to DXF via ODA or Teigha
+PDF import	PyMuPDF	Convert pages to SVG and merge
+Keep fonts	SVGBackend (ezdxf ≥ 1.2)	Ensure TTF installed on server
+Layer → colour map	as above	Use ctx.layer_properties.set_color(layer, rgb)
+Object placement (“îlots”)	subjx JS library 	Attach draggable/resize handles to <rect> created on click
+Snap-to-grid	subjx option snap: {x:20,y:20}	
+Corridor auto-generation	back-end Python with Shapely	Build polygons, inset corridors, re-export to SVG group
+Export	give user buttons: download SVG / PNG via cairosvg	
+4 Step-by-step setup
+Backend environment
+
+bash
+pip install ezdxf==1.4.2 shapely svgwrite pymupdf cairosvg
+Front-end static assets
+
+text
+/static/js/panzoom.min.js
+/static/js/subjx.min.js
+/static/css/subjx.css
+Streamlit app skeleton
+
+python
+st.file_uploader(...)
+if file:
+    svg_code = cad_to_svg(file)          # pipeline section 2.1
+    st.write("Zoom & drag the plan below:")
+    embed_svg(svg_code)                  # section 2.2
+    if st.button("Export PNG"):
+        png_bytes = cairosvg.svg2png(bytestring=svg_code)
+        st.download_button("Download PNG", png_bytes, "plan.png")
+Îlot placement callback (runs in JS; send JSON to Python via streamlit.components message channel).
+
+5 Troubleshooting tips
+Issue	Fix
+White page / nothing renders	Ensure SVG served inside html() not st.image(); check CSP not blocking inline JS
+Text still paths	You used Matplotlib backend; switch to svg.SVGBackend
+Layers invisible	Autocad uses ACI colours; call ctx.set_current_layout(msp) before rendering
+Drag handles behind plan	Set z-index for .sjx-hdl class in custom CSS
