@@ -148,3 +148,5 @@ shapely
 sqlalchemy
 streamlit
 websockets
+cairosvg
+svgwrite

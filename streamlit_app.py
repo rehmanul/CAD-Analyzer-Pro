@@ -39,6 +39,7 @@ from real_dxf_processor import RealDXFProcessor
 from smart_floor_plan_detector import SmartFloorPlanDetector
 from floor_plan_extractor import FloorPlanExtractor
 from targeted_floor_plan_extractor import TargetedFloorPlanExtractor
+from svg_floor_plan_renderer import SVGFloorPlanRenderer
 from fast_architectural_visualizer import FastArchitecturalVisualizer
 from empty_plan_visualizer import EmptyPlanVisualizer
 from data_validator import DataValidator
@@ -261,6 +262,7 @@ class CADAnalyzerApp:
         self.smart_floor_detector = SmartFloorPlanDetector()  # For floor plan detection from multi-view DXF
         self.floor_plan_extractor = FloorPlanExtractor()  # For precise floor plan extraction
         self.targeted_extractor = TargetedFloorPlanExtractor()  # For extracting specific floor plan section
+        self.svg_renderer = SVGFloorPlanRenderer()  # For high-quality SVG rendering
         self.fast_visualizer = FastArchitecturalVisualizer()  # For fast rendering
         self.empty_plan_visualizer = EmptyPlanVisualizer()  # For clean empty plan view
         self.ilot_placer = OptimizedIlotPlacer()
@@ -421,7 +423,15 @@ class CADAnalyzerApp:
                     # Set visualization mode to show base floor plan (Image 1 style)
                     st.session_state.visualization_mode = "base"
                     
-                    st.markdown('<div class="success-message">✅ Floor plan processed successfully! Showing empty floor plan (walls, entrances, restricted areas).</div>', unsafe_allow_html=True)
+                    st.markdown('<div class="success-message">✅ Floor plan processed successfully! Showing high-quality SVG rendering with proper colors.</div>', unsafe_allow_html=True)
+                    
+                    # Create SVG rendering
+                    target_bounds = result.get('bounds')
+                    svg_code = self.svg_renderer.render_floor_plan_svg(file_content, uploaded_file.name, target_bounds)
+                    
+                    # Display legend and SVG
+                    st.markdown(self.svg_renderer.create_legend(), unsafe_allow_html=True)
+                    self.svg_renderer.embed_svg_with_controls(svg_code, height=600)
                     
                     # Display analysis results
                     self.display_analysis_results(result)
