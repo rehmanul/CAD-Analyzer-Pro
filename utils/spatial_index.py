@@ -7,7 +7,7 @@ Provides spatial indexing capabilities for fast geometric queries
 import numpy as np
 from typing import Dict, List, Tuple, Optional, Any
 from shapely.geometry import Point, Polygon, LineString, box
-from shapely.spatial import STRtree
+from shapely.strtree import STRtree
 import logging
 
 class SpatialIndex:
