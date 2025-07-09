@@ -41,6 +41,7 @@ from floor_plan_extractor import FloorPlanExtractor
 from targeted_floor_plan_extractor import TargetedFloorPlanExtractor
 from svg_floor_plan_renderer import SVGFloorPlanRenderer
 from simple_svg_renderer import SimpleSVGRenderer
+from production_svg_renderer import ProductionSVGRenderer
 from fast_architectural_visualizer import FastArchitecturalVisualizer
 from empty_plan_visualizer import EmptyPlanVisualizer
 from data_validator import DataValidator
@@ -265,6 +266,7 @@ class CADAnalyzerApp:
         self.targeted_extractor = TargetedFloorPlanExtractor()  # For extracting specific floor plan section
         self.svg_renderer = SVGFloorPlanRenderer()  # For high-quality SVG rendering
         self.simple_svg_renderer = SimpleSVGRenderer()  # For simple SVG rendering
+        self.production_svg_renderer = ProductionSVGRenderer()  # For production SVG rendering
         self.fast_visualizer = FastArchitecturalVisualizer()  # For fast rendering
         self.empty_plan_visualizer = EmptyPlanVisualizer()  # For clean empty plan view
         self.ilot_placer = OptimizedIlotPlacer()
@@ -425,14 +427,21 @@ class CADAnalyzerApp:
                     # Set visualization mode to show base floor plan (Image 1 style)
                     st.session_state.visualization_mode = "base"
                     
-                    st.markdown('<div class="success-message">✅ Floor plan processed successfully! Showing high-quality SVG rendering with proper colors.</div>', unsafe_allow_html=True)
+                    st.markdown('<div class="success-message">✅ Plan traité avec succès! Affichage SVG professionnel avec contrôles interactifs.</div>', unsafe_allow_html=True)
                     
-                    # Create SVG rendering using simple renderer
+                    # Create production SVG rendering
                     target_bounds = result.get('bounds')
-                    svg_code = self.simple_svg_renderer.render_dxf_to_svg(file_content, uploaded_file.name, target_bounds)
+                    svg_code = self.production_svg_renderer.dxf_to_svg(file_content, uploaded_file.name, target_bounds)
                     
-                    # Display SVG with controls
-                    self.simple_svg_renderer.embed_svg_with_controls(svg_code, height=600)
+                    # Display interactive SVG with pan/zoom controls
+                    self.production_svg_renderer.embed_interactive_svg(svg_code, height=650)
+                    
+                    # Add export options
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        self.production_svg_renderer.export_svg(svg_code, f"{uploaded_file.name.replace('.dxf', '')}_plan.svg")
+                    with col2:
+                        self.production_svg_renderer.export_png(svg_code, f"{uploaded_file.name.replace('.dxf', '')}_plan.png")
                     
                     # Display analysis results
                     self.display_analysis_results(result)
