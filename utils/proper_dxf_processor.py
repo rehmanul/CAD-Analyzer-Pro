@@ -143,12 +143,16 @@ class ProperDXFProcessor:
             return self._create_fallback_structure(filename)
     
     def _extract_walls(self, doc) -> List[Dict]:
-        """Extract wall elements from DXF"""
+        """Extract wall elements from DXF (floor plan only, not elevations)"""
         walls = []
         
-        for entity in doc.modelspace():
+        # Get all entities and filter for floor plan data
+        all_entities = list(doc.modelspace())
+        floor_plan_entities = self._filter_floor_plan_entities(all_entities)
+        
+        for entity in floor_plan_entities:
             if entity.dxftype() == 'LINE':
-                if self._is_wall_layer(entity.dxf.layer):
+                if self._is_wall_layer(entity.dxf.layer) and self._is_floor_plan_line(entity):
                     wall = {
                         'type': 'LINE',
                         'points': [
@@ -160,7 +164,7 @@ class ProperDXFProcessor:
                     walls.append(wall)
             
             elif entity.dxftype() == 'LWPOLYLINE':
-                if self._is_wall_layer(entity.dxf.layer):
+                if self._is_wall_layer(entity.dxf.layer) and self._is_floor_plan_polyline(entity):
                     points = [(point[0], point[1]) for point in entity.get_points()]
                     if len(points) >= 2:
                         wall = {
@@ -171,7 +175,7 @@ class ProperDXFProcessor:
                         walls.append(wall)
             
             elif entity.dxftype() == 'POLYLINE':
-                if self._is_wall_layer(entity.dxf.layer):
+                if self._is_wall_layer(entity.dxf.layer) and self._is_floor_plan_polyline(entity):
                     points = [(vertex.dxf.location.x, vertex.dxf.location.y) for vertex in entity.vertices]
                     if len(points) >= 2:
                         wall = {
@@ -182,6 +186,67 @@ class ProperDXFProcessor:
                         walls.append(wall)
         
         return walls
+    
+    def _filter_floor_plan_entities(self, entities) -> List:
+        """Filter entities to include only floor plan data, exclude elevations"""
+        floor_plan_entities = []
+        
+        # Analyze Z-coordinates to identify floor plan vs elevation
+        z_coords = []
+        for entity in entities:
+            try:
+                if entity.dxftype() == 'LINE':
+                    z_coords.extend([entity.dxf.start.z, entity.dxf.end.z])
+                elif entity.dxftype() in ['LWPOLYLINE', 'POLYLINE']:
+                    # Most floor plans have Z=0
+                    z_coords.append(getattr(entity.dxf, 'elevation', 0))
+            except:
+                pass
+        
+        # Find the most common Z level (likely floor plan level)
+        if z_coords:
+            from collections import Counter
+            z_counter = Counter(z_coords)
+            floor_plan_z = z_counter.most_common(1)[0][0]
+        else:
+            floor_plan_z = 0
+        
+        # Filter entities at floor plan level
+        for entity in entities:
+            try:
+                if entity.dxftype() == 'LINE':
+                    if abs(entity.dxf.start.z - floor_plan_z) < 0.1 and abs(entity.dxf.end.z - floor_plan_z) < 0.1:
+                        floor_plan_entities.append(entity)
+                elif entity.dxftype() in ['LWPOLYLINE', 'POLYLINE']:
+                    entity_z = getattr(entity.dxf, 'elevation', 0)
+                    if abs(entity_z - floor_plan_z) < 0.1:
+                        floor_plan_entities.append(entity)
+                else:
+                    # Include other entity types (INSERT, ARC, etc.)
+                    floor_plan_entities.append(entity)
+            except:
+                # Include entities that don't have Z coordinates
+                floor_plan_entities.append(entity)
+        
+        return floor_plan_entities
+    
+    def _is_floor_plan_line(self, entity) -> bool:
+        """Check if line entity is part of floor plan (not elevation)"""
+        try:
+            # Floor plan lines typically have minimal Z variation
+            z_diff = abs(entity.dxf.start.z - entity.dxf.end.z)
+            return z_diff < 0.1
+        except:
+            return True
+    
+    def _is_floor_plan_polyline(self, entity) -> bool:
+        """Check if polyline entity is part of floor plan"""
+        try:
+            # Floor plan polylines are typically at elevation 0 or constant Z
+            elevation = getattr(entity.dxf, 'elevation', 0)
+            return abs(elevation) < 1.0  # Within 1 unit of Z=0
+        except:
+            return True
     
     def _extract_doors(self, doc) -> List[Dict]:
         """Extract door elements from DXF"""

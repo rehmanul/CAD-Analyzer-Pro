@@ -388,11 +388,11 @@ class CADAnalyzerApp:
                 try:
                     file_content = uploaded_file.read()
                     
-                    # Use real DXF processor for authentic architectural data
+                    # Use proper DXF processor for floor plan data (not elevations)
                     if uploaded_file.name.lower().endswith('.dxf'):
                         file_size_mb = len(file_content) / (1024 * 1024)
-                        st.info(f"Processing DXF file ({file_size_mb:.1f}MB) - extracting real architectural data...")
-                        result = self.real_dxf_processor.process_dxf_file(file_content, uploaded_file.name)
+                        st.info(f"Processing DXF file ({file_size_mb:.1f}MB) - extracting floor plan data...")
+                        result = self.proper_dxf_processor.process_dxf_file(file_content, uploaded_file.name)
                     else:
                         # Use ultra-high performance analyzer for other files
                         result = self.floor_analyzer.process_file_ultra_fast(file_content, uploaded_file.name)

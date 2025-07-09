@@ -171,10 +171,21 @@ class FastArchitecturalVisualizer:
         )
     
     def _add_legend(self, fig: go.Figure):
-        """Add legend matching client's reference image"""
-        # Add legend as annotations positioned in top-right
-        legend_x = 0.98
-        legend_y = 0.98
+        """Add legend matching client's reference image with proper spacing"""
+        # Position legend in top-right with better spacing
+        legend_x = 0.95
+        legend_y = 0.95
+        
+        # Create legend background box first
+        fig.add_shape(
+            type="rect",
+            x0=0.78, y0=0.80,
+            x1=0.98, y1=0.98,
+            fillcolor="white",
+            line=dict(color="black", width=1),
+            opacity=0.9,
+            xref="paper", yref="paper"
+        )
         
         # Legend title
         fig.add_annotation(
@@ -183,40 +194,38 @@ class FastArchitecturalVisualizer:
             showarrow=False,
             xref="paper", yref="paper",
             xanchor="right", yanchor="top",
-            font=dict(size=14, color="black"),
-            bgcolor="white",
-            bordercolor="black",
-            borderwidth=1
+            font=dict(size=12, color="black", family="Arial"),
+            bgcolor="rgba(0,0,0,0)"
         )
         
-        # Legend items
+        # Legend items with better spacing
         legend_items = [
-            {"color": "#4285F4", "text": "NO ENTREE", "y_offset": -0.05},
-            {"color": "#EA4335", "text": "ENTRÉE/SORTIE", "y_offset": -0.08},
-            {"color": "#2C2C2C", "text": "MUR", "y_offset": -0.11}
+            {"color": "#3B82F6", "text": "NO ENTREE", "y_offset": -0.04},
+            {"color": "#EF4444", "text": "ENTRÉE/SORTIE", "y_offset": -0.07},
+            {"color": "#6B7280", "text": "MUR", "y_offset": -0.10}
         ]
         
         for item in legend_items:
             # Color box
             fig.add_annotation(
-                x=legend_x - 0.08, y=legend_y + item["y_offset"],
+                x=0.82, y=legend_y + item["y_offset"],
                 text="■",
                 showarrow=False,
                 xref="paper", yref="paper",
                 xanchor="center", yanchor="middle",
-                font=dict(size=16, color=item["color"]),
-                bgcolor="white"
+                font=dict(size=14, color=item["color"]),
+                bgcolor="rgba(0,0,0,0)"
             )
             
-            # Text label
+            # Text label with proper spacing
             fig.add_annotation(
-                x=legend_x - 0.02, y=legend_y + item["y_offset"],
+                x=0.85, y=legend_y + item["y_offset"],
                 text=item["text"],
                 showarrow=False,
                 xref="paper", yref="paper",
                 xanchor="left", yanchor="middle",
-                font=dict(size=11, color="black"),
-                bgcolor="white"
+                font=dict(size=10, color="black", family="Arial"),
+                bgcolor="rgba(0,0,0,0)"
             )
     
     def create_floor_plan_with_ilots(self, analysis_data: Dict, ilots: List[Dict]) -> go.Figure:
@@ -246,13 +255,25 @@ class FastArchitecturalVisualizer:
         return fig
     
     def _add_legend_with_ilots(self, fig: go.Figure):
-        """Add legend with îlots included"""
-        # Clear existing legend annotations
+        """Add legend with îlots included - properly spaced"""
+        # Clear existing shapes and annotations
         fig.layout.annotations = []
+        fig.layout.shapes = [shape for shape in fig.layout.shapes if shape.get('type') != 'rect' or not (shape.get('x0', 0) > 0.7)]
         
-        # Add legend as annotations positioned in top-right
-        legend_x = 0.98
-        legend_y = 0.98
+        # Position legend in top-right with better spacing
+        legend_x = 0.95
+        legend_y = 0.95
+        
+        # Create legend background box
+        fig.add_shape(
+            type="rect",
+            x0=0.75, y0=0.75,
+            x1=0.98, y1=0.98,
+            fillcolor="white",
+            line=dict(color="black", width=1),
+            opacity=0.9,
+            xref="paper", yref="paper"
+        )
         
         # Legend title
         fig.add_annotation(
@@ -261,41 +282,39 @@ class FastArchitecturalVisualizer:
             showarrow=False,
             xref="paper", yref="paper",
             xanchor="right", yanchor="top",
-            font=dict(size=14, color="black"),
-            bgcolor="white",
-            bordercolor="black",
-            borderwidth=1
+            font=dict(size=12, color="black", family="Arial"),
+            bgcolor="rgba(0,0,0,0)"
         )
         
-        # Legend items including îlots
+        # Legend items including îlots with proper spacing
         legend_items = [
-            {"color": "#3B82F6", "text": "NO ENTREE", "y_offset": -0.05},
-            {"color": "#EF4444", "text": "ENTRÉE/SORTIE", "y_offset": -0.08},
-            {"color": "#6B7280", "text": "MUR", "y_offset": -0.11},
-            {"color": "#EF4444", "text": "ÎLOTS", "y_offset": -0.14}
+            {"color": "#3B82F6", "text": "NO ENTREE", "y_offset": -0.04},
+            {"color": "#EF4444", "text": "ENTRÉE/SORTIE", "y_offset": -0.07},
+            {"color": "#6B7280", "text": "MUR", "y_offset": -0.10},
+            {"color": "#EF4444", "text": "ÎLOTS", "y_offset": -0.13}
         ]
         
         for item in legend_items:
             # Color box
             fig.add_annotation(
-                x=legend_x - 0.08, y=legend_y + item["y_offset"],
+                x=0.78, y=legend_y + item["y_offset"],
                 text="■",
                 showarrow=False,
                 xref="paper", yref="paper",
                 xanchor="center", yanchor="middle",
-                font=dict(size=16, color=item["color"]),
-                bgcolor="white"
+                font=dict(size=14, color=item["color"]),
+                bgcolor="rgba(0,0,0,0)"
             )
             
-            # Text label
+            # Text label with proper spacing
             fig.add_annotation(
-                x=legend_x - 0.02, y=legend_y + item["y_offset"],
+                x=0.81, y=legend_y + item["y_offset"],
                 text=item["text"],
                 showarrow=False,
                 xref="paper", yref="paper",
                 xanchor="left", yanchor="middle",
-                font=dict(size=11, color="black"),
-                bgcolor="white"
+                font=dict(size=10, color="black", family="Arial"),
+                bgcolor="rgba(0,0,0,0)"
             )
     
     def create_complete_floor_plan(self, analysis_data: Dict, ilots: List[Dict], corridors: List[Dict]) -> go.Figure:
