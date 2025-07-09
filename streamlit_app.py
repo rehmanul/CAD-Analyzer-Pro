@@ -78,79 +78,55 @@ st.markdown("""
         --border-color: #e5e7eb;
     }
 
-    /* DARK THEME TEXT VISIBILITY FIX */
-    /* Target dark theme specifically without changing backgrounds */
-    .stApp[data-theme="dark"] {
+    /* TARGETED DARK THEME TEXT FIXES */
+    /* Only target specific problematic elements in dark theme */
+    
+    /* File uploader text - the main issue */
+    .stApp[data-theme="dark"] .stFileUploader label,
+    .stApp[data-theme="dark"] div[data-testid="stFileUploader"] label,
+    .stApp[data-theme="dark"] div[data-testid="stFileUploader"] span,
+    .stApp[data-theme="dark"] div[data-testid="stFileUploader"] small,
+    .stApp[data-theme="dark"] div[data-testid="stFileUploader"] p {
         color: #ffffff !important;
     }
-
-    /* Force white text for ALL elements in dark theme */
-    .stApp[data-theme="dark"] *:not(.hero-section *):not(.section-header *):not(.success-message *) {
+    
+    /* Sidebar text in dark theme */
+    .stApp[data-theme="dark"] section[data-testid="stSidebar"] label,
+    .stApp[data-theme="dark"] section[data-testid="stSidebar"] span,
+    .stApp[data-theme="dark"] section[data-testid="stSidebar"] p,
+    .stApp[data-theme="dark"] section[data-testid="stSidebar"] h1,
+    .stApp[data-theme="dark"] section[data-testid="stSidebar"] h2,
+    .stApp[data-theme="dark"] section[data-testid="stSidebar"] h3 {
         color: #ffffff !important;
     }
-
-    /* Main content area in dark theme */
-    .stApp[data-theme="dark"] .main * {
+    
+    /* Main content labels and text */
+    .stApp[data-theme="dark"] .main label,
+    .stApp[data-theme="dark"] .main span:not(.hero-section span):not(.section-header span),
+    .stApp[data-theme="dark"] .main p:not(.hero-section p):not(.section-header p) {
         color: #ffffff !important;
     }
-
-    /* Sidebar in dark theme */
-    .stApp[data-theme="dark"] .sidebar *,
-    .stApp[data-theme="dark"] section[data-testid="stSidebar"] * {
+    
+    /* Input field labels specifically */
+    .stApp[data-theme="dark"] .stTextInput > label,
+    .stApp[data-theme="dark"] .stSelectbox > label,
+    .stApp[data-theme="dark"] .stNumberInput > label,
+    .stApp[data-theme="dark"] .stSlider > label,
+    .stApp[data-theme="dark"] .stCheckbox > label,
+    .stApp[data-theme="dark"] .stRadio > label {
         color: #ffffff !important;
     }
-
-    /* File uploader text in dark theme */
-    .stApp[data-theme="dark"] .stFileUploader *,
-    .stApp[data-theme="dark"] div[data-testid="stFileUploader"] *,
-    .stApp[data-theme="dark"] .uploadedFile * {
+    
+    /* Tab labels */
+    .stApp[data-theme="dark"] .stTabs [data-baseweb="tab-list"] button p,
+    .stApp[data-theme="dark"] .stTabs [data-baseweb="tab-list"] button span {
         color: #ffffff !important;
     }
-
-    /* Input labels and text in dark theme */
-    .stApp[data-theme="dark"] .stTextInput label,
-    .stApp[data-theme="dark"] .stSelectbox label,
-    .stApp[data-theme="dark"] .stNumberInput label,
-    .stApp[data-theme="dark"] .stSlider label,
-    .stApp[data-theme="dark"] .stCheckbox label,
-    .stApp[data-theme="dark"] .stRadio label {
+    
+    /* Metric labels */
+    .stApp[data-theme="dark"] div[data-testid="metric-container"] label,
+    .stApp[data-theme="dark"] div[data-testid="metric-container"] span {
         color: #ffffff !important;
-    }
-
-    /* Markdown and text elements in dark theme */
-    .stApp[data-theme="dark"] .stMarkdown *,
-    .stApp[data-theme="dark"] .stText *,
-    .stApp[data-theme="dark"] .stSubheader *,
-    .stApp[data-theme="dark"] .stHeader *,
-    .stApp[data-theme="dark"] .stTitle *,
-    .stApp[data-theme="dark"] .stCaption *,
-    .stApp[data-theme="dark"] .stMetric *,
-    .stApp[data-theme="dark"] div[data-testid="stMarkdownContainer"] *,
-    .stApp[data-theme="dark"] div[data-testid="metric-container"] * {
-        color: #ffffff !important;
-    }
-
-    /* Tab text in dark theme */
-    .stApp[data-theme="dark"] .stTabs *,
-    .stApp[data-theme="dark"] .stTabs [data-baseweb="tab-list"] * {
-        color: #ffffff !important;
-    }
-
-    /* Warning/Info messages in dark theme */
-    .stApp[data-theme="dark"] .stWarning *,
-    .stApp[data-theme="dark"] .stInfo *,
-    .stApp[data-theme="dark"] .stError *,
-    .stApp[data-theme="dark"] .stSuccess * {
-        color: #ffffff !important;
-    }
-
-    /* Light theme (keep original colors) */
-    .stApp:not([data-theme="dark"]) {
-        color: #1f2937;
-    }
-
-    .stApp:not([data-theme="dark"]) * {
-        color: #1f2937;
     }
 
     /* Modern Hero Section */
