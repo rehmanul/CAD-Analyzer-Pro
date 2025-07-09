@@ -113,9 +113,12 @@ class SmartFloorPlanDetector:
         regions = []
         
         try:
-            # Get bounding boxes for all entities
+            # First, filter out obvious elevation elements (curves, human figures, etc.)
+            floor_plan_entities = self._filter_floor_plan_entities(entities)
+            
+            # Get bounding boxes for filtered entities
             entity_boxes = []
-            for entity in entities:
+            for entity in floor_plan_entities:
                 bbox = self._get_entity_bbox(entity)
                 if bbox:
                     entity_boxes.append({
@@ -134,8 +137,8 @@ class SmartFloorPlanDetector:
             # Get centers for clustering
             centers = np.array([box['center'] for box in entity_boxes])
             
-            # Cluster entities by spatial proximity
-            clustering = DBSCAN(eps=50, min_samples=5).fit(centers)
+            # Cluster entities by spatial proximity (tighter clustering for floor plans)
+            clustering = DBSCAN(eps=30, min_samples=10).fit(centers)
             
             # Group entities by clusters
             clusters = defaultdict(list)
@@ -154,6 +157,117 @@ class SmartFloorPlanDetector:
         
         return regions
     
+    def _filter_floor_plan_entities(self, entities) -> List:
+        """Filter entities to keep only floor plan elements (remove elevation drawings)"""
+        floor_plan_entities = []
+        
+        try:
+            for entity in entities:
+                entity_type = entity.dxftype()
+                
+                # Skip complex curves and splines that are common in elevation drawings
+                if entity_type in ['SPLINE', 'ELLIPSE', 'HATCH']:
+                    continue
+                
+                # Skip text entities that might be elevation labels
+                if entity_type in ['TEXT', 'MTEXT']:
+                    continue
+                
+                # For circles, check if they're too small (details) or too large (people)
+                if entity_type == 'CIRCLE':
+                    try:
+                        radius = entity.dxf.radius
+                        # Skip very small circles (details) or very large ones (people heads)
+                        if radius < 0.1 or radius > 10:
+                            continue
+                    except:
+                        continue
+                
+                # For arcs, check if they're reasonable door arcs
+                if entity_type == 'ARC':
+                    try:
+                        radius = entity.dxf.radius
+                        # Keep door-sized arcs only
+                        if 0.5 <= radius <= 2.0:
+                            floor_plan_entities.append(entity)
+                    except:
+                        continue
+                
+                # For lines, check if they're horizontal/vertical (typical of floor plans)
+                elif entity_type == 'LINE':
+                    try:
+                        start = entity.dxf.start
+                        end = entity.dxf.end
+                        
+                        # Calculate line angle
+                        dx = end.x - start.x
+                        dy = end.y - start.y
+                        
+                        if abs(dx) < 0.001 and abs(dy) < 0.001:  # Skip zero-length lines
+                            continue
+                        
+                        # Check if line is approximately horizontal or vertical
+                        if abs(dx) < 0.001 or abs(dy) < 0.001:  # Perfectly horizontal/vertical
+                            floor_plan_entities.append(entity)
+                        else:
+                            # Calculate angle from horizontal
+                            angle = abs(np.arctan2(dy, dx) * 180 / np.pi)
+                            # Keep lines that are close to horizontal/vertical (within 15 degrees)
+                            if angle <= 15 or angle >= 75:
+                                floor_plan_entities.append(entity)
+                    except:
+                        # If we can't analyze the line, include it
+                        floor_plan_entities.append(entity)
+                
+                # For polylines, check if they form rectangular shapes (typical of floor plans)
+                elif entity_type in ['LWPOLYLINE', 'POLYLINE']:
+                    try:
+                        points = list(entity.get_points())
+                        if len(points) >= 3:
+                            # Check if it's a simple rectangular shape
+                            if self._is_rectangular_shape(points):
+                                floor_plan_entities.append(entity)
+                    except:
+                        continue
+                
+                # Keep other basic entities
+                else:
+                    floor_plan_entities.append(entity)
+            
+            print(f"Filtered {len(entities)} entities down to {len(floor_plan_entities)} floor plan entities")
+            
+        except Exception as e:
+            print(f"Error filtering floor plan entities: {str(e)}")
+            return entities  # Return original if filtering fails
+        
+        return floor_plan_entities
+    
+    def _is_rectangular_shape(self, points) -> bool:
+        """Check if a series of points forms a rectangular shape"""
+        try:
+            if len(points) < 4:
+                return False
+            
+            # Check if most line segments are horizontal or vertical
+            horizontal_vertical_count = 0
+            
+            for i in range(len(points) - 1):
+                p1 = points[i]
+                p2 = points[i + 1]
+                
+                dx = abs(p2[0] - p1[0])
+                dy = abs(p2[1] - p1[1])
+                
+                # Check if line is approximately horizontal or vertical
+                if dx < 0.1 or dy < 0.1:
+                    horizontal_vertical_count += 1
+            
+            # If most lines are horizontal/vertical, it's likely a rectangular shape
+            return horizontal_vertical_count >= len(points) * 0.7
+        
+        except:
+            return False
+    
     def _analyze_cluster_region(self, cluster_entities) -> Optional[Dict]:
         """Analyze a cluster of entities to determine if it's a floor plan"""
         if not cluster_entities:
@@ -170,15 +284,33 @@ class SmartFloorPlanDetector:
             wall_count = 0
             door_count = 0
             line_count = 0
+            arc_count = 0
+            circle_count = 0
+            polyline_count = 0
+            text_count = 0
             
             for box in cluster_entities:
                 entity = box['entity']
-                if entity.dxftype() in ['LINE', 'LWPOLYLINE', 'POLYLINE']:
+                entity_type = entity.dxftype()
+                
+                if entity_type == 'LINE':
                     line_count += 1
                     if self._is_wall_entity(entity):
                         wall_count += 1
                     elif self._is_door_entity(entity):
                         door_count += 1
+                elif entity_type == 'ARC':
+                    arc_count += 1
+                    if self._is_door_entity(entity):
+                        door_count += 1
+                elif entity_type == 'CIRCLE':
+                    circle_count += 1
+                elif entity_type in ['LWPOLYLINE', 'POLYLINE']:
+                    polyline_count += 1
+                    if self._is_wall_entity(entity):
+                        wall_count += 1
+                elif entity_type in ['TEXT', 'MTEXT']:
+                    text_count += 1
             
             # Calculate metrics for floor plan detection
             region_width = max_x - min_x
@@ -186,19 +318,36 @@ class SmartFloorPlanDetector:
             region_area = region_width * region_height
             entity_density = len(cluster_entities) / region_area if region_area > 0 else 0
             
-            # Floor plan characteristics
-            is_rectangular = abs(region_width - region_height) < max(region_width, region_height) * 0.5
-            has_walls = wall_count > 5
-            has_doors = door_count > 0
-            good_density = 0.01 < entity_density < 1.0
+            # Floor plan characteristics (more sophisticated detection)
+            aspect_ratio = region_width / region_height if region_height > 0 else 1
+            is_reasonable_aspect = 0.3 < aspect_ratio < 3.0  # Floor plans are usually not extremely elongated
+            
+            has_walls = wall_count > 10  # Floor plans have many walls
+            has_doors = door_count > 0  # Floor plans have doors/openings
+            has_arcs = arc_count > 0  # Floor plans often have door arcs
+            good_density = 0.005 < entity_density < 0.5  # Not too sparse, not too dense
+            
+            # Check for elevation indicators (things that suggest this is NOT a floor plan)
+            has_too_many_lines = line_count > wall_count * 3  # Elevations have many detail lines
+            has_excessive_text = text_count > 50  # Elevations often have lots of labels
+            
+            # Floor plan should have good balance of different entity types
+            entity_diversity = len([x for x in [line_count, arc_count, polyline_count] if x > 0])
             
             # Score this region as potential floor plan
             score = 0
-            if has_walls: score += 3
-            if has_doors: score += 2
-            if is_rectangular: score += 1
+            if has_walls: score += 5  # Most important factor
+            if has_doors: score += 3
+            if has_arcs: score += 2  # Door arcs are common in floor plans
+            if is_reasonable_aspect: score += 2
             if good_density: score += 1
-            if wall_count > 10: score += 1
+            if entity_diversity >= 2: score += 1
+            if wall_count > 20: score += 1
+            
+            # Penalize elevation-like characteristics
+            if has_too_many_lines: score -= 3
+            if has_excessive_text: score -= 2
+            if aspect_ratio > 2.5 or aspect_ratio < 0.4: score -= 1  # Very elongated regions
             
             return {
                 'bounds': {
@@ -211,9 +360,15 @@ class SmartFloorPlanDetector:
                 'wall_count': wall_count,
                 'door_count': door_count,
                 'line_count': line_count,
+                'arc_count': arc_count,
+                'circle_count': circle_count,
+                'polyline_count': polyline_count,
+                'text_count': text_count,
                 'score': score,
                 'area': region_area,
-                'density': entity_density
+                'density': entity_density,
+                'aspect_ratio': aspect_ratio,
+                'entity_diversity': entity_diversity
             }
             
         except Exception as e:
