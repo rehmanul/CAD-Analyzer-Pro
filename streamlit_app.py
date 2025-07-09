@@ -37,6 +37,7 @@ from proper_dxf_processor import ProperDXFProcessor
 from fast_dxf_processor import FastDXFProcessor
 from real_dxf_processor import RealDXFProcessor
 from fast_architectural_visualizer import FastArchitecturalVisualizer
+from empty_plan_visualizer import EmptyPlanVisualizer
 from data_validator import DataValidator
 
 # Page configuration
@@ -253,6 +254,7 @@ class CADAnalyzerApp:
         self.fast_dxf_processor = FastDXFProcessor(timeout_seconds=8)  # For large files
         self.real_dxf_processor = RealDXFProcessor()  # For real architectural data
         self.fast_visualizer = FastArchitecturalVisualizer()  # For fast rendering
+        self.empty_plan_visualizer = EmptyPlanVisualizer()  # For clean empty plan view
         self.ilot_placer = OptimizedIlotPlacer()
         self.simple_placer = SimpleIlotPlacer()  # Backup placer
         self.corridor_generator = OptimizedCorridorGenerator()
@@ -475,22 +477,22 @@ class CADAnalyzerApp:
         """Create fast architectural floor plan visualization without simplification"""
         mode = st.session_state.get('visualization_mode', 'base')
         
-        # Use fast visualizer for large architectural data
+        # Use appropriate visualizer based on mode
         if mode == 'base':
-            # Empty floor plan with walls, restricted areas, entrances
-            fig = self.fast_visualizer.create_fast_floor_plan(result)
+            # Clean empty floor plan like reference image
+            fig = self.empty_plan_visualizer.create_empty_plan(result)
         elif mode == 'with_ilots':
-            # Floor plan with îlots
+            # Clean floor plan with red rectangular îlots
             ilots = st.session_state.get('placed_ilots', [])
-            fig = self.fast_visualizer.create_floor_plan_with_ilots(result, ilots)
+            fig = self.empty_plan_visualizer.create_plan_with_ilots(result, ilots)
         elif mode == 'detailed':
-            # Complete layout with corridors
+            # Complete layout with corridors using fast visualizer
             ilots = st.session_state.get('placed_ilots', [])
             corridors = st.session_state.get('corridors', [])
             fig = self.fast_visualizer.create_complete_floor_plan(result, ilots, corridors)
         else:
-            # Fallback to empty floor plan
-            fig = self.fast_visualizer.create_fast_floor_plan(result)
+            # Fallback to clean empty floor plan
+            fig = self.empty_plan_visualizer.create_empty_plan(result)
         
         return fig
 
