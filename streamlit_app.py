@@ -30,6 +30,7 @@ from client_expected_visualizer import ClientExpectedVisualizer
 from optimized_corridor_generator import OptimizedCorridorGenerator
 from professional_floor_plan_visualizer import ProfessionalFloorPlanVisualizer
 from reference_style_visualizer import ReferenceStyleVisualizer
+from architectural_floor_plan_visualizer import ArchitecturalFloorPlanVisualizer
 from data_validator import DataValidator
 
 # Page configuration
@@ -248,6 +249,7 @@ class CADAnalyzerApp:
         self.visualizer = ClientExpectedVisualizer()
         self.professional_visualizer = ProfessionalFloorPlanVisualizer()
         self.reference_visualizer = ReferenceStyleVisualizer()  # Matches your reference images
+        self.architectural_visualizer = ArchitecturalFloorPlanVisualizer()  # Exact match to your reference
         self.data_validator = DataValidator()
         
         # Initialize session state with visualization modes
@@ -448,202 +450,33 @@ class CADAnalyzerApp:
             """, unsafe_allow_html=True)
             
             st.subheader("Floor Plan Visualization")
-            fig = self.create_floor_plan_visualization(result)
+            fig = self.create_architectural_floor_plan_visualization(result)
             st.plotly_chart(fig, use_container_width=True, height=600)
 
-    def create_floor_plan_visualization(self, result):
-        """Create floor plan visualization matching your reference images - Step by step approach"""
-        import plotly.graph_objects as go
-        
+    def create_architectural_floor_plan_visualization(self, result):
+        """Create architectural floor plan visualization matching your reference images exactly"""
         mode = st.session_state.get('visualization_mode', 'base')
         
-        # Create simplified but effective visualization
-        fig = go.Figure()
-        
-        # Get data
-        walls = result.get('walls', [])
-        restricted_areas = result.get('restricted_areas', [])
-        entrances = result.get('entrances', [])
-        bounds = result.get('bounds', {})
-        
-        print(f"DEBUG: Creating visualization in mode '{mode}' with {len(walls)} walls, {len(restricted_areas)} restricted areas, {len(entrances)} entrances")
-        
-        # Add background
-        min_x = bounds.get('min_x', 0)
-        max_x = bounds.get('max_x', 100)
-        min_y = bounds.get('min_y', 0)
-        max_y = bounds.get('max_y', 100)
-        
-        # Add light background
-        fig.add_shape(
-            type="rect",
-            x0=min_x, y0=min_y,
-            x1=max_x, y1=max_y,
-            fillcolor='#F5F5F5',
-            line=dict(color='#F5F5F5', width=0),
-            layer="below"
-        )
-        
-        # Add restricted areas (blue zones like your reference)
-        if restricted_areas:
-            for area in restricted_areas:
-                if isinstance(area, dict) and 'bounds' in area:
-                    bounds_data = area['bounds']
-                    fig.add_shape(
-                        type="rect",
-                        x0=bounds_data.get('min_x', 0),
-                        y0=bounds_data.get('min_y', 0),
-                        x1=bounds_data.get('max_x', 10),
-                        y1=bounds_data.get('max_y', 10),
-                        fillcolor='#3B82F6',
-                        line=dict(color='#3B82F6', width=2),
-                        opacity=0.8
-                    )
-        
-        # Add entrance areas (red curves like your reference)
-        if entrances:
-            for entrance in entrances:
-                if isinstance(entrance, dict):
-                    x = entrance.get('x', 0)
-                    y = entrance.get('y', 0)
-                    radius = entrance.get('radius', 5)
-                    
-                    # Create circular entrance marking
-                    fig.add_shape(
-                        type="circle",
-                        x0=x-radius, y0=y-radius,
-                        x1=x+radius, y1=y+radius,
-                        fillcolor='#EF4444',
-                        line=dict(color='#EF4444', width=3),
-                        opacity=0.8
-                    )
-        
-        # Add walls (gray like your reference)
-        if walls:
-            walls_added = 0
-            for wall in walls:
-                if len(wall) >= 2:
-                    x_coords = [point[0] for point in wall]
-                    y_coords = [point[1] for point in wall]
-                    
-                    fig.add_trace(go.Scatter(
-                        x=x_coords,
-                        y=y_coords,
-                        mode='lines',
-                        line=dict(color='#6B7280', width=6),  # Thicker walls for better visibility
-                        showlegend=False,
-                        hoverinfo='skip'
-                    ))
-                    walls_added += 1
-            print(f"DEBUG: Added {walls_added} wall traces to figure")
-        
-        # Add îlots if in appropriate mode
-        if mode in ['with_ilots', 'detailed'] and st.session_state.placed_ilots:
-            for ilot in st.session_state.placed_ilots:
-                x = ilot.get('x', 0)
-                y = ilot.get('y', 0)
-                width = ilot.get('width', 2)
-                height = ilot.get('height', 2)
-                
-                fig.add_shape(
-                    type="rect",
-                    x0=x, y0=y,
-                    x1=x + width, y1=y + height,
-                    fillcolor='#EF4444',
-                    line=dict(color='#EF4444', width=2),
-                    opacity=0.7
-                )
-        
-        # Add corridors if in detailed mode
-        if mode == 'detailed' and st.session_state.corridors:
-            for corridor in st.session_state.corridors:
-                path = corridor.get('path', [])
-                if len(path) >= 2:
-                    x_coords = [point[0] for point in path]
-                    y_coords = [point[1] for point in path]
-                    
-                    fig.add_trace(go.Scatter(
-                        x=x_coords,
-                        y=y_coords,
-                        mode='lines',
-                        line=dict(color='#EF4444', width=4),
-                        showlegend=False,
-                        hoverinfo='skip'
-                    ))
-        
-        # Layout is already calculated above for background
-        
-        # Calculate padding - fix for small coordinate ranges
-        width = max_x - min_x if max_x > min_x else 100
-        height = max_y - min_y if max_y > min_y else 100
-        
-        # Use much smaller padding for small coordinate ranges
-        if width < 100 and height < 100:
-            padding = max(width * 0.1, height * 0.1, 2)  # Small padding for small drawings
+        # Use the new architectural visualizer
+        if mode == 'base':
+            # Image 1 style - Empty floor plan with walls, restricted areas, entrances
+            fig = self.architectural_visualizer.create_empty_floor_plan(result)
+        elif mode == 'with_ilots':
+            # Image 2 style - Floor plan with red îlots
+            fig = self.architectural_visualizer.create_floor_plan_with_ilots(
+                result, 
+                st.session_state.placed_ilots
+            )
+        elif mode == 'detailed':
+            # Image 3 style - Complete layout with corridors
+            fig = self.architectural_visualizer.create_complete_floor_plan(
+                result,
+                st.session_state.placed_ilots,
+                st.session_state.corridors
+            )
         else:
-            padding = max(width * 0.05, height * 0.05, 50)  # Reduced default padding
-        
-        print(f"DEBUG: Layout bounds - X: [{min_x:.1f}, {max_x:.1f}], Y: [{min_y:.1f}, {max_y:.1f}], Padding: {padding:.1f}")
-        
-        fig.update_layout(
-            title="Floor Plan Analysis",
-            title_x=0.5,
-            title_font_size=18,
-            xaxis=dict(
-                range=[min_x - padding, max_x + padding],
-                showgrid=False,
-                showticklabels=False,
-                zeroline=False,
-                visible=False
-            ),
-            yaxis=dict(
-                range=[min_y - padding, max_y + padding],
-                showgrid=False,
-                showticklabels=False,
-                zeroline=False,
-                visible=False,
-                scaleanchor="x",
-                scaleratio=1
-            ),
-            plot_bgcolor='#F8F9FA',
-            paper_bgcolor='white',
-            showlegend=True,
-            legend=dict(
-                orientation="h",
-                yanchor="bottom",
-                y=1.02,
-                xanchor="right",
-                x=1,
-                font=dict(size=12)
-            ),
-            height=600,
-            margin=dict(l=20, r=20, t=80, b=20)
-        )
-        
-        # Add legend exactly like your reference
-        fig.add_trace(go.Scatter(
-            x=[None], y=[None],
-            mode='markers',
-            marker=dict(color='#3B82F6', size=12, symbol='square'),
-            name='NO ENTREE',
-            showlegend=True
-        ))
-        
-        fig.add_trace(go.Scatter(
-            x=[None], y=[None],
-            mode='markers',
-            marker=dict(color='#EF4444', size=12, symbol='square'),
-            name='ENTREE/SORTIE',
-            showlegend=True
-        ))
-        
-        fig.add_trace(go.Scatter(
-            x=[None], y=[None],
-            mode='markers',
-            marker=dict(color='#6B7280', size=12, symbol='square'),
-            name='MUR',
-            showlegend=True
-        ))
+            # Fallback to empty floor plan
+            fig = self.architectural_visualizer.create_empty_floor_plan(result)
         
         return fig
 
