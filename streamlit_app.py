@@ -28,6 +28,7 @@ from optimized_ilot_placer import OptimizedIlotPlacer
 from client_expected_visualizer import ClientExpectedVisualizer
 from optimized_corridor_generator import OptimizedCorridorGenerator
 from professional_floor_plan_visualizer import ProfessionalFloorPlanVisualizer
+from data_validator import DataValidator
 
 # Page configuration
 st.set_page_config(
@@ -243,6 +244,7 @@ class CADAnalyzerApp:
         self.corridor_generator = OptimizedCorridorGenerator()
         self.visualizer = ClientExpectedVisualizer()
         self.professional_visualizer = ProfessionalFloorPlanVisualizer()
+        self.data_validator = DataValidator()
         
         # Initialize session state
         if 'analysis_results' not in st.session_state:
@@ -295,6 +297,13 @@ class CADAnalyzerApp:
             </div>
             """, unsafe_allow_html=True)
             utilization_target = st.slider("Space Utilization (%)", 50, 90, 70, key="utilization")
+            
+            # Display data source validation info
+            if st.session_state.analysis_results and st.session_state.placed_ilots:
+                self.data_validator.display_data_source_info(
+                    st.session_state.analysis_results, 
+                    st.session_state.placed_ilots
+                )
             
             # Store settings in session state
             st.session_state.ilot_config = {

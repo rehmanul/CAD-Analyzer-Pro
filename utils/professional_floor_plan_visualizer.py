@@ -111,11 +111,11 @@ class ProfessionalFloorPlanVisualizer:
         if corridors:
             self._add_3d_corridors(fig, corridors)
         
-        # Set realistic 3D layout with professional architectural presentation
+        # Set professional 3D layout matching reference image quality
         fig.update_layout(
             scene=dict(
                 camera=dict(
-                    eye=dict(x=1.8, y=1.8, z=1.2),
+                    eye=dict(x=2.2, y=2.2, z=1.8),  # Better elevated angle
                     projection=dict(type='perspective')
                 ),
                 aspectmode='data',
@@ -140,27 +140,27 @@ class ProfessionalFloorPlanVisualizer:
                     showbackground=False,
                     visible=False
                 ),
-                bgcolor='rgba(245,245,245,0.3)'
+                bgcolor='rgba(248,250,252,0.2)'  # Very light blue-gray background
             ),
-            paper_bgcolor='#f8f9fa',
-            plot_bgcolor='#f8f9fa',
+            paper_bgcolor='#ffffff',
+            plot_bgcolor='#ffffff',
             title={
                 'text': '3D Architectural Visualization',
                 'x': 0.5,
-                'font': dict(family='Inter, Arial, sans-serif', size=20, color='#2d3748')
+                'font': dict(family='Inter, Arial, sans-serif', size=22, color='#1a202c', weight='bold')
             },
             showlegend=True,
             legend=dict(
                 x=0.02,
                 y=0.98,
                 bgcolor="rgba(255,255,255,0.95)",
-                bordercolor="#cbd5e0",
+                bordercolor="#e2e8f0",
                 borderwidth=1,
-                font=dict(size=11)
+                font=dict(size=12, family='Inter, Arial, sans-serif')
             ),
             width=1200,
             height=800,
-            margin=dict(l=0, r=0, t=40, b=0)
+            margin=dict(l=0, r=0, t=50, b=0)
         )
         
         return fig
@@ -563,33 +563,77 @@ class ProfessionalFloorPlanVisualizer:
                         ))
     
     def _add_3d_furniture(self, fig: go.Figure, rooms: List[Dict]):
-        """Add simple furniture elements to rooms"""
-        for room in rooms:
+        """Add detailed furniture elements to create realistic interiors"""
+        furniture_colors = {
+            'desk': '#8b4513',        # Saddle brown
+            'chair': '#654321',       # Dark brown
+            'bed': '#daa520',         # Goldenrod
+            'cabinet': '#a0522d',     # Sienna
+            'decoration': '#228b22'   # Forest green for plants
+        }
+        
+        for i, room in enumerate(rooms):
             x = room.get('x', 0)
             y = room.get('y', 0)
             width = room.get('width', 3)
             height = room.get('height', 2)
+            size_cat = room.get('size_category', 'medium')
             
-            # Add simple furniture based on room size
-            if width > 2 and height > 2:
-                # Add a table/desk in center
-                table_size = 0.8
-                table_height = 0.8
-                table_x = x + width/2 - table_size/2
-                table_y = y + height/2 - table_size/2
+            # Add furniture based on room size and type
+            if width > 1.5 and height > 1.5:
+                # Office/workspace furniture for hotel rooms
+                if size_cat in ['medium', 'large', 'xlarge']:
+                    # Desk
+                    desk_width = min(1.2, width * 0.4)
+                    desk_height = 0.75
+                    desk_depth = min(0.6, height * 0.3)
+                    desk_x = x + width * 0.1
+                    desk_y = y + height * 0.1
+                    
+                    self._add_furniture_piece(fig, desk_x, desk_y, desk_width, desk_depth, desk_height, furniture_colors['desk'])
+                    
+                    # Chair
+                    chair_size = 0.5
+                    chair_height = 0.9
+                    chair_x = desk_x + desk_width + 0.2
+                    chair_y = desk_y + desk_depth/2 - chair_size/2
+                    
+                    self._add_furniture_piece(fig, chair_x, chair_y, chair_size, chair_size, chair_height, furniture_colors['chair'])
                 
-                fig.add_trace(go.Mesh3d(
-                    x=[table_x, table_x+table_size, table_x+table_size, table_x, 
-                       table_x, table_x+table_size, table_x+table_size, table_x],
-                    y=[table_y, table_y, table_y+table_size, table_y+table_size,
-                       table_y, table_y, table_y+table_size, table_y+table_size],
-                    z=[table_height, table_height, table_height, table_height,
-                       table_height+0.1, table_height+0.1, table_height+0.1, table_height+0.1],
-                    color='#8b4513',
-                    opacity=0.8,
-                    showlegend=False,
-                    hoverinfo='skip'
-                ))
+                # Bed for larger rooms
+                if size_cat in ['large', 'xlarge'] and width > 2.5:
+                    bed_width = min(1.4, width * 0.5)
+                    bed_length = min(2.0, height * 0.6)
+                    bed_height = 0.6
+                    bed_x = x + width - bed_width - 0.2
+                    bed_y = y + height - bed_length - 0.2
+                    
+                    self._add_furniture_piece(fig, bed_x, bed_y, bed_width, bed_length, bed_height, furniture_colors['bed'])
+                
+                # Small decoration/plant
+                if width > 2 and height > 2:
+                    plant_size = 0.3
+                    plant_height = 0.4
+                    plant_x = x + width * 0.8
+                    plant_y = y + height * 0.2
+                    
+                    self._add_furniture_piece(fig, plant_x, plant_y, plant_size, plant_size, plant_height, furniture_colors['decoration'])
+    
+    def _add_furniture_piece(self, fig: go.Figure, x: float, y: float, width: float, depth: float, height: float, color: str):
+        """Add a single furniture piece as a 3D box"""
+        vertices_x = [x, x+width, x+width, x, x, x+width, x+width, x]
+        vertices_y = [y, y, y+depth, y+depth, y, y, y+depth, y+depth]
+        vertices_z = [0, 0, 0, 0, height, height, height, height]
+        
+        fig.add_trace(go.Mesh3d(
+            x=vertices_x,
+            y=vertices_y,
+            z=vertices_z,
+            color=color,
+            opacity=0.85,
+            showlegend=False,
+            hoverinfo='skip'
+        ))
     
     def _add_3d_corridors(self, fig: go.Figure, corridors: List[Dict]):
         """Add 3D corridor pathways"""
