@@ -256,6 +256,13 @@ class ReferenceStyleVisualizer:
         min_x, max_x = bounds.get('min_x', 0), bounds.get('max_x', 100)
         min_y, max_y = bounds.get('min_y', 0), bounds.get('max_y', 100)
         
+        print(f"DEBUG: Setting layout bounds: x=[{min_x}, {max_x}], y=[{min_y}, {max_y}]")
+        
+        # Calculate proper padding based on the actual data range
+        width = max_x - min_x
+        height = max_y - min_y
+        padding = max(0.5, width * 0.1, height * 0.1)
+        
         fig.update_layout(
             title={
                 'text': "Floor Plan Analysis",
@@ -263,14 +270,14 @@ class ReferenceStyleVisualizer:
                 'font': {'size': 20, 'family': 'Arial', 'color': '#000000'}
             },
             xaxis=dict(
-                range=[min_x - 5, max_x + 5],
+                range=[min_x - padding, max_x + padding],
                 showgrid=False,
                 showticklabels=False,
                 zeroline=False,
                 showline=False
             ),
             yaxis=dict(
-                range=[min_y - 5, max_y + 5],
+                range=[min_y - padding, max_y + padding],
                 showgrid=False,
                 showticklabels=False,
                 zeroline=False,
