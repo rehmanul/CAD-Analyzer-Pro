@@ -18,7 +18,7 @@ class EmptyPlanVisualizer:
             'walls': '#6B7280',       # Gray walls (MUR)
             'restricted': '#3B82F6',  # Blue restricted areas (NO ENTREE)
             'entrances': '#EF4444',   # Red entrances (ENTRÉE/SORTIE)
-            'ilots': '#EF4444',       # Red îlots
+            'ilots': '#10B981',       # Green îlots like reference image
             'corridors': '#EF4444'    # Red corridors
         }
     
@@ -229,10 +229,10 @@ class EmptyPlanVisualizer:
             )
     
     def create_plan_with_ilots(self, analysis_data: Dict, ilots: List[Dict]) -> go.Figure:
-        """Create plan with red rectangular îlots"""
+        """Create plan with green rectangular îlots matching reference image"""
         fig = self.create_empty_plan(analysis_data)
         
-        # Add red rectangular îlots
+        # Add green rectangular îlots
         for ilot in ilots:
             x = ilot.get('x', 0)
             y = ilot.get('y', 0)
@@ -275,10 +275,10 @@ class EmptyPlanVisualizer:
         
         # Legend items with îlots
         legend_items = [
-            {"color": "#3B82F6", "text": "NO ENTREE", "y_offset": -0.05},
-            {"color": "#EF4444", "text": "ENTRÉE/SORTIE", "y_offset": -0.08},
-            {"color": "#EF4444", "text": "ÎLOTS", "y_offset": -0.11},
-            {"color": "#6B7280", "text": "MUR", "y_offset": -0.14}
+            {"color": "#6B7280", "text": "MUR", "y_offset": -0.05},
+            {"color": "#3B82F6", "text": "NO ENTREE", "y_offset": -0.08},
+            {"color": "#EF4444", "text": "ENTRÉE/SORTIE", "y_offset": -0.11},
+            {"color": "#10B981", "text": "ÎLOTS", "y_offset": -0.14}
         ]
         
         for item in legend_items:

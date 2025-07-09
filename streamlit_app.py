@@ -40,6 +40,7 @@ from fast_architectural_visualizer import FastArchitecturalVisualizer
 from empty_plan_visualizer import EmptyPlanVisualizer
 from data_validator import DataValidator
 from reference_floor_plan_visualizer import ReferenceFloorPlanVisualizer
+from smart_ilot_placer import SmartIlotPlacer
 
 # Page configuration
 st.set_page_config(
@@ -267,6 +268,7 @@ class CADAnalyzerApp:
         self.room_visualizer = ArchitecturalRoomVisualizer()  # For proper room structure
         self.data_validator = DataValidator()
         self.reference_floor_plan_visualizer = ReferenceFloorPlanVisualizer()  # Clean reference style
+        self.smart_ilot_placer = SmartIlotPlacer()  # Intelligent îlot placement
         
         # Initialize session state with visualization modes
         if 'analysis_results' not in st.session_state:
@@ -480,22 +482,22 @@ class CADAnalyzerApp:
         mode = st.session_state.get('visualization_mode', 'base')
         
         try:
-            # Use reference visualizer for clean floor plan matching your reference images
+            # Use the working visualizer that achieved the clean result shown in your image
             if mode == 'base':
                 # Clean empty floor plan with gray walls, blue restricted areas, red entrances
-                fig = self.reference_floor_plan_visualizer.create_empty_floor_plan(result)
+                fig = self.empty_plan_visualizer.create_empty_plan(result)
             elif mode == 'with_ilots':
                 # Floor plan with green rectangular îlots
                 ilots = st.session_state.get('placed_ilots', [])
-                fig = self.reference_floor_plan_visualizer.create_floor_plan_with_ilots(result, ilots)
+                fig = self.empty_plan_visualizer.create_plan_with_ilots(result, ilots)
             elif mode == 'detailed':
                 # Complete layout with corridors
                 ilots = st.session_state.get('placed_ilots', [])
                 corridors = st.session_state.get('corridors', [])
-                fig = self.reference_floor_plan_visualizer.create_complete_floor_plan(result, ilots, corridors)
+                fig = self.empty_plan_visualizer.create_complete_plan(result, ilots, corridors)
             else:
-                # Default to clean reference visualization
-                fig = self.reference_floor_plan_visualizer.create_empty_floor_plan(result)
+                # Default to clean visualization that works
+                fig = self.empty_plan_visualizer.create_empty_plan(result)
         except Exception as e:
             st.error(f"Visualization error: {str(e)}")
             # Fallback to basic visualization
@@ -545,7 +547,33 @@ class CADAnalyzerApp:
 
         # Placement button
         if st.button("🚀 Place Îlots", type="primary", use_container_width=True):
-            self.place_ilots(config)
+            with st.spinner("Placing îlots intelligently..."):
+                # Use smart îlot placer for intelligent placement
+                analysis_results = st.session_state.analysis_results
+                placed_ilots = self.smart_ilot_placer.place_ilots_smart(analysis_results, config)
+                
+                if placed_ilots:
+                    st.session_state.placed_ilots = placed_ilots
+                    st.session_state.visualization_mode = "with_ilots"
+                    
+                    # Calculate placement statistics
+                    stats = self.smart_ilot_placer.calculate_placement_stats(placed_ilots)
+                    
+                    st.markdown('<div class="success-message">✅ Îlots placed successfully! Showing floor plan with green rectangular îlots.</div>', unsafe_allow_html=True)
+                    
+                    # Display placement statistics
+                    col1, col2, col3, col4 = st.columns(4)
+                    with col1:
+                        st.metric("Total Îlots", stats['total_ilots'])
+                    with col2:
+                        st.metric("Total Area", f"{stats['total_area']:.1f} m²")
+                    with col3:
+                        st.metric("Average Size", f"{stats['average_size']:.1f} m²")
+                    with col4:
+                        coverage = (stats['total_area'] / (analysis_results['bounds']['max_x'] * analysis_results['bounds']['max_y'])) * 100
+                        st.metric("Coverage", f"{coverage:.1f}%")
+                else:
+                    st.error("❌ Failed to place îlots. Please check the configuration and try again.")
 
         # Display placement results
         if st.session_state.placed_ilots:
