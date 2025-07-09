@@ -478,7 +478,7 @@ class CADAnalyzerApp:
                         x=x_coords,
                         y=y_coords,
                         mode='lines',
-                        line=dict(color='#000000', width=2),
+                        line=dict(color='#000000', width=3),  # Increased line width
                         showlegend=False,
                         hoverinfo='skip'
                     ))
@@ -525,10 +525,15 @@ class CADAnalyzerApp:
         min_y = bounds.get('min_y', 0)
         max_y = bounds.get('max_y', 100)
         
-        # Calculate padding
-        width = max_x - min_x if max_x > min_x else 1000
-        height = max_y - min_y if max_y > min_y else 1000
-        padding = max(width * 0.05, height * 0.05, 500)
+        # Calculate padding - fix for small coordinate ranges
+        width = max_x - min_x if max_x > min_x else 100
+        height = max_y - min_y if max_y > min_y else 100
+        
+        # Use much smaller padding for small coordinate ranges
+        if width < 100 and height < 100:
+            padding = max(width * 0.1, height * 0.1, 2)  # Small padding for small drawings
+        else:
+            padding = max(width * 0.05, height * 0.05, 50)  # Reduced default padding
         
         print(f"DEBUG: Layout bounds - X: [{min_x:.1f}, {max_x:.1f}], Y: [{min_y:.1f}, {max_y:.1f}], Padding: {padding:.1f}")
         
