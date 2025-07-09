@@ -76,7 +76,11 @@ class SVGFloorPlanRenderer:
                 
                 # If target bounds specified, filter entities
                 if target_bounds:
-                    msp = self._filter_entities_by_bounds(msp, target_bounds)
+                    filtered_entities = self._filter_entities_by_bounds(msp, target_bounds)
+                    # Create a temporary modelspace with filtered entities
+                    temp_msp = doc.modelspace()
+                    temp_msp.entities = filtered_entities
+                    msp = temp_msp
                 
                 # Render to SVG
                 frontend = Frontend(ctx, backend)
@@ -120,21 +124,17 @@ class SVGFloorPlanRenderer:
     def _configure_layer_properties(self, ctx):
         """Configure layer properties for proper rendering"""
         try:
-            # Set line weights and colors for different layer types
-            for layer_name, color in self.layer_color_map.items():
-                try:
-                    # Set color for layer
-                    rgb_color = self._hex_to_rgb(color)
-                    ctx.layer_properties.set_color(layer_name, rgb_color)
-                    
-                    # Set line weight based on layer type
-                    if 'WALL' in layer_name.upper() or 'MUR' in layer_name.upper():
-                        ctx.layer_properties.set_lineweight(layer_name, 0.5)  # Thicker walls
-                    else:
-                        ctx.layer_properties.set_lineweight(layer_name, 0.25)  # Thinner lines
-                        
-                except Exception as e:
-                    print(f"Error configuring layer {layer_name}: {str(e)}")
+            # Try to access layer configuration through different methods
+            if hasattr(ctx, 'configure_layer'):
+                for layer_name, color in self.layer_color_map.items():
+                    try:
+                        rgb_color = self._hex_to_rgb(color)
+                        ctx.configure_layer(layer_name, color=rgb_color)
+                    except Exception as e:
+                        print(f"Error configuring layer {layer_name}: {str(e)}")
+            elif hasattr(ctx, 'set_current_layout'):
+                # Alternative configuration method
+                pass
                     
         except Exception as e:
             print(f"Error configuring layer properties: {str(e)}")
