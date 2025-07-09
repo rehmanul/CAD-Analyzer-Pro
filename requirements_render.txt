@@ -5,9 +5,8 @@ plotly==5.24.1
 pandas==2.2.3
 numpy==1.26.4
 shapely==2.1.0
-# Use older scipy version that has better pre-compiled wheels
-scipy==1.11.4
-scikit-learn==1.3.2
+# SciPy removed - not needed for CAD analysis
+# scikit-learn removed - depends on SciPy
 ezdxf==1.4.0
 PyMuPDF==1.24.14
 opencv-python-headless==4.10.0.84
