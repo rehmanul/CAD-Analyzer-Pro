@@ -47,6 +47,8 @@ from empty_plan_visualizer import EmptyPlanVisualizer
 from data_validator import DataValidator
 from reference_floor_plan_visualizer import ReferenceFloorPlanVisualizer
 from smart_ilot_placer import SmartIlotPlacer
+from advanced_3d_renderer import Advanced3DRenderer
+from webgl_3d_renderer import WebGL3DRenderer
 
 # Page configuration
 st.set_page_config(
@@ -56,17 +58,17 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Modern Professional CSS Styling
+# Professional Theme-Aware CSS Styling
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-    /* Global Styling */
+    /* Global Styling with Theme Support */
     .main {
         font-family: 'Inter', sans-serif;
     }
 
-    /* Theme-aware text colors */
+    /* Light Theme Variables */
     :root {
         --text-primary: #1f2937;
         --text-secondary: #6b7280;
@@ -76,13 +78,53 @@ st.markdown("""
         --border-color: #e5e7eb;
     }
 
-    [data-theme="dark"] {
-        --text-primary: #f9fafb;
-        --text-secondary: #d1d5db;
-        --text-light: #9ca3af;
-        --bg-primary: #1f2937;
-        --bg-secondary: #374151;
-        --border-color: #4b5563;
+    /* Dark Theme Variables */
+    [data-theme="dark"], .stApp[data-theme="dark"] {
+        --text-primary: #f9fafb !important;
+        --text-secondary: #d1d5db !important;
+        --text-light: #9ca3af !important;
+        --bg-primary: #1f2937 !important;
+        --bg-secondary: #374151 !important;
+        --border-color: #4b5563 !important;
+    }
+
+    /* Force text color for all elements */
+    .stApp, .stApp * {
+        color: var(--text-primary) !important;
+    }
+
+    /* Theme-aware text colors */
+    .stMarkdown, .stMarkdown *, .stText, .stText *, 
+    .stSubheader, .stSubheader *, .stHeader, .stHeader *,
+    .stTitle, .stTitle *, .stCaption, .stCaption * {
+        color: var(--text-primary) !important;
+    }
+
+    /* Secondary text elements */
+    .stInfo, .stInfo *, .stSelectbox label, .stTextInput label,
+    .stNumberInput label, .stSlider label {
+        color: var(--text-secondary) !important;
+    }
+
+    /* Input field text */
+    .stTextInput input, .stNumberInput input, .stSelectbox select {
+        color: var(--text-primary) !important;
+        background-color: var(--bg-secondary) !important;
+    }
+
+    /* Sidebar text */
+    .css-1d391kg, .css-1d391kg * {
+        color: var(--text-primary) !important;
+    }
+
+    /* Tab text */
+    .stTabs [data-baseweb="tab-list"] button [data-testid="stMarkdownContainer"] p {
+        color: var(--text-primary) !important;
+    }
+
+    /* Metric text */
+    .metric-container .metric-label, .metric-container .metric-value {
+        color: var(--text-primary) !important;
     }
 
     /* Modern Hero Section */
@@ -91,12 +133,86 @@ st.markdown("""
                     url('https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=1200');
         background-size: cover;
         background-position: center;
-        color: white;
+        color: white !important;
         padding: 3rem 2rem;
         border-radius: 16px;
         margin-bottom: 2rem;
         box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
         text-align: center;
+    }
+
+    .hero-section * {
+        color: white !important;
+    }
+    
+    /* Professional section headers */
+    .section-header {
+        background: linear-gradient(135deg, #4f46e5, #7c3aed);
+        color: white !important;
+        padding: 1rem 2rem;
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+    }
+    
+    .section-header h2 {
+        color: white !important;
+        margin: 0;
+        font-weight: 600;
+    }
+    
+    /* Success message styling */
+    .success-message {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white !important;
+        padding: 1rem;
+        border-radius: 8px;
+        margin: 1rem 0;
+        font-weight: 500;
+        border-left: 4px solid #34d399;
+    }
+    
+    /* Enhanced button styling */
+    .stButton button {
+        background: linear-gradient(135deg, #4f46e5, #7c3aed) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 8px !important;
+        padding: 0.75rem 1.5rem !important;
+        font-weight: 500 !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3) !important;
+    }
+    
+    .stButton button:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4) !important;
+    }
+    
+    /* Metrics styling */
+    .metric-container {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 1rem;
+        border-radius: 8px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    /* 3D visualization controls */
+    .viz-controls {
+        background: rgba(255, 255, 255, 0.95);
+        padding: 1rem;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+        margin-bottom: 1rem;
+    }
+    
+    /* WebGL container styling */
+    .webgl-container {
+        border: 2px solid #4f46e5;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 8px 32px rgba(79, 70, 229, 0.2);
     }
 
     .hero-title {
@@ -525,44 +641,85 @@ class CADAnalyzerApp:
             st.plotly_chart(fig, use_container_width=True, height=600)
 
     def create_architectural_floor_plan_visualization(self, result):
-        """Create clean floor plan visualization matching reference images"""
+        """Create advanced floor plan visualization with 3D rendering capabilities"""
         mode = st.session_state.get('visualization_mode', 'base')
+        
+        # Add 3D visualization option
+        col1, col2 = st.columns([3, 1])
+        with col2:
+            view_3d = st.checkbox("🎛️ 3D View", value=False, key="3d_view_toggle")
+            if view_3d:
+                render_quality = st.selectbox(
+                    "Quality",
+                    ["Standard", "High", "Ultra"],
+                    index=1,
+                    key="3d_quality"
+                )
+                show_wireframe = st.checkbox("Wireframe", value=False, key="wireframe_toggle")
+                enable_shadows = st.checkbox("Shadows", value=True, key="shadows_toggle")
 
         try:
-            # Always use architectural visualizer for consistent results
-            if mode == 'base':
-                # Clean empty floor plan with gray walls, blue restricted areas, red entrances
-                fig = self.architectural_visualizer.create_empty_floor_plan(result)
-            elif mode == 'with_ilots':
-                # Floor plan with red rectangular îlots
-                ilots = st.session_state.get('placed_ilots', [])
-                fig = self.architectural_visualizer.create_floor_plan_with_ilots(result, ilots)
-            elif mode == 'detailed':
-                # Complete layout with corridors
+            # Check if 3D view is enabled
+            if view_3d:
+                # Use advanced 3D renderer
                 ilots = st.session_state.get('placed_ilots', [])
                 corridors = st.session_state.get('corridors', [])
-                fig = self.architectural_visualizer.create_complete_floor_plan(result, ilots, corridors)
-            else:
-                # Default to clean visualization
-                fig = self.architectural_visualizer.create_empty_floor_plan(result)
-
-            # Ensure the visualization has proper styling
-            fig.update_layout(
-                plot_bgcolor='#f7fafc',  # Light gray background
-                paper_bgcolor='white',
-                showlegend=True,
-                legend=dict(
-                    x=1.02, y=1,
-                    bgcolor='white',
-                    bordercolor='#4a5568',
-                    borderwidth=1
+                
+                # Create 3D visualization
+                advanced_3d = Advanced3DRenderer()
+                fig = advanced_3d.create_advanced_3d_visualization(
+                    result, ilots, corridors, 
+                    show_wireframe=show_wireframe,
+                    enable_shadows=enable_shadows
                 )
-            )
+                
+                # Add 3D-specific styling
+                fig.update_layout(
+                    title={
+                        'text': '🎛️ Advanced 3D Floor Plan Visualization',
+                        'x': 0.5,
+                        'xanchor': 'center',
+                        'font': {'size': 20}
+                    },
+                    height=800
+                )
+                
+                return fig
+            else:
+                # Use standard 2D visualization
+                if mode == 'base':
+                    # Clean empty floor plan with gray walls, blue restricted areas, red entrances
+                    fig = self.architectural_visualizer.create_empty_floor_plan(result)
+                elif mode == 'with_ilots':
+                    # Floor plan with red rectangular îlots
+                    ilots = st.session_state.get('placed_ilots', [])
+                    fig = self.architectural_visualizer.create_floor_plan_with_ilots(result, ilots)
+                elif mode == 'detailed':
+                    # Complete layout with corridors
+                    ilots = st.session_state.get('placed_ilots', [])
+                    corridors = st.session_state.get('corridors', [])
+                    fig = self.architectural_visualizer.create_complete_floor_plan(result, ilots, corridors)
+                else:
+                    # Default to clean visualization
+                    fig = self.architectural_visualizer.create_empty_floor_plan(result)
 
-            return fig
+                # Ensure the visualization has proper styling
+                fig.update_layout(
+                    plot_bgcolor='#f7fafc',  # Light gray background
+                    paper_bgcolor='white',
+                    showlegend=True,
+                    legend=dict(
+                        x=1.02, y=1,
+                        bgcolor='white',
+                        bordercolor='#4a5568',
+                        borderwidth=1
+                    )
+                )
+
+                return fig
 
         except Exception as e:
-            st.error(f"Architectural visualization error: {str(e)}")
+            st.error(f"Visualization error: {str(e)}")
             # Create a simple fallback that works
             fig = go.Figure()
 
@@ -938,27 +1095,77 @@ class CADAnalyzerApp:
                     st.metric(corridor_type.title(), count)
 
     def render_results_export_tab(self):
-        """Render results and export options"""
+        """Render results and export options with advanced 3D capabilities"""
         st.markdown('<div class="section-header"><h2>📊 Results & Export</h2></div>', unsafe_allow_html=True)
 
         if not st.session_state.placed_ilots:
             st.warning("Please complete îlot placement and corridor generation first.")
             return
 
-        # Final visualization with controls
-        st.subheader("Complete Floor Plan Layout")
-
-        # Visualization controls
-        col1, col2 = st.columns([3, 1])
-        with col2:
-            view_3d = st.checkbox("3D View", key="export_3d_toggle")
-            professional_style = st.checkbox("Professional Style", value=True, key="export_prof_style")
-
-        fig = self.create_complete_visualization(use_professional=professional_style, show_3d=view_3d)
-        st.plotly_chart(fig, use_container_width=True, height=700)
+        # Advanced Visualization Options
+        st.markdown("### 🎨 Advanced Visualization Options")
+        
+        # Visualization mode selection
+        viz_mode = st.selectbox(
+            "Select Visualization Mode",
+            ["2D Professional", "3D Interactive (Plotly)", "3D WebGL Real-Time", "All Views"],
+            index=0
+        )
+        
+        if viz_mode == "2D Professional":
+            fig = self.create_complete_visualization(use_professional=True, show_3d=False)
+            st.plotly_chart(fig, use_container_width=True, height=800)
+            
+        elif viz_mode == "3D Interactive (Plotly)":
+            advanced_3d = Advanced3DRenderer()
+            fig = advanced_3d.create_advanced_3d_visualization(
+                st.session_state.analysis_results, 
+                st.session_state.placed_ilots, 
+                st.session_state.corridors,
+                show_wireframe=st.checkbox("Show Wireframe", value=False, key="results_wireframe"),
+                enable_shadows=st.checkbox("Enable Shadows", value=True, key="results_shadows")
+            )
+            st.plotly_chart(fig, use_container_width=True, height=800)
+            
+        elif viz_mode == "3D WebGL Real-Time":
+            st.markdown("#### 🎛️ Real-Time 3D WebGL Visualization")
+            st.info("Interactive 3D visualization with real-time manipulation capabilities")
+            
+            webgl_renderer = WebGL3DRenderer()
+            webgl_renderer.render_3d_scene(
+                st.session_state.analysis_results,
+                st.session_state.placed_ilots,
+                st.session_state.corridors,
+                container_id="webgl-3d-scene"
+            )
+            
+        elif viz_mode == "All Views":
+            st.markdown("#### 📋 2D Professional View")
+            fig_2d = self.create_complete_visualization(use_professional=True, show_3d=False)
+            st.plotly_chart(fig_2d, use_container_width=True, height=600)
+            
+            st.markdown("#### 🎛️ 3D Interactive View")
+            advanced_3d = Advanced3DRenderer()
+            fig_3d = advanced_3d.create_advanced_3d_visualization(
+                st.session_state.analysis_results, 
+                st.session_state.placed_ilots, 
+                st.session_state.corridors,
+                show_wireframe=False,
+                enable_shadows=True
+            )
+            st.plotly_chart(fig_3d, use_container_width=True, height=600)
+            
+            st.markdown("#### 🎮 WebGL Real-Time View")
+            webgl_renderer = WebGL3DRenderer()
+            webgl_renderer.render_3d_scene(
+                st.session_state.analysis_results,
+                st.session_state.placed_ilots,
+                st.session_state.corridors,
+                container_id="webgl-all-views"
+            )
 
         # Project summary
-        st.subheader("Project Summary")
+        st.markdown("### 🎯 Project Summary")
 
         col1, col2, col3, col4 = st.columns(4)
         with col1:
@@ -973,7 +1180,7 @@ class CADAnalyzerApp:
             st.metric("Corridor Length", f"{total_corridor_length:.1f} m")
 
         # Export options
-        st.subheader("Export Options")
+        st.markdown("### 💾 Export Options")
 
         col1, col2, col3 = st.columns(3)
 
@@ -986,8 +1193,8 @@ class CADAnalyzerApp:
                 self.export_summary()
 
         with col3:
-            if st.button("Export Image", type="secondary"):
-                st.info("Use the camera icon in the plot toolbar above to save the visualization as an image.")
+            if st.button("📐 Export 3D Model", type="secondary"):
+                st.info("3D model export functionality - IFC, OBJ, GLTF formats coming soon!")
 
     def create_complete_visualization(self, use_professional=True, show_3d=False):
         """Create complete visualization matching your reference images"""
