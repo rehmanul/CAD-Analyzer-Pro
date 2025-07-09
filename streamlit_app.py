@@ -77,10 +77,75 @@ st.markdown("""
         --bg-secondary: #f9fafb;
         --border-color: #e5e7eb;
     }
+    
+    /* Dark Theme Variables */
+    .stApp[data-theme="dark"] {
+        --text-primary: #ffffff;
+        --text-secondary: #d1d5db;
+        --text-light: #9ca3af;
+        --bg-primary: #1f2937;
+        --bg-secondary: #374151;
+        --border-color: #4b5563;
+    }
 
-    /* SIMPLE DARK THEME FIX - Only file uploader */
+    /* COMPREHENSIVE DARK THEME TEXT VISIBILITY FIXES */
     .stApp[data-theme="dark"] .stFileUploader small {
         color: #ffffff !important;
+    }
+    
+    /* Dark theme sidebar text fixes */
+    .stApp[data-theme="dark"] .stSidebar .stMarkdown,
+    .stApp[data-theme="dark"] .stSidebar .stText,
+    .stApp[data-theme="dark"] .stSidebar p,
+    .stApp[data-theme="dark"] .stSidebar span,
+    .stApp[data-theme="dark"] .stSidebar div,
+    .stApp[data-theme="dark"] .stSidebar label {
+        color: #ffffff !important;
+    }
+    
+    /* Dark theme slider labels and values */
+    .stApp[data-theme="dark"] .stSlider label,
+    .stApp[data-theme="dark"] .stSlider .stMarkdown {
+        color: #ffffff !important;
+    }
+    
+    /* Dark theme checkbox labels */
+    .stApp[data-theme="dark"] .stCheckbox label,
+    .stApp[data-theme="dark"] .stCheckbox .stMarkdown {
+        color: #ffffff !important;
+    }
+    
+    /* Dark theme selectbox labels */
+    .stApp[data-theme="dark"] .stSelectbox label,
+    .stApp[data-theme="dark"] .stSelectbox .stMarkdown {
+        color: #ffffff !important;
+    }
+    
+    /* Dark theme metric labels and values */
+    .stApp[data-theme="dark"] [data-testid="metric-container"],
+    .stApp[data-theme="dark"] [data-testid="metric-container"] label,
+    .stApp[data-theme="dark"] [data-testid="metric-container"] div {
+        color: #ffffff !important;
+    }
+    
+    /* Dark theme general text elements */
+    .stApp[data-theme="dark"] .stMarkdown h1,
+    .stApp[data-theme="dark"] .stMarkdown h2,
+    .stApp[data-theme="dark"] .stMarkdown h3,
+    .stApp[data-theme="dark"] .stMarkdown h4,
+    .stApp[data-theme="dark"] .stMarkdown h5,
+    .stApp[data-theme="dark"] .stMarkdown h6 {
+        color: #ffffff !important;
+    }
+    
+    /* Dark theme tab text */
+    .stApp[data-theme="dark"] .stTabs [data-baseweb="tab"] {
+        color: #ffffff !important;
+    }
+    
+    /* Dark theme warning/info/success message text */
+    .stApp[data-theme="dark"] .stAlert {
+        color: #000000 !important;
     }
 
     /* Modern Hero Section */
@@ -332,9 +397,9 @@ st.markdown("""
         gap: 0.5rem;
     }
 
-    /* Fix Streamlit default text colors */
-    .stMarkdown, .stText, p, span, div {
-        color: var(--text-primary);
+    /* Fix Streamlit default text colors with better specificity */
+    .stMarkdown, .stText, p, span, div, label {
+        color: var(--text-primary) !important;
     }
 
     /* Fix metric labels and values */
@@ -343,6 +408,24 @@ st.markdown("""
     }
 
     [data-testid="metric-container"] > div {
+        color: var(--text-primary) !important;
+    }
+    
+    /* Ensure sidebar text visibility */
+    .stSidebar .stMarkdown,
+    .stSidebar .stText,
+    .stSidebar p,
+    .stSidebar span,
+    .stSidebar div,
+    .stSidebar label {
+        color: var(--text-primary) !important;
+    }
+    
+    /* Input field labels */
+    .stNumberInput label,
+    .stSlider label,
+    .stCheckbox label,
+    .stSelectbox label {
         color: var(--text-primary) !important;
     }
 
