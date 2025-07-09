@@ -88,134 +88,50 @@ st.markdown("""
         --border-color: #4b5563;
     }
 
-    /* COMPREHENSIVE DARK THEME TEXT VISIBILITY FIXES */
-    .stApp[data-theme="dark"] .stFileUploader small {
+    /* ULTIMATE DARK THEME FIX - Maximum Specificity */
+    .stApp[data-theme="dark"], 
+    .stApp[data-theme="dark"] *, 
+    .stApp[data-theme="dark"] *::before, 
+    .stApp[data-theme="dark"] *::after {
         color: #ffffff !important;
+        fill: #ffffff !important;
     }
     
-    /* Dark theme ALL text elements - comprehensive fix */
-    .stApp[data-theme="dark"] * {
-        color: #ffffff !important;
-    }
-    
-    /* Dark theme sidebar text fixes - highest priority */
-    .stApp[data-theme="dark"] .stSidebar .stMarkdown,
-    .stApp[data-theme="dark"] .stSidebar .stText,
-    .stApp[data-theme="dark"] .stSidebar p,
-    .stApp[data-theme="dark"] .stSidebar span,
-    .stApp[data-theme="dark"] .stSidebar div,
-    .stApp[data-theme="dark"] .stSidebar label,
-    .stApp[data-theme="dark"] .stSidebar * {
-        color: #ffffff !important;
-    }
-    
-    /* Dark theme main content text */
-    .stApp[data-theme="dark"] .main .stMarkdown,
-    .stApp[data-theme="dark"] .main .stText,
-    .stApp[data-theme="dark"] .main p,
-    .stApp[data-theme="dark"] .main span,
-    .stApp[data-theme="dark"] .main div,
-    .stApp[data-theme="dark"] .main label,
-    .stApp[data-theme="dark"] .main * {
-        color: #ffffff !important;
-    }
-    
-    /* Dark theme slider labels and values */
-    .stApp[data-theme="dark"] .stSlider label,
-    .stApp[data-theme="dark"] .stSlider .stMarkdown,
-    .stApp[data-theme="dark"] .stSlider * {
-        color: #ffffff !important;
-    }
-    
-    /* Dark theme checkbox labels */
-    .stApp[data-theme="dark"] .stCheckbox label,
-    .stApp[data-theme="dark"] .stCheckbox .stMarkdown,
-    .stApp[data-theme="dark"] .stCheckbox * {
-        color: #ffffff !important;
-    }
-    
-    /* Dark theme selectbox labels */
-    .stApp[data-theme="dark"] .stSelectbox label,
-    .stApp[data-theme="dark"] .stSelectbox .stMarkdown,
-    .stApp[data-theme="dark"] .stSelectbox * {
-        color: #ffffff !important;
-    }
-    
-    /* Dark theme metric labels and values */
-    .stApp[data-theme="dark"] [data-testid="metric-container"],
-    .stApp[data-theme="dark"] [data-testid="metric-container"] label,
-    .stApp[data-theme="dark"] [data-testid="metric-container"] div,
-    .stApp[data-theme="dark"] [data-testid="metric-container"] * {
-        color: #ffffff !important;
-    }
-    
-    /* Dark theme general text elements */
-    .stApp[data-theme="dark"] .stMarkdown h1,
-    .stApp[data-theme="dark"] .stMarkdown h2,
-    .stApp[data-theme="dark"] .stMarkdown h3,
-    .stApp[data-theme="dark"] .stMarkdown h4,
-    .stApp[data-theme="dark"] .stMarkdown h5,
-    .stApp[data-theme="dark"] .stMarkdown h6,
-    .stApp[data-theme="dark"] .stMarkdown p,
-    .stApp[data-theme="dark"] .stMarkdown span,
-    .stApp[data-theme="dark"] .stMarkdown div,
-    .stApp[data-theme="dark"] .stMarkdown * {
-        color: #ffffff !important;
-    }
-    
-    /* Dark theme tab text */
-    .stApp[data-theme="dark"] .stTabs [data-baseweb="tab"],
-    .stApp[data-theme="dark"] .stTabs * {
-        color: #ffffff !important;
-    }
-    
-    /* Dark theme file uploader text */
-    .stApp[data-theme="dark"] .stFileUploader,
-    .stApp[data-theme="dark"] .stFileUploader *,
-    .stApp[data-theme="dark"] .stFileUploader label,
-    .stApp[data-theme="dark"] .stFileUploader small,
-    .stApp[data-theme="dark"] .stFileUploader div {
-        color: #ffffff !important;
-    }
-    
-    /* Dark theme button text */
-    .stApp[data-theme="dark"] .stButton,
-    .stApp[data-theme="dark"] .stButton *,
-    .stApp[data-theme="dark"] button,
-    .stApp[data-theme="dark"] button * {
-        color: #ffffff !important;
-    }
-    
-    /* Dark theme warning/info/success message text - keep background readable */
-    .stApp[data-theme="dark"] .stAlert {
+    /* Special exceptions for elements that should remain dark text */
+    .stApp[data-theme="dark"] .stAlert,
+    .stApp[data-theme="dark"] .stAlert *,
+    .stApp[data-theme="dark"] .stException,
+    .stApp[data-theme="dark"] .stException *,
+    .stApp[data-theme="dark"] .stSuccess,
+    .stApp[data-theme="dark"] .stSuccess *,
+    .stApp[data-theme="dark"] .stWarning,
+    .stApp[data-theme="dark"] .stWarning *,
+    .stApp[data-theme="dark"] .stError,
+    .stApp[data-theme="dark"] .stError *,
+    .stApp[data-theme="dark"] .stInfo,
+    .stApp[data-theme="dark"] .stInfo * {
         color: #000000 !important;
     }
     
-    /* Dark theme input field text */
-    .stApp[data-theme="dark"] input,
+    /* Input fields need special handling */
+    .stApp[data-theme="dark"] input[type="text"],
+    .stApp[data-theme="dark"] input[type="number"],
+    .stApp[data-theme="dark"] input[type="email"],
+    .stApp[data-theme="dark"] input[type="password"],
     .stApp[data-theme="dark"] textarea,
-    .stApp[data-theme="dark"] .stTextInput,
-    .stApp[data-theme="dark"] .stTextArea,
-    .stApp[data-theme="dark"] .stNumberInput {
+    .stApp[data-theme="dark"] select {
         color: #ffffff !important;
+        background-color: #374151 !important;
+        border-color: #6b7280 !important;
     }
     
-    /* Dark theme column content */
-    .stApp[data-theme="dark"] .stColumn,
-    .stApp[data-theme="dark"] .stColumn * {
-        color: #ffffff !important;
-    }
-    
-    /* Dark theme container content */
-    .stApp[data-theme="dark"] .stContainer,
-    .stApp[data-theme="dark"] .stContainer * {
-        color: #ffffff !important;
-    }
-    
-    /* Dark theme expander content */
-    .stApp[data-theme="dark"] .stExpander,
-    .stApp[data-theme="dark"] .stExpander * {
-        color: #ffffff !important;
+    /* Plot elements should remain default */
+    .stApp[data-theme="dark"] .js-plotly-plot,
+    .stApp[data-theme="dark"] .js-plotly-plot *,
+    .stApp[data-theme="dark"] .plotly,
+    .stApp[data-theme="dark"] .plotly * {
+        color: unset !important;
+        fill: unset !important;
     }
 
     /* Modern Hero Section */
