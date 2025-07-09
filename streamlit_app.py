@@ -39,6 +39,7 @@ from real_dxf_processor import RealDXFProcessor
 from fast_architectural_visualizer import FastArchitecturalVisualizer
 from empty_plan_visualizer import EmptyPlanVisualizer
 from data_validator import DataValidator
+from reference_floor_plan_visualizer import ReferenceFloorPlanVisualizer
 
 # Page configuration
 st.set_page_config(
@@ -265,6 +266,7 @@ class CADAnalyzerApp:
         self.exact_visualizer = ExactReferenceVisualizer()  # EXACT match to your reference images
         self.room_visualizer = ArchitecturalRoomVisualizer()  # For proper room structure
         self.data_validator = DataValidator()
+        self.reference_floor_plan_visualizer = ReferenceFloorPlanVisualizer()  # Clean reference style
         
         # Initialize session state with visualization modes
         if 'analysis_results' not in st.session_state:
@@ -480,22 +482,22 @@ class CADAnalyzerApp:
         """Create authentic architectural floor plan visualization from real DXF data"""
         mode = st.session_state.get('visualization_mode', 'base')
         
-        # Always use fast architectural visualizer for authentic DXF data
+        # Use reference visualizer for clean floor plan matching your reference images
         if mode == 'base':
-            # Clean empty floor plan with authentic architectural data
-            fig = self.fast_visualizer.create_fast_floor_plan(result)
+            # Clean empty floor plan with gray walls, blue restricted areas, red entrances
+            fig = self.reference_floor_plan_visualizer.create_empty_floor_plan(result)
         elif mode == 'with_ilots':
-            # Floor plan with red rectangular îlots
+            # Floor plan with green rectangular îlots
             ilots = st.session_state.get('placed_ilots', [])
-            fig = self.fast_visualizer.create_floor_plan_with_ilots(result, ilots)
+            fig = self.reference_floor_plan_visualizer.create_floor_plan_with_ilots(result, ilots)
         elif mode == 'detailed':
             # Complete layout with corridors
             ilots = st.session_state.get('placed_ilots', [])
             corridors = st.session_state.get('corridors', [])
-            fig = self.fast_visualizer.create_complete_floor_plan(result, ilots, corridors)
+            fig = self.reference_floor_plan_visualizer.create_complete_floor_plan(result, ilots, corridors)
         else:
-            # Default to authentic architectural visualization
-            fig = self.fast_visualizer.create_fast_floor_plan(result)
+            # Default to clean reference visualization
+            fig = self.reference_floor_plan_visualizer.create_empty_floor_plan(result)
         
         return fig
 
