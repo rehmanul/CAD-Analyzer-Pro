@@ -31,6 +31,7 @@ from optimized_corridor_generator import OptimizedCorridorGenerator
 from professional_floor_plan_visualizer import ProfessionalFloorPlanVisualizer
 from reference_style_visualizer import ReferenceStyleVisualizer
 from architectural_floor_plan_visualizer import ArchitecturalFloorPlanVisualizer
+from exact_reference_visualizer import ExactReferenceVisualizer
 from data_validator import DataValidator
 
 # Page configuration
@@ -250,6 +251,7 @@ class CADAnalyzerApp:
         self.professional_visualizer = ProfessionalFloorPlanVisualizer()
         self.reference_visualizer = ReferenceStyleVisualizer()  # Matches your reference images
         self.architectural_visualizer = ArchitecturalFloorPlanVisualizer()  # Exact match to your reference
+        self.exact_visualizer = ExactReferenceVisualizer()  # EXACT match to your reference images
         self.data_validator = DataValidator()
         
         # Initialize session state with visualization modes
@@ -454,29 +456,28 @@ class CADAnalyzerApp:
             st.plotly_chart(fig, use_container_width=True, height=600)
 
     def create_architectural_floor_plan_visualization(self, result):
-        """Create architectural floor plan visualization matching your reference images exactly"""
+        """Create EXACT architectural floor plan visualization matching your reference images"""
         mode = st.session_state.get('visualization_mode', 'base')
         
-        # Use the new architectural visualizer
+        # Use the exact reference visualizer for perfect match
         if mode == 'base':
             # Image 1 style - Empty floor plan with walls, restricted areas, entrances
-            fig = self.architectural_visualizer.create_empty_floor_plan(result)
+            fig = self.exact_visualizer.create_architectural_floor_plan(result, mode='base')
         elif mode == 'with_ilots':
-            # Image 2 style - Floor plan with red îlots
-            fig = self.architectural_visualizer.create_floor_plan_with_ilots(
-                result, 
-                st.session_state.placed_ilots
-            )
+            # Image 2 style - Floor plan with green îlots
+            # Add îlots to result data for visualization
+            result_with_ilots = result.copy()
+            result_with_ilots['ilots'] = st.session_state.placed_ilots
+            fig = self.exact_visualizer.create_architectural_floor_plan(result_with_ilots, mode='with_ilots')
         elif mode == 'detailed':
             # Image 3 style - Complete layout with corridors
-            fig = self.architectural_visualizer.create_complete_floor_plan(
-                result,
-                st.session_state.placed_ilots,
-                st.session_state.corridors
-            )
+            result_complete = result.copy()
+            result_complete['ilots'] = st.session_state.placed_ilots
+            result_complete['corridors'] = st.session_state.corridors
+            fig = self.exact_visualizer.create_architectural_floor_plan(result_complete, mode='detailed')
         else:
             # Fallback to empty floor plan
-            fig = self.architectural_visualizer.create_empty_floor_plan(result)
+            fig = self.exact_visualizer.create_architectural_floor_plan(result, mode='base')
         
         return fig
 
