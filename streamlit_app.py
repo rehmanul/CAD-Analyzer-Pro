@@ -27,7 +27,7 @@ from optimized_dxf_processor import OptimizedDXFProcessor
 from optimized_ilot_placer import OptimizedIlotPlacer
 from client_expected_visualizer import ClientExpectedVisualizer
 from optimized_corridor_generator import OptimizedCorridorGenerator
-from modern_visualizer import ModernVisualizer
+from professional_floor_plan_visualizer import ProfessionalFloorPlanVisualizer
 
 # Page configuration
 st.set_page_config(
@@ -242,7 +242,7 @@ class CADAnalyzerApp:
         self.ilot_placer = OptimizedIlotPlacer()
         self.corridor_generator = OptimizedCorridorGenerator()
         self.visualizer = ClientExpectedVisualizer()
-        # self.modern_visualizer = ModernVisualizer()
+        self.professional_visualizer = ProfessionalFloorPlanVisualizer()
         
         # Initialize session state
         if 'analysis_results' not in st.session_state:
@@ -563,9 +563,16 @@ class CADAnalyzerApp:
             with col4:
                 st.metric("5-10 m²", size_counts.get('size_5_10', 0))
 
-        # Visualization with îlots
-        st.subheader("Floor Plan with Îlots")
-        fig = self.create_complete_visualization()
+        # Modern visualization with îlots
+        st.subheader("Professional Floor Plan with Îlots")
+        
+        # Add visualization controls
+        col1, col2 = st.columns([3, 1])
+        with col2:
+            view_3d = st.checkbox("3D View", key="ilot_3d_toggle")
+            professional_style = st.checkbox("Professional Style", value=True, key="ilot_prof_style")
+        
+        fig = self.create_complete_visualization(use_professional=professional_style, show_3d=view_3d)
         st.plotly_chart(fig, use_container_width=True, height=700)
 
     def render_corridor_generation_tab(self):
@@ -675,9 +682,16 @@ class CADAnalyzerApp:
             st.warning("Please complete îlot placement and corridor generation first.")
             return
 
-        # Final visualization
+        # Final visualization with controls
         st.subheader("Complete Floor Plan Layout")
-        fig = self.create_complete_visualization()
+        
+        # Visualization controls
+        col1, col2 = st.columns([3, 1])
+        with col2:
+            view_3d = st.checkbox("3D View", key="export_3d_toggle")
+            professional_style = st.checkbox("Professional Style", value=True, key="export_prof_style")
+        
+        fig = self.create_complete_visualization(use_professional=professional_style, show_3d=view_3d)
         st.plotly_chart(fig, use_container_width=True, height=700)
 
         # Project summary
@@ -712,19 +726,28 @@ class CADAnalyzerApp:
             if st.button("Export Image", type="secondary"):
                 st.info("Use the camera icon in the plot toolbar above to save the visualization as an image.")
 
-    def create_complete_visualization(self):
-        """Create complete visualization matching client expected output"""
+    def create_complete_visualization(self, use_professional=True, show_3d=False):
+        """Create complete visualization with modern professional styling"""
         result = st.session_state.analysis_results
         ilots = st.session_state.placed_ilots
         corridors = st.session_state.corridors
         
-        # Use client expected visualizer for exact match to requirements
-        fig = self.visualizer.create_client_expected_visualization(
-            analysis_data=result,
-            ilots=ilots,
-            corridors=corridors,
-            show_measurements=True
-        )
+        if use_professional:
+            # Use professional visualizer for modern styling matching reference images
+            fig = self.professional_visualizer.create_professional_floor_plan(
+                analysis_data=result,
+                ilots=ilots,
+                corridors=corridors,
+                show_3d=show_3d
+            )
+        else:
+            # Use client expected visualizer for exact match to original requirements
+            fig = self.visualizer.create_client_expected_visualization(
+                analysis_data=result,
+                ilots=ilots,
+                corridors=corridors,
+                show_measurements=True
+            )
         
         return fig
 
