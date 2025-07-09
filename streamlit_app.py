@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 """
 CAD Analyzer Pro - Complete Application
@@ -61,12 +60,12 @@ st.set_page_config(
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-    
+
     /* Global Styling */
     .main {
         font-family: 'Inter', sans-serif;
     }
-    
+
     /* Modern Hero Section */
     .hero-section {
         background: linear-gradient(135deg, rgba(67, 56, 202, 0.9), rgba(99, 102, 241, 0.9)), 
@@ -80,7 +79,7 @@ st.markdown("""
         box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
         text-align: center;
     }
-    
+
     .hero-title {
         font-size: 3.5rem;
         font-weight: 700;
@@ -88,7 +87,7 @@ st.markdown("""
         text-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
         letter-spacing: -0.02em;
     }
-    
+
     .hero-subtitle {
         font-size: 1.25rem;
         font-weight: 400;
@@ -96,7 +95,7 @@ st.markdown("""
         margin-bottom: 0;
         line-height: 1.6;
     }
-    
+
     /* Modern Upload Section */
     .upload-section {
         background: linear-gradient(145deg, #ffffff, #f8fafc);
@@ -108,13 +107,13 @@ st.markdown("""
         transition: all 0.3s ease;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
-    
+
     .upload-section:hover {
         border-color: #6366f1;
         transform: translateY(-2px);
         box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1);
     }
-    
+
     /* Enhanced Sidebar */
     .sidebar-section {
         background: rgba(255, 255, 255, 0.95);
@@ -125,7 +124,7 @@ st.markdown("""
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         border: 1px solid rgba(229, 231, 235, 0.5);
     }
-    
+
     .sidebar-header {
         font-size: 1.1rem;
         font-weight: 600;
@@ -134,7 +133,7 @@ st.markdown("""
         padding-bottom: 0.5rem;
         border-bottom: 2px solid #e5e7eb;
     }
-    
+
     /* Modern Cards and Metrics */
     .metric-card {
         background: linear-gradient(145deg, #ffffff, #f9fafb);
@@ -145,12 +144,12 @@ st.markdown("""
         margin: 1rem 0;
         transition: transform 0.2s ease;
     }
-    
+
     .metric-card:hover {
         transform: translateY(-2px);
         box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1);
     }
-    
+
     /* Success and Error Messages */
     .success-message {
         background: linear-gradient(145deg, #ecfdf5, #d1fae5);
@@ -162,7 +161,7 @@ st.markdown("""
         font-weight: 500;
         box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.1);
     }
-    
+
     .warning-message {
         background: linear-gradient(145deg, #fffbeb, #fef3c7);
         border: 2px solid #f59e0b;
@@ -173,7 +172,7 @@ st.markdown("""
         font-weight: 500;
         box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.1);
     }
-    
+
     .error-message {
         background: linear-gradient(145deg, #fef2f2, #fecaca);
         border: 2px solid #ef4444;
@@ -184,7 +183,7 @@ st.markdown("""
         font-weight: 500;
         box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.1);
     }
-    
+
     /* Modern Buttons */
     .stButton > button {
         background: linear-gradient(145deg, #6366f1, #4f46e5);
@@ -197,13 +196,13 @@ st.markdown("""
         transition: all 0.2s ease;
         box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.3);
     }
-    
+
     .stButton > button:hover {
         background: linear-gradient(145deg, #4f46e5, #4338ca);
         transform: translateY(-1px);
         box-shadow: 0 10px 25px -3px rgba(99, 102, 241, 0.4);
     }
-    
+
     /* Tab Styling */
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
@@ -212,27 +211,27 @@ st.markdown("""
         border-radius: 12px;
         backdrop-filter: blur(10px);
     }
-    
+
     .stTabs [data-baseweb="tab"] {
         border-radius: 8px;
         padding: 0.75rem 1.5rem;
         font-weight: 500;
         transition: all 0.2s ease;
     }
-    
+
     .stTabs [aria-selected="true"] {
         background: linear-gradient(145deg, #6366f1, #4f46e5);
         color: white;
         box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.3);
     }
-    
+
     /* Professional Typography */
     h1, h2, h3 {
         font-family: 'Inter', sans-serif;
         font-weight: 600;
         color: #1f2937;
     }
-    
+
     .section-title {
         font-size: 1.5rem;
         font-weight: 600;
@@ -242,7 +241,7 @@ st.markdown("""
         align-items: center;
         gap: 0.5rem;
     }
-    
+
     /* Modern Plotly Container */
     .plot-container {
         background: white;
@@ -283,7 +282,7 @@ class CADAnalyzerApp:
         self.data_validator = DataValidator()
         self.reference_floor_plan_visualizer = ReferenceFloorPlanVisualizer()  # Clean reference style
         self.smart_ilot_placer = SmartIlotPlacer()  # Intelligent îlot placement
-        
+
         # Initialize session state with visualization modes
         if 'analysis_results' not in st.session_state:
             st.session_state.analysis_results = None
@@ -306,7 +305,7 @@ class CADAnalyzerApp:
                 <div class="sidebar-header">🎛️ Settings & Controls</div>
             </div>
             """, unsafe_allow_html=True)
-            
+
             # Îlot Size Distribution Settings
             st.markdown("""
             <div class="sidebar-section">
@@ -318,11 +317,11 @@ class CADAnalyzerApp:
             size_1_3_pct = st.slider("1-3 m² (Medium - Orange)", 15, 35, 25, key="size_1_3") 
             size_3_5_pct = st.slider("3-5 m² (Large - Green)", 20, 40, 30, key="size_3_5")
             size_5_10_pct = st.slider("5-10 m² (XL - Purple)", 25, 50, 35, key="size_5_10")
-            
+
             total_pct = size_0_1_pct + size_1_3_pct + size_3_5_pct + size_5_10_pct
             if total_pct != 100:
                 st.error(f"Total must be 100%. Current: {total_pct}%")
-            
+
             st.markdown("""
             <div class="sidebar-section">
                 <div class="sidebar-header">🛤️ Spacing Settings</div>
@@ -331,21 +330,21 @@ class CADAnalyzerApp:
             min_spacing = st.slider("Minimum Spacing (m)", 0.5, 3.0, 1.0, key="min_spacing")
             wall_clearance = st.slider("Wall Clearance (m)", 0.3, 2.0, 0.5, key="wall_clearance")
             corridor_width = st.slider("Corridor Width (m)", 1.0, 3.0, 1.5, key="corridor_width")
-            
+
             st.markdown("""
             <div class="sidebar-section">
                 <div class="sidebar-header">🎯 Optimization</div>
             </div>
             """, unsafe_allow_html=True)
             utilization_target = st.slider("Space Utilization (%)", 50, 90, 70, key="utilization")
-            
+
             # Display data source validation info
             if st.session_state.analysis_results and st.session_state.placed_ilots:
                 self.data_validator.display_data_source_info(
                     st.session_state.analysis_results, 
                     st.session_state.placed_ilots
                 )
-            
+
             # Store settings in session state
             st.session_state.ilot_config = {
                 'size_0_1_percent': size_0_1_pct,
@@ -403,7 +402,7 @@ class CADAnalyzerApp:
             with st.spinner(f"Processing {uploaded_file.name}..."):
                 try:
                     file_content = uploaded_file.read()
-                    
+
                     # Use smart floor plan detector for DXF files (extracts main floor plan only)
                     if uploaded_file.name.lower().endswith('.dxf'):
                         file_size_mb = len(file_content) / (1024 * 1024)
@@ -412,11 +411,11 @@ class CADAnalyzerApp:
                     else:
                         # Use ultra-high performance analyzer for other files
                         result = self.floor_analyzer.process_file_ultra_fast(file_content, uploaded_file.name)
-                    
+
                     if not result.get('success'):
                         st.error(f"Processing failed: {result.get('error', 'Unknown error')}")
                         return
-                        
+
                 except Exception as e:
                     st.error(f"Error processing file: {str(e)}")
                     return
@@ -426,9 +425,9 @@ class CADAnalyzerApp:
                     st.session_state.file_processed = True
                     # Set visualization mode to show base floor plan (Image 1 style)
                     st.session_state.visualization_mode = "base"
-                    
+
                     st.markdown('<div class="success-message">✅ Plan traité avec succès! Clean floor plan visualization ready.</div>', unsafe_allow_html=True)
-                    
+
                     # Display analysis results with proper visualization
                     self.display_analysis_results(result)
                 else:
@@ -437,13 +436,13 @@ class CADAnalyzerApp:
     def display_analysis_results(self, result):
         """Display analysis results"""
         st.subheader("Analysis Results")
-        
 
-        
+
+
         # Analysis Metrics
         st.markdown("### 📊 Analysis Results")
         col1, col2, col3, col4 = st.columns(4)
-        
+
         with col1:
             st.metric("Total Entities", result.get('entity_count', 0))
         with col2:
@@ -460,7 +459,7 @@ class CADAnalyzerApp:
             width = bounds.get('max_x', 0) - bounds.get('min_x', 0)
             height = bounds.get('max_y', 0) - bounds.get('min_y', 0)
             area = width * height
-            
+
             col1, col2, col3 = st.columns(3)
             with col1:
                 st.metric("Width", f"{width:.1f} m")
@@ -478,13 +477,13 @@ class CADAnalyzerApp:
                 'with_ilots': '🏢 Stage 2: Floor Plan with Îlots Placed',
                 'detailed': '🛤️ Stage 3: Complete Layout with Corridors'
             }
-            
+
             st.markdown(f"""
             <div class="success-message">
                 <strong>Current View:</strong> {mode_messages.get(mode, 'Floor Plan')}
             </div>
             """, unsafe_allow_html=True)
-            
+
             st.subheader("Floor Plan Visualization")
             fig = self.create_architectural_floor_plan_visualization(result)
             st.plotly_chart(fig, use_container_width=True, height=600)
@@ -492,7 +491,7 @@ class CADAnalyzerApp:
     def create_architectural_floor_plan_visualization(self, result):
         """Create clean floor plan visualization matching reference images"""
         mode = st.session_state.get('visualization_mode', 'base')
-        
+
         try:
             # Always use architectural visualizer for consistent results
             if mode == 'base':
@@ -510,7 +509,7 @@ class CADAnalyzerApp:
             else:
                 # Default to clean visualization
                 fig = self.architectural_visualizer.create_empty_floor_plan(result)
-                
+
             # Ensure the visualization has proper styling
             fig.update_layout(
                 plot_bgcolor='#f7fafc',  # Light gray background
@@ -523,16 +522,18 @@ class CADAnalyzerApp:
                     borderwidth=1
                 )
             )
-            
+
+            return fig
+
         except Exception as e:
             st.error(f"Architectural visualization error: {str(e)}")
             # Create a simple fallback that works
             fig = go.Figure()
-            
+
             # Add basic walls if available
             walls = result.get('walls', [])
             entities = result.get('entities', [])
-            
+
             if walls or entities:
                 # Add walls as gray lines
                 for wall in (walls if walls else entities[:50]):  # Limit to first 50 entities
@@ -546,11 +547,11 @@ class CADAnalyzerApp:
                             showlegend=False,
                             hoverinfo='skip'
                         ))
-            
+
             # Set basic layout
             bounds = result.get('bounds', {'min_x': 0, 'max_x': 100, 'min_y': 0, 'max_y': 100})
             padding = 5
-            
+
             fig.update_layout(
                 title="Floor Plan Analysis",
                 xaxis=dict(
@@ -565,8 +566,73 @@ class CADAnalyzerApp:
                 plot_bgcolor='#f7fafc',
                 paper_bgcolor='white'
             )
-        
+
         return fig
+
+    def create_fallback_visualization(self, result):
+        """Fallback visualization using simple plotly traces"""
+        try:
+            fig = go.Figure()
+
+            # Get bounds
+            bounds = result.get('bounds', {'min_x': 0, 'max_x': 100, 'min_y': 0, 'max_y': 100})
+
+            # Add walls from entities if available
+            entities = result.get('entities', [])
+            walls = result.get('walls', [])
+
+            wall_count = 0
+
+            # Process walls first
+            for wall in walls:
+                if isinstance(wall, list) and len(wall) >= 2:
+                    x_coords = [p[0] for p in wall if len(p) >= 2]
+                    y_coords = [p[1] for p in wall if len(p) >= 2]
+
+                    if len(x_coords) >= 2:
+                        fig.add_trace(go.Scatter(
+                            x=x_coords, y=y_coords,
+                            mode='lines',
+                            line=dict(color='#666666', width=2),
+                            name='Walls' if wall_count == 0 else None,
+                            showlegend=(wall_count == 0)
+                        ))
+                        wall_count += 1
+
+            # Process entities if no walls
+            if wall_count == 0:
+                for entity in entities[:200]:  # Limit for performance
+                    if isinstance(entity, dict):
+                        points = entity.get('points', [])
+                        if points and len(points) >= 2:
+                            x_coords = [p[0] for p in points if len(p) >= 2]
+                            y_coords = [p[1] for p in points if len(p) >= 2]
+
+                            if len(x_coords) >= 2:
+                                fig.add_trace(go.Scatter(
+                                    x=x_coords, y=y_coords,
+                                    mode='lines',
+                                    line=dict(color='#666666', width=1),
+                                    showlegend=False
+                                ))
+                                wall_count += 1
+
+            # Set layout
+            fig.update_layout(
+                title="Floor Plan (Fallback View)",
+                xaxis=dict(scaleanchor="y", scaleratio=1),
+                yaxis=dict(),
+                plot_bgcolor='#F5F5F5',
+                paper_bgcolor='white',
+                showlegend=True
+            )
+
+            st.plotly_chart(fig, use_container_width=True, height=600)
+            st.success(f"Fallback visualization rendered with {wall_count} elements")
+
+        except Exception as e:
+            st.error(f"Fallback visualization failed: {str(e)}")
+            st.info("Try uploading a different DXF file or check the file format.")
 
     def render_ilot_placement_tab(self):
         """Render îlot placement interface"""
@@ -588,14 +654,14 @@ class CADAnalyzerApp:
         if 'ilot_config' not in st.session_state:
             st.warning("⚠️ Please configure îlot settings in the sidebar first!")
             return
-        
+
         config = st.session_state.ilot_config
         total_percent = config['size_0_1_percent'] + config['size_1_3_percent'] + config['size_3_5_percent'] + config['size_5_10_percent']
-        
+
         if total_percent != 100:
             st.error(f"⚠️ Size percentages must total 100%. Current: {total_percent}%. Please adjust in sidebar.")
             return
-        
+
         # Show current configuration
         st.markdown("### 📋 Current Configuration")
         col1, col2, col3, col4 = st.columns(4)
@@ -614,16 +680,16 @@ class CADAnalyzerApp:
                 # Use smart îlot placer for intelligent placement
                 analysis_results = st.session_state.analysis_results
                 placed_ilots = self.smart_ilot_placer.place_ilots_smart(analysis_results, config)
-                
+
                 if placed_ilots:
                     st.session_state.placed_ilots = placed_ilots
                     st.session_state.visualization_mode = "with_ilots"
-                    
+
                     # Calculate placement statistics
                     stats = self.smart_ilot_placer.calculate_placement_stats(placed_ilots)
-                    
+
                     st.markdown('<div class="success-message">✅ Îlots placed successfully! Showing floor plan with green rectangular îlots.</div>', unsafe_allow_html=True)
-                    
+
                     # Display placement statistics
                     col1, col2, col3, col4 = st.columns(4)
                     with col1:
@@ -648,12 +714,12 @@ class CADAnalyzerApp:
             try:
                 # Get analysis results
                 result = st.session_state.analysis_results
-                
+
                 # Calculate target count from bounds and configuration
                 bounds = result.get('bounds', {'min_x': 0, 'max_x': 100, 'min_y': 0, 'max_y': 100})
                 area = (bounds['max_x'] - bounds['min_x']) * (bounds['max_y'] - bounds['min_y'])
                 target_count = max(8, min(int(area / 12), 40))  # More conservative target
-                
+
                 # Try optimized placer first
                 placed_ilots = []
                 try:
@@ -663,23 +729,23 @@ class CADAnalyzerApp:
                     )
                 except Exception:
                     pass
-                
+
                 # Use simple placer if optimized fails or returns no results
                 if not placed_ilots:
                     placed_ilots = self.simple_placer.place_ilots_guaranteed(
                         analysis_data=result,
                         target_count=target_count
                     )
-                
+
                 st.session_state.placed_ilots = placed_ilots
-                
+
                 if placed_ilots:
                     # Update visualization mode to show îlots (Image 2 style)
                     st.session_state.visualization_mode = "with_ilots"
                     st.markdown(f'<div class="success-message">✅ Successfully placed {len(placed_ilots)} îlots with {sum(ilot.get("area", 0) for ilot in placed_ilots):.1f} m² total area! Visualization updated to show îlots.</div>', unsafe_allow_html=True)
                 else:
                     st.error("Unable to place îlots. Please check the floor plan has sufficient open space.")
-                    
+
             except Exception as e:
                 st.error(f"Error placing îlots: {str(e)}")
                 # No fallback - show error message
@@ -688,11 +754,11 @@ class CADAnalyzerApp:
     def display_ilot_results(self):
         """Display îlot placement results"""
         st.subheader("Îlot Placement Results")
-        
+
         # Summary metrics
         total_ilots = len(st.session_state.placed_ilots)
         total_area = sum(ilot.get('area', 0) for ilot in st.session_state.placed_ilots)
-        
+
         col1, col2, col3 = st.columns(3)
         with col1:
             st.metric("Total Îlots", total_ilots)
@@ -722,7 +788,7 @@ class CADAnalyzerApp:
 
         # Show updated visualization with îlots
         st.subheader("Updated Floor Plan with Îlots")
-        
+
         # Display the updated visualization based on current mode
         if st.session_state.analysis_results:
             fig = self.create_architectural_floor_plan_visualization(st.session_state.analysis_results)
@@ -748,9 +814,9 @@ class CADAnalyzerApp:
         if 'ilot_config' not in st.session_state:
             st.warning("⚠️ Please configure settings in the sidebar first!")
             return
-            
+
         config = st.session_state.ilot_config
-        
+
         # Show current corridor settings
         st.markdown("### 📋 Current Corridor Configuration")
         col1, col2, col3 = st.columns(3)
@@ -776,7 +842,7 @@ class CADAnalyzerApp:
         # Display corridor results
         if st.session_state.corridors:
             self.display_corridor_results()
-            
+
             # Show final visualization with corridors
             st.subheader("Complete Floor Plan with Corridors")
             if st.session_state.analysis_results:
@@ -789,31 +855,31 @@ class CADAnalyzerApp:
             try:
                 # Generate optimized corridor network
                 result = st.session_state.analysis_results
-                
+
                 st.session_state.corridors = self.corridor_generator.generate_optimized_corridors(
                     analysis_data=result,
                     ilots=st.session_state.placed_ilots
                 )
-                
+
                 if st.session_state.corridors:
                     # Update visualization mode to show complete layout (Image 3 style)
                     st.session_state.visualization_mode = "detailed"
                     st.markdown(f'<div class="success-message">✅ Generated {len(st.session_state.corridors)} corridors! Visualization updated to show complete layout.</div>', unsafe_allow_html=True)
                 else:
                     st.warning("No corridors were generated.")
-                    
+
             except Exception as e:
                 st.error(f"Error generating corridors: {str(e)}")
 
     def display_corridor_results(self):
         """Display corridor generation results"""
         st.subheader("Corridor Network Results")
-        
+
         # Summary metrics
         total_corridors = len(st.session_state.corridors)
         total_length = sum(corridor.get('length', 0) for corridor in st.session_state.corridors)
         mandatory_count = len([c for c in st.session_state.corridors if c.get('is_mandatory', False)])
-        
+
         col1, col2, col3 = st.columns(3)
         with col1:
             st.metric("Total Corridors", total_corridors)
@@ -845,19 +911,19 @@ class CADAnalyzerApp:
 
         # Final visualization with controls
         st.subheader("Complete Floor Plan Layout")
-        
+
         # Visualization controls
         col1, col2 = st.columns([3, 1])
         with col2:
             view_3d = st.checkbox("3D View", key="export_3d_toggle")
             professional_style = st.checkbox("Professional Style", value=True, key="export_prof_style")
-        
+
         fig = self.create_complete_visualization(use_professional=professional_style, show_3d=view_3d)
         st.plotly_chart(fig, use_container_width=True, height=700)
 
         # Project summary
         st.subheader("Project Summary")
-        
+
         col1, col2, col3, col4 = st.columns(4)
         with col1:
             st.metric("Total Îlots", len(st.session_state.placed_ilots))
@@ -872,17 +938,17 @@ class CADAnalyzerApp:
 
         # Export options
         st.subheader("Export Options")
-        
+
         col1, col2, col3 = st.columns(3)
-        
+
         with col1:
             if st.button("Export as JSON", type="secondary"):
                 self.export_json()
-        
+
         with col2:
             if st.button("Export Summary", type="secondary"):
                 self.export_summary()
-        
+
         with col3:
             if st.button("Export Image", type="secondary"):
                 st.info("Use the camera icon in the plot toolbar above to save the visualization as an image.")
@@ -892,7 +958,7 @@ class CADAnalyzerApp:
         result = st.session_state.analysis_results
         ilots = st.session_state.placed_ilots
         corridors = st.session_state.corridors
-        
+
         if show_3d:
             # Use professional visualizer for 3D view
             fig = self.professional_visualizer.create_professional_floor_plan(
@@ -919,7 +985,7 @@ class CADAnalyzerApp:
             else:
                 # Image 1: Empty plan
                 fig = self.architectural_visualizer.create_empty_floor_plan(result)
-        
+
         return fig
 
     def export_json(self):
@@ -930,9 +996,9 @@ class CADAnalyzerApp:
             'corridors': st.session_state.corridors,
             'export_timestamp': datetime.now().isoformat()
         }
-        
+
         json_string = json.dumps(export_data, indent=2)
-        
+
         st.download_button(
             label="Download JSON Data",
             data=json_string,
@@ -963,15 +1029,15 @@ CORRIDOR NETWORK:
 
 SIZE DISTRIBUTION:
 """
-        
+
         size_counts = {}
         for ilot in st.session_state.placed_ilots:
             size_cat = ilot.get('size_category', 'unknown')
             size_counts[size_cat] = size_counts.get(size_cat, 0) + 1
-        
+
         for size_cat, count in size_counts.items():
             summary += f"- {size_cat}: {count} îlots\n"
-        
+
         st.download_button(
             label="Download Summary Report",
             data=summary,
