@@ -452,6 +452,9 @@ class CADAnalyzerApp:
                 st.metric("Height", f"{height:.1f} m")
             with col3:
                 st.metric("Total Area", f"{area:.1f} m²")
+                st.metric("Height", f"{height:.1f} m")
+            with col3:
+                st.metric("Total Area", f"{area:.1f} m²")
 
         # Visualization with status indicator
         if result.get('walls') or result.get('entities'):

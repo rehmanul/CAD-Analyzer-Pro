@@ -71,57 +71,59 @@ class EmptyPlanVisualizer:
         return fig
     
     def _create_room_structure(self, analysis_data: Dict, bounds: Dict) -> List[Dict]:
-        """Create simplified room structure from DXF data"""
-        width = bounds['max_x'] - bounds['min_x']
-        height = bounds['max_y'] - bounds['min_y']
+        """Use actual DXF wall data to create authentic floor plan"""
+        walls = analysis_data.get('walls', [])
+        if not walls:
+            # Fallback to simple layout if no wall data
+            return self._create_fallback_layout(bounds)
         
-        # Create room layout similar to reference image
-        rooms = []
-        
-        # Main rooms layout
-        room_configs = [
-            # Left column rooms
-            {'x': bounds['min_x'], 'y': bounds['min_y'], 'w': width * 0.25, 'h': height * 0.4},
-            {'x': bounds['min_x'], 'y': bounds['min_y'] + height * 0.4, 'w': width * 0.25, 'h': height * 0.35},
-            {'x': bounds['min_x'], 'y': bounds['min_y'] + height * 0.75, 'w': width * 0.25, 'h': height * 0.25},
-            
-            # Center column rooms
-            {'x': bounds['min_x'] + width * 0.25, 'y': bounds['min_y'], 'w': width * 0.35, 'h': height * 0.3},
-            {'x': bounds['min_x'] + width * 0.25, 'y': bounds['min_y'] + height * 0.3, 'w': width * 0.35, 'h': height * 0.45},
-            {'x': bounds['min_x'] + width * 0.25, 'y': bounds['min_y'] + height * 0.75, 'w': width * 0.35, 'h': height * 0.25},
-            
-            # Right column rooms
-            {'x': bounds['min_x'] + width * 0.6, 'y': bounds['min_y'], 'w': width * 0.4, 'h': height * 0.25},
-            {'x': bounds['min_x'] + width * 0.6, 'y': bounds['min_y'] + height * 0.25, 'w': width * 0.4, 'h': height * 0.25},
-            {'x': bounds['min_x'] + width * 0.6, 'y': bounds['min_y'] + height * 0.5, 'w': width * 0.4, 'h': height * 0.25},
-            {'x': bounds['min_x'] + width * 0.6, 'y': bounds['min_y'] + height * 0.75, 'w': width * 0.4, 'h': height * 0.25},
-        ]
-        
-        return room_configs
+        # Use actual wall data for authentic visualization
+        return walls
     
-    def _add_room_walls(self, fig: go.Figure, rooms: List[Dict]):
-        """Add room walls like reference image"""
-        for room in rooms:
-            x, y, w, h = room['x'], room['y'], room['w'], room['h']
-            
-            # Room outline
-            wall_coords = [
-                [x, x + w, x + w, x, x],  # x coordinates
-                [y, y, y + h, y + h, y]   # y coordinates
-            ]
-            
+    def _add_room_walls(self, fig: go.Figure, walls: List[Dict]):
+        """Add authentic walls from DXF data"""
+        # Batch all wall segments for performance
+        all_x = []
+        all_y = []
+        
+        for wall in walls:
+            points = wall.get('points', [])
+            if len(points) >= 2:
+                # Add wall segment
+                for i in range(len(points) - 1):
+                    x1, y1 = points[i]
+                    x2, y2 = points[i + 1]
+                    
+                    all_x.extend([x1, x2, None])  # None creates line break
+                    all_y.extend([y1, y2, None])
+        
+        if all_x and all_y:
             fig.add_trace(go.Scatter(
-                x=wall_coords[0],
-                y=wall_coords[1],
+                x=all_x,
+                y=all_y,
                 mode='lines',
                 line=dict(
                     color=self.colors['walls'],
-                    width=3
+                    width=2
                 ),
-                fill='none',
                 showlegend=False,
-                hoverinfo='skip'
+                hoverinfo='skip',
+                name='walls'
             ))
+    
+    def _create_fallback_layout(self, bounds: Dict) -> List[Dict]:
+        """Create fallback simple layout if no wall data available"""
+        width = bounds['max_x'] - bounds['min_x']
+        height = bounds['max_y'] - bounds['min_y']
+        
+        # Simple rectangular room
+        return [{'points': [
+            [bounds['min_x'], bounds['min_y']],
+            [bounds['max_x'], bounds['min_y']],
+            [bounds['max_x'], bounds['max_y']],
+            [bounds['min_x'], bounds['max_y']],
+            [bounds['min_x'], bounds['min_y']]
+        ]}]
     
     def _add_restricted_areas(self, fig: go.Figure, restricted_areas: List[Dict]):
         """Add blue restricted areas"""
