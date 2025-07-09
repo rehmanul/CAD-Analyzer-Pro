@@ -16,6 +16,7 @@ import multiprocessing
 import os
 import tempfile
 import io
+# Removed import to fix immediate crash
 
 class UltraHighPerformanceAnalyzer:
     """Ultra-optimized analyzer for maximum performance"""
@@ -212,6 +213,59 @@ class UltraHighPerformanceAnalyzer:
         
         return restricted_areas, entrances
     
+    def _create_connected_outline(self, line_segments):
+        """Create connected building outline from wall segments"""
+        if not line_segments:
+            return []
+        
+        # Get all points
+        all_points = []
+        for segment in line_segments:
+            all_points.extend(segment)
+        
+        if not all_points:
+            return line_segments
+        
+        # Calculate bounds
+        min_x = min(p[0] for p in all_points)
+        max_x = max(p[0] for p in all_points)
+        min_y = min(p[1] for p in all_points)
+        max_y = max(p[1] for p in all_points)
+        
+        # Create building perimeter outline
+        perimeter = [
+            [min_x, min_y],
+            [max_x, min_y], 
+            [max_x, max_y],
+            [min_x, max_y],
+            [min_x, min_y]  # Close rectangle
+        ]
+        
+        # Add interior walls as separate segments
+        interior_walls = []
+        for segment in line_segments:
+            if len(segment) >= 2:
+                # Only keep interior walls (not on perimeter)
+                start_x, start_y = segment[0]
+                end_x, end_y = segment[-1]
+                
+                # Check if this is an interior wall
+                on_perimeter = (
+                    (abs(start_x - min_x) < 1.0 and abs(end_x - min_x) < 1.0) or  # Left edge
+                    (abs(start_x - max_x) < 1.0 and abs(end_x - max_x) < 1.0) or  # Right edge  
+                    (abs(start_y - min_y) < 1.0 and abs(end_y - min_y) < 1.0) or  # Bottom edge
+                    (abs(start_y - max_y) < 1.0 and abs(end_y - max_y) < 1.0)     # Top edge
+                )
+                
+                if not on_perimeter:
+                    interior_walls.append(segment)
+        
+        # Return perimeter + interior walls
+        result_walls = [perimeter]
+        result_walls.extend(interior_walls[:20])  # Limit interior walls for performance
+        
+        return result_walls
+    
     def _process_dxf_ultra_fast(self, file_content: bytes, filename: str) -> Dict[str, Any]:
         """Ultra-fast DXF processing with timeout protection"""
         
@@ -259,8 +313,8 @@ class UltraHighPerformanceAnalyzer:
                 except:
                     continue
             
-            # Connect line segments to form continuous walls
-            walls = self._connect_wall_segments(all_line_segments)
+            # Create connected building outline from segments
+            walls = self._create_connected_outline(all_line_segments)
             
             # Detect restricted areas and entrances from the floor plan
             if walls:
