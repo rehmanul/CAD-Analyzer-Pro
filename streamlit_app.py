@@ -35,6 +35,7 @@ from architectural_room_visualizer import ArchitecturalRoomVisualizer
 from exact_reference_visualizer import ExactReferenceVisualizer
 from proper_dxf_processor import ProperDXFProcessor
 from fast_dxf_processor import FastDXFProcessor
+from real_dxf_processor import RealDXFProcessor
 from data_validator import DataValidator
 
 # Page configuration
@@ -249,6 +250,7 @@ class CADAnalyzerApp:
         self.dxf_processor = OptimizedDXFProcessor()
         self.proper_dxf_processor = ProperDXFProcessor()  # For proper architectural extraction
         self.fast_dxf_processor = FastDXFProcessor(timeout_seconds=8)  # For large files
+        self.real_dxf_processor = RealDXFProcessor()  # For real architectural data
         self.ilot_placer = OptimizedIlotPlacer()
         self.simple_placer = SimpleIlotPlacer()  # Backup placer
         self.corridor_generator = OptimizedCorridorGenerator()
@@ -382,11 +384,11 @@ class CADAnalyzerApp:
                 try:
                     file_content = uploaded_file.read()
                     
-                    # Always use fast DXF processor for DXF files to prevent timeouts
+                    # Use real DXF processor for authentic architectural data
                     if uploaded_file.name.lower().endswith('.dxf'):
                         file_size_mb = len(file_content) / (1024 * 1024)
-                        st.info(f"Processing DXF file ({file_size_mb:.1f}MB) with smart sampling...")
-                        result = self.fast_dxf_processor.process_dxf_file(file_content, uploaded_file.name)
+                        st.info(f"Processing DXF file ({file_size_mb:.1f}MB) - extracting real architectural data...")
+                        result = self.real_dxf_processor.process_dxf_file(file_content, uploaded_file.name)
                     else:
                         # Use ultra-high performance analyzer for other files
                         result = self.floor_analyzer.process_file_ultra_fast(file_content, uploaded_file.name)
@@ -624,7 +626,7 @@ class CADAnalyzerApp:
         
         # Display the updated visualization based on current mode
         if st.session_state.analysis_results:
-            fig = self.create_floor_plan_visualization(st.session_state.analysis_results)
+            fig = self.create_architectural_floor_plan_visualization(st.session_state.analysis_results)
             st.plotly_chart(fig, use_container_width=True, height=700)
 
     def render_corridor_generation_tab(self):
@@ -679,7 +681,7 @@ class CADAnalyzerApp:
             # Show final visualization with corridors
             st.subheader("Complete Floor Plan with Corridors")
             if st.session_state.analysis_results:
-                fig = self.create_floor_plan_visualization(st.session_state.analysis_results)
+                fig = self.create_architectural_floor_plan_visualization(st.session_state.analysis_results)
                 st.plotly_chart(fig, use_container_width=True, height=700)
 
     def generate_corridors(self, config):

@@ -142,8 +142,17 @@ class ReferenceStyleVisualizer:
         
         # Print coordinate ranges for debugging
         if all_x_coords and all_y_coords:
-            print(f"DEBUG: X range: [{min(all_x_coords):.1f}, {max(all_x_coords):.1f}]")
-            print(f"DEBUG: Y range: [{min(all_y_coords):.1f}, {max(all_y_coords):.1f}]")
+            try:
+                min_x = float(min(all_x_coords))
+                max_x = float(max(all_x_coords))
+                min_y = float(min(all_y_coords))
+                max_y = float(max(all_y_coords))
+                print(f"DEBUG: X range: [{min_x:.1f}, {max_x:.1f}]")
+                print(f"DEBUG: Y range: [{min_y:.1f}, {max_y:.1f}]")
+            except (ValueError, TypeError) as e:
+                print(f"DEBUG: Error formatting coordinates: {e}")
+                print(f"DEBUG: X coords sample: {all_x_coords[:5]}")
+                print(f"DEBUG: Y coords sample: {all_y_coords[:5]}")
     
     def _add_restricted_areas(self, fig: go.Figure, restricted_areas: List):
         """Add blue restricted areas (NO ENTREE)"""
