@@ -568,43 +568,82 @@ class CADAnalyzerApp:
         uploaded_file = st.file_uploader(
             "Choose a floor plan file",
             type=['dxf', 'dwg', 'pdf', 'png', 'jpg', 'jpeg'],
-            help="Supported formats: DXF, DWG, PDF, PNG, JPG • Max size: 50MB"
+            help="Supported formats: DXF, DWG, PDF, PNG, JPG • Max size: 200MB"
         )
 
         if uploaded_file is not None:
-            with st.spinner(f"Processing {uploaded_file.name}..."):
-                try:
-                    file_content = uploaded_file.read()
+            # Validate file size
+            file_size_mb = uploaded_file.size / (1024 * 1024)
+            if file_size_mb > 200:
+                st.error(f"File too large: {file_size_mb:.1f}MB. Maximum allowed: 200MB")
+                return
 
-                    # Use smart floor plan detector for DXF files (extracts main floor plan only)
+            with st.spinner(f"Processing {uploaded_file.name} ({file_size_mb:.1f}MB)..."):
+                try:
+                    # Reset uploaded file pointer
+                    uploaded_file.seek(0)
+                    file_content = uploaded_file.read()
+                    
+                    # Validate file content
+                    if not file_content:
+                        st.error("File appears to be empty or corrupted")
+                        return
+
+                    # Process based on file type with improved error handling
                     if uploaded_file.name.lower().endswith('.dxf'):
-                        file_size_mb = len(file_content) / (1024 * 1024)
-                        st.info(f"Processing DXF file ({file_size_mb:.1f}MB) - extracting target floor plan section...")
-                        result = self.targeted_extractor.process_dxf_file(file_content, uploaded_file.name)
+                        st.info("Processing DXF file - extracting floor plan...")
+                        
+                        # Try multiple processors for better success rate
+                        processors = [
+                            ("Targeted Extractor", self.targeted_extractor),
+                            ("Fast Processor", self.fast_dxf_processor),
+                            ("Real Processor", self.real_dxf_processor),
+                            ("Optimized Processor", self.dxf_processor)
+                        ]
+                        
+                        result = None
+                        for processor_name, processor in processors:
+                            try:
+                                if hasattr(processor, 'process_dxf_file'):
+                                    result = processor.process_dxf_file(file_content, uploaded_file.name)
+                                else:
+                                    result = processor.process_file_ultra_fast(file_content, uploaded_file.name)
+                                
+                                if result and result.get('success'):
+                                    st.success(f"Successfully processed with {processor_name}")
+                                    break
+                                    
+                            except Exception as e:
+                                st.warning(f"{processor_name} failed: {str(e)}")
+                                continue
+                        
+                        if not result or not result.get('success'):
+                            st.error("All DXF processors failed. Please check file format.")
+                            return
+                            
                     else:
                         # Use ultra-high performance analyzer for other files
                         result = self.floor_analyzer.process_file_ultra_fast(file_content, uploaded_file.name)
 
-                    if not result.get('success'):
-                        st.error(f"Processing failed: {result.get('error', 'Unknown error')}")
+                    if not result or not result.get('success'):
+                        st.error(f"Processing failed: {result.get('error', 'Unknown error') if result else 'No result'}")
                         return
 
                 except Exception as e:
                     st.error(f"Error processing file: {str(e)}")
+                    st.info("Please try uploading the file again or check the file format.")
                     return
 
-                if result.get('success'):
-                    st.session_state.analysis_results = result
-                    st.session_state.file_processed = True
-                    # Set visualization mode to show base floor plan (Image 1 style)
-                    st.session_state.visualization_mode = "base"
+                # Success handling
+                st.session_state.analysis_results = result
+                st.session_state.file_processed = True
+                # Set visualization mode to show base floor plan (Image 1 style)
+                st.session_state.visualization_mode = "base"
 
-                    st.markdown('<div class="success-message">✅ Plan traité avec succès! Clean floor plan visualization ready.</div>', unsafe_allow_html=True)
+                st.markdown('<div class="success-message">✅ Floor plan processed successfully! Clean architectural visualization ready.</div>', unsafe_allow_html=True)
 
-                    # Display analysis results with proper visualization
-                    self.display_analysis_results(result)
-                else:
-                    st.error(f"Error processing file: {result.get('error', 'Unknown error')}")
+                # Display analysis results with proper visualization
+                self.display_analysis_results(result)
 
     def display_analysis_results(self, result):
         """Display analysis results"""
