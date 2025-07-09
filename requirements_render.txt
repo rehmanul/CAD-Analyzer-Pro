@@ -1,23 +1,26 @@
 # Render-optimized requirements for CAD Analyzer Pro
-# Memory-efficient versions for 512MB limit
+# Memory-efficient versions for 512MB limit with pre-compiled binaries
 streamlit==1.36.0
 plotly==5.24.1
 pandas==2.2.3
 numpy==1.26.4
 shapely==2.1.0
-scipy==1.13.1
-scikit-learn==1.5.2
+# Use pre-compiled scipy wheel to avoid Fortran compilation issues
+scipy==1.11.4
+# Remove scikit-learn to reduce memory usage and avoid compilation issues
 ezdxf==1.4.0
 PyMuPDF==1.24.14
 opencv-python-headless==4.10.0.84
 pillow==10.4.0
-psycopg2==2.9.10
+# Use binary version of psycopg2 for PostgreSQL
+psycopg2-binary==2.9.10
 sqlalchemy==2.0.35
 python-dotenv==1.0.1
 reportlab==4.2.2
+# Use lighter matplotlib backend
 matplotlib==3.8.4
 networkx==3.3
-psutil==5.9.8
+# Remove psutil to reduce dependencies
 redis==5.0.8
 websockets==12.0
 requests==2.31.0

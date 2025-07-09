@@ -37,6 +37,9 @@ Preferred communication style: Simple, everyday language.
 - Fixed duplicate widget key error for 3D view toggles by using unique prefixes
 - Improved DXF file upload handling with multiple fallback processors
 - Enhanced error handling for file processing
+- Fixed Render deployment issues with SciPy compilation by removing problematic dependencies
+- Created minimal requirements file for deployment without Fortran compilation needs
+- Added graceful handling of missing psutil dependency for production deployment
 
 ### Canvas Improvements
 - Tripled visualization canvas size from 600px to 1800px for better floor plan visibility

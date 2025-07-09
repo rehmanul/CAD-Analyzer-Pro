@@ -21,34 +21,40 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'utils'))
 
 # Import ultra-high performance modules
-from ultra_high_performance_analyzer import UltraHighPerformanceAnalyzer
-from optimized_dxf_processor import OptimizedDXFProcessor
-from optimized_ilot_placer import OptimizedIlotPlacer
-from simple_ilot_placer import SimpleIlotPlacer
-from client_expected_visualizer import ClientExpectedVisualizer
-from optimized_corridor_generator import OptimizedCorridorGenerator
-from professional_floor_plan_visualizer import ProfessionalFloorPlanVisualizer
-from reference_style_visualizer import ReferenceStyleVisualizer
-from architectural_floor_plan_visualizer import ArchitecturalFloorPlanVisualizer
-from architectural_room_visualizer import ArchitecturalRoomVisualizer
-from exact_reference_visualizer import ExactReferenceVisualizer
-from proper_dxf_processor import ProperDXFProcessor
-from fast_dxf_processor import FastDXFProcessor
-from real_dxf_processor import RealDXFProcessor
-from smart_floor_plan_detector import SmartFloorPlanDetector
-from floor_plan_extractor import FloorPlanExtractor
-from targeted_floor_plan_extractor import TargetedFloorPlanExtractor
-from svg_floor_plan_renderer import SVGFloorPlanRenderer
-from simple_svg_renderer import SimpleSVGRenderer
-from production_svg_renderer import ProductionSVGRenderer
-from final_production_renderer import FinalProductionRenderer
-from fast_architectural_visualizer import FastArchitecturalVisualizer
-from empty_plan_visualizer import EmptyPlanVisualizer
-from data_validator import DataValidator
-from reference_floor_plan_visualizer import ReferenceFloorPlanVisualizer
-from smart_ilot_placer import SmartIlotPlacer
-from advanced_3d_renderer import Advanced3DRenderer
-from webgl_3d_renderer import WebGL3DRenderer
+# Core imports with error handling for deployment
+try:
+    from ultra_high_performance_analyzer import UltraHighPerformanceAnalyzer
+    from optimized_dxf_processor import OptimizedDXFProcessor
+    from optimized_ilot_placer import OptimizedIlotPlacer
+    from simple_ilot_placer import SimpleIlotPlacer
+    from client_expected_visualizer import ClientExpectedVisualizer
+    from optimized_corridor_generator import OptimizedCorridorGenerator
+    from professional_floor_plan_visualizer import ProfessionalFloorPlanVisualizer
+    from reference_style_visualizer import ReferenceStyleVisualizer
+    from architectural_floor_plan_visualizer import ArchitecturalFloorPlanVisualizer
+    from architectural_room_visualizer import ArchitecturalRoomVisualizer
+    from exact_reference_visualizer import ExactReferenceVisualizer
+    from proper_dxf_processor import ProperDXFProcessor
+    from fast_dxf_processor import FastDXFProcessor
+    from real_dxf_processor import RealDXFProcessor
+    from smart_floor_plan_detector import SmartFloorPlanDetector
+    from floor_plan_extractor import FloorPlanExtractor
+    from targeted_floor_plan_extractor import TargetedFloorPlanExtractor
+    from svg_floor_plan_renderer import SVGFloorPlanRenderer
+    from simple_svg_renderer import SimpleSVGRenderer
+    from production_svg_renderer import ProductionSVGRenderer
+    from final_production_renderer import FinalProductionRenderer
+    from fast_architectural_visualizer import FastArchitecturalVisualizer
+    from empty_plan_visualizer import EmptyPlanVisualizer
+    from data_validator import DataValidator
+    from reference_floor_plan_visualizer import ReferenceFloorPlanVisualizer
+    from smart_ilot_placer import SmartIlotPlacer
+    from advanced_3d_renderer import Advanced3DRenderer
+    from webgl_3d_renderer import WebGL3DRenderer
+except ImportError as e:
+    st.error(f"Import error: {str(e)}")
+    st.error("Some features may be unavailable. Please check the deployment configuration.")
+    st.stop()
 
 # Page configuration
 st.set_page_config(

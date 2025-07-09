@@ -9,6 +9,13 @@ import streamlit as st
 import sys
 import os
 
+# Handle psutil import gracefully for Render deployment
+try:
+    import psutil
+    PSUTIL_AVAILABLE = True
+except ImportError:
+    PSUTIL_AVAILABLE = False
+
 def main():
     """Main entry point for Streamlit app"""
     try:

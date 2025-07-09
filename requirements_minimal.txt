@@ -1,0 +1,38 @@
+# Minimal requirements for CAD Analyzer Pro Render deployment
+# Only essential packages without compilation issues
+
+# Core framework
+streamlit==1.36.0
+
+# Visualization
+plotly==5.24.1
+
+# Data handling
+pandas==2.2.3
+numpy==1.26.4
+
+# Geometry (core functionality)
+shapely==2.1.0
+
+# DXF processing
+ezdxf==1.4.0
+
+# Basic image processing
+pillow==10.4.0
+
+# Database
+psycopg2-binary==2.9.10
+sqlalchemy==2.0.35
+
+# Environment
+python-dotenv==1.0.1
+
+# Server
+gunicorn==21.2.0
+
+# Basic utilities
+requests==2.31.0
+typing-extensions==4.12.2
+
+# Network utilities
+networkx==3.3
