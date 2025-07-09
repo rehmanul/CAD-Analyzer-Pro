@@ -78,53 +78,120 @@ st.markdown("""
         --border-color: #e5e7eb;
     }
 
-    /* Dark Theme Variables */
-    [data-theme="dark"], .stApp[data-theme="dark"] {
-        --text-primary: #f9fafb !important;
-        --text-secondary: #d1d5db !important;
+    /* Dark Theme Support - Streamlit automatically adds 'dark' class */
+    .stApp[data-theme="dark"], 
+    [data-theme="dark"],
+    html[data-theme="dark"],
+    .stApp.dark-theme,
+    .dark .stApp {
+        --text-primary: #ffffff !important;
+        --text-secondary: #e5e7eb !important;
+        --text-light: #d1d5db !important;
+        --bg-primary: #111827 !important;
+        --bg-secondary: #1f2937 !important;
+        --border-color: #374151 !important;
+    }
+
+    /* Light Theme (default) */
+    .stApp[data-theme="light"],
+    [data-theme="light"],
+    html[data-theme="light"],
+    .stApp:not([data-theme="dark"]) {
+        --text-primary: #1f2937 !important;
+        --text-secondary: #6b7280 !important;
         --text-light: #9ca3af !important;
-        --bg-primary: #1f2937 !important;
-        --bg-secondary: #374151 !important;
-        --border-color: #4b5563 !important;
+        --bg-primary: #ffffff !important;
+        --bg-secondary: #f9fafb !important;
+        --border-color: #e5e7eb !important;
     }
 
-    /* Force text color for all elements */
-    .stApp, .stApp * {
+    /* Universal text color enforcement for ALL themes */
+    .stApp * {
         color: var(--text-primary) !important;
     }
 
-    /* Theme-aware text colors */
-    .stMarkdown, .stMarkdown *, .stText, .stText *, 
-    .stSubheader, .stSubheader *, .stHeader, .stHeader *,
-    .stTitle, .stTitle *, .stCaption, .stCaption * {
+    /* Specific element targeting for better theme support */
+    .stMarkdown *, .stText *, .stSubheader *, .stHeader *, 
+    .stTitle *, .stCaption *, .stMetric *, 
+    div[data-testid="stMarkdownContainer"] *,
+    div[data-testid="metric-container"] *,
+    .element-container *,
+    .main * {
         color: var(--text-primary) !important;
     }
 
-    /* Secondary text elements */
-    .stInfo, .stInfo *, .stSelectbox label, .stTextInput label,
-    .stNumberInput label, .stSlider label {
-        color: var(--text-secondary) !important;
+    /* Sidebar specific styling */
+    .css-1d391kg *, 
+    .css-1y4p8pa *,
+    .css-12oz5g7 *,
+    section[data-testid="stSidebar"] *,
+    .sidebar * {
+        color: var(--text-primary) !important;
     }
 
-    /* Input field text */
-    .stTextInput input, .stNumberInput input, .stSelectbox select {
+    /* Input elements */
+    .stTextInput input, .stNumberInput input, .stSelectbox select,
+    .stTextArea textarea, .stSlider * {
         color: var(--text-primary) !important;
         background-color: var(--bg-secondary) !important;
+        border-color: var(--border-color) !important;
     }
 
-    /* Sidebar text */
-    .css-1d391kg, .css-1d391kg * {
+    /* Tab styling */
+    .stTabs [data-baseweb="tab-list"] button *,
+    .stTabs [data-baseweb="tab-list"] *,
+    .stTabs * {
         color: var(--text-primary) !important;
     }
 
-    /* Tab text */
-    .stTabs [data-baseweb="tab-list"] button [data-testid="stMarkdownContainer"] p {
+    /* Button text visibility */
+    .stButton button, .stDownloadButton button {
+        color: white !important;
+    }
+
+    /* File uploader text */
+    .stFileUploader *, 
+    div[data-testid="stFileUploader"] * {
         color: var(--text-primary) !important;
     }
 
-    /* Metric text */
-    .metric-container .metric-label, .metric-container .metric-value {
+    /* Checkbox and radio text */
+    .stCheckbox *, .stRadio * {
         color: var(--text-primary) !important;
+    }
+
+    /* Success/Info/Warning messages */
+    .stSuccess *, .stInfo *, .stWarning *, .stError * {
+        color: var(--text-primary) !important;
+    }
+
+    /* Additional dark theme fixes */
+    .stApp[data-theme="dark"] .stSelectbox > div > div,
+    .stApp[data-theme="dark"] .stTextInput > div > div,
+    .stApp[data-theme="dark"] .stNumberInput > div > div {
+        color: #ffffff !important;
+    }
+
+    /* Force white text in dark theme for problematic elements */
+    .stApp[data-theme="dark"] .main .element-container,
+    .stApp[data-theme="dark"] .main .stMarkdown,
+    .stApp[data-theme="dark"] .main .stText,
+    .stApp[data-theme="dark"] .main .stMetric,
+    .stApp[data-theme="dark"] .sidebar .element-container,
+    .stApp[data-theme="dark"] .sidebar .stMarkdown,
+    .stApp[data-theme="dark"] .sidebar .stText {
+        color: #ffffff !important;
+    }
+
+    /* All child elements in dark theme */
+    .stApp[data-theme="dark"] * {
+        color: #ffffff !important;
+    }
+
+    /* Override for buttons to keep white text */
+    .stApp[data-theme="dark"] .stButton button,
+    .stApp[data-theme="dark"] .stDownloadButton button {
+        color: #ffffff !important;
     }
 
     /* Modern Hero Section */
