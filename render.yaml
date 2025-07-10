@@ -4,7 +4,7 @@ services:
     name: cad-analyzer-pro
     env: python
     plan: starter
-    buildCommand: pip install -r requirements_render.txt --no-cache-dir
+    buildCommand: pip install -r requirements_render.txt --no-cache-dir --only-binary=all --prefer-binary
     startCommand: streamlit run streamlit_app.py --server.port $PORT --server.address 0.0.0.0
     envVars:
       - key: PYTHONPATH
