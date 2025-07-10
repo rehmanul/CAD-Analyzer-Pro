@@ -1,0 +1,36 @@
+2025-07-10T00:02:37.543402818Z ==> Cloning from https://github.com/rehmanul/CAD-Analyzer-Pro
+2025-07-10T00:02:38.115589625Z ==> Checking out commit 2deb846e89e9aac2baf46d5fd1fb2191fe4c3be0 in branch main
+2025-07-10T00:02:40.653763668Z ==> Using Python version 3.13.4 (default)
+2025-07-10T00:02:40.685223389Z ==> Docs on specifying a Python version: https://render.com/docs/python-version
+2025-07-10T00:02:43.720783173Z ==> Using Poetry version 2.1.3 (default)
+2025-07-10T00:02:43.768948258Z ==> Docs on specifying a Poetry version: https://render.com/docs/poetry-version
+2025-07-10T00:02:43.788818403Z ==> Running build command 'pip install -r requirements_render.txt'...
+2025-07-10T00:02:44.442806364Z Collecting streamlit==1.36.0 (from -r requirements_render.txt (line 3))
+2025-07-10T00:02:44.510127457Z   Downloading streamlit-1.36.0-py2.py3-none-any.whl.metadata (8.5 kB)
+2025-07-10T00:02:44.564515874Z Collecting plotly==5.24.1 (from -r requirements_render.txt (line 4))
+2025-07-10T00:02:44.573536161Z   Downloading plotly-5.24.1-py3-none-any.whl.metadata (7.3 kB)
+2025-07-10T00:02:44.716682462Z Collecting pandas==2.2.3 (from -r requirements_render.txt (line 5))
+2025-07-10T00:02:44.726470907Z   Downloading pandas-2.2.3-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (89 kB)
+2025-07-10T00:02:44.980107261Z Collecting numpy==1.26.4 (from -r requirements_render.txt (line 6))
+2025-07-10T00:02:44.992673589Z   Downloading numpy-1.26.4.tar.gz (15.8 MB)
+2025-07-10T00:02:45.390523069Z      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 15.8/15.8 MB 41.6 MB/s eta 0:00:00
+2025-07-10T00:02:47.972175327Z   Installing build dependencies: started
+2025-07-10T00:02:50.298464412Z   Installing build dependencies: finished with status 'done'
+2025-07-10T00:02:50.299206239Z   Getting requirements to build wheel: started
+2025-07-10T00:02:50.586581486Z   Getting requirements to build wheel: finished with status 'done'
+2025-07-10T00:02:50.588502651Z   Installing backend dependencies: started
+2025-07-10T00:02:51.508439218Z   Installing backend dependencies: finished with status 'done'
+2025-07-10T00:02:51.509209366Z   Preparing metadata (pyproject.toml): started
+2025-07-10T00:03:52.248095477Z   Preparing metadata (pyproject.toml): still running...
+2025-07-10T00:04:54.449345187Z   Preparing metadata (pyproject.toml): still running...
+2025-07-10T00:05:56.138405436Z   Preparing metadata (pyproject.toml): still running...
+2025-07-10T00:07:01.345355542Z   Preparing metadata (pyproject.toml): still running...
+2025-07-10T00:07:06.82401154Z   Preparing metadata (pyproject.toml): finished with status 'done'
+2025-07-10T00:07:06.950741313Z Collecting shapely==2.1.0 (from -r requirements_render.txt (line 7))
+2025-07-10T00:07:06.961058069Z   Downloading shapely-2.1.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (6.8 kB)
+2025-07-10T00:07:07.087605988Z ERROR: Ignored the following yanked versions: 1.14.0rc1
+2025-07-10T00:07:07.087807822Z ERROR: Ignored the following versions that require a different python version: 0.55.2 Requires-Python <3.5; 1.10.0 Requires-Python <3.12,>=3.8; 1.10.0rc1 Requires-Python <3.12,>=3.8; 1.10.0rc2 Requires-Python <3.12,>=3.8; 1.10.1 Requires-Python <3.12,>=3.8; 1.11.0 Requires-Python <3.13,>=3.9; 1.11.0rc1 Requires-Python <3.13,>=3.9; 1.11.0rc2 Requires-Python <3.13,>=3.9; 1.11.1 Requires-Python <3.13,>=3.9; 1.11.2 Requires-Python <3.13,>=3.9; 1.11.3 Requires-Python <3.13,>=3.9; 1.21.2 Requires-Python >=3.7,<3.11; 1.21.3 Requires-Python >=3.7,<3.11; 1.21.4 Requires-Python >=3.7,<3.11; 1.21.5 Requires-Python >=3.7,<3.11; 1.21.6 Requires-Python >=3.7,<3.11; 1.26.0 Requires-Python <3.13,>=3.9; 1.26.1 Requires-Python <3.13,>=3.9; 1.6.2 Requires-Python >=3.7,<3.10; 1.6.3 Requires-Python >=3.7,<3.10; 1.7.0 Requires-Python >=3.7,<3.10; 1.7.1 Requires-Python >=3.7,<3.10; 1.7.2 Requires-Python >=3.7,<3.11; 1.7.3 Requires-Python >=3.7,<3.11; 1.8.0 Requires-Python >=3.8,<3.11; 1.8.0rc1 Requires-Python >=3.8,<3.11; 1.8.0rc2 Requires-Python >=3.8,<3.11; 1.8.0rc3 Requires-Python >=3.8,<3.11; 1.8.0rc4 Requires-Python >=3.8,<3.11; 1.8.1 Requires-Python >=3.8,<3.11; 1.9.0 Requires-Python >=3.8,<3.12; 1.9.0rc1 Requires-Python >=3.8,<3.12; 1.9.0rc2 Requires-Python >=3.8,<3.12; 1.9.0rc3 Requires-Python >=3.8,<3.12; 1.9.1 Requires-Python >=3.8,<3.12
+2025-07-10T00:07:07.087986596Z ERROR: Could not find a version that satisfies the requirement scipy==1.10.1 (from versions: 0.8.0, 0.9.0, 0.10.0, 0.10.1, 0.11.0, 0.12.0, 0.12.1, 0.13.0, 0.13.1, 0.13.2, 0.13.3, 0.14.0, 0.14.1, 0.15.0, 0.15.1, 0.16.0, 0.16.1, 0.17.0, 0.17.1, 0.18.0, 0.18.1, 0.19.0, 0.19.1, 1.0.0, 1.0.1, 1.1.0, 1.2.0, 1.2.1, 1.2.2, 1.2.3, 1.3.0, 1.3.1, 1.3.2, 1.3.3, 1.4.0, 1.4.1, 1.5.0, 1.5.1, 1.5.2, 1.5.3, 1.5.4, 1.6.0, 1.6.1, 1.9.2, 1.9.3, 1.11.4, 1.12.0rc1, 1.12.0rc2, 1.12.0, 1.13.0rc1, 1.13.0, 1.13.1, 1.14.0rc2, 1.14.0, 1.14.1, 1.15.0rc1, 1.15.0rc2, 1.15.0, 1.15.1, 1.15.2, 1.15.3, 1.16.0rc1, 1.16.0rc2, 1.16.0)
+2025-07-10T00:07:07.227694996Z ERROR: No matching distribution found for scipy==1.10.1
+2025-07-10T00:07:07.731166348Z ==> Build failed 😞
+2025-07-10T00:07:07.731182419Z ==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys
