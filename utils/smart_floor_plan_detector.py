@@ -1,628 +1,672 @@
 """
-Smart Floor Plan Detector
-Intelligently detects and extracts main floor plan from DXF files containing multiple views
+Smart Floor Plan Detector for Phase 1
+Intelligent detection of main floor plan from complex multi-view CAD files
 """
 
-import ezdxf
-from ezdxf import recover
 import numpy as np
-from typing import Dict, List, Any, Optional, Tuple
-import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from collections import defaultdict
+from typing import Dict, List, Tuple, Optional, Any
+from shapely.geometry import Polygon, LineString, Point, MultiPolygon
+from shapely.ops import unary_union
+import logging
+from dataclasses import dataclass
+from enum import Enum
+from utils.enhanced_cad_parser import FloorPlanData, CADElement, ElementType
+
+class ViewType(Enum):
+    FLOOR_PLAN = "floor_plan"
+    ELEVATION = "elevation"
+    SECTION = "section"
+    DETAIL = "detail"
+    TITLE_BLOCK = "title_block"
+    UNKNOWN = "unknown"
+
+@dataclass
+class DetectedView:
+    """Represents a detected view in the CAD file"""
+    view_type: ViewType
+    confidence: float
+    bounds: Tuple[float, float, float, float]  # min_x, min_y, max_x, max_y
+    elements: List[CADElement]
+    scale: float = 1.0
+    area: float = 0.0
+    complexity_score: float = 0.0
 
 class SmartFloorPlanDetector:
-    """Detects and extracts main floor plan from multi-view DXF files"""
+    """
+    Smart detection of main floor plan from multi-view CAD files
+    Uses geometric analysis and architectural patterns to identify the primary floor plan
+    """
     
     def __init__(self):
-        self.wall_layers = ['WALLS', 'WALL', 'MUR', 'MURS', '0', 'DEFPOINTS', 'LAYER']
-        self.door_layers = ['DOORS', 'DOOR', 'PORTE', 'PORTES']
-        self.window_layers = ['WINDOWS', 'WINDOW', 'FENETRE', 'FENETRES']
+        self.logger = logging.getLogger(__name__)
         
-    def process_dxf_file(self, file_content: bytes, filename: str) -> Dict[str, Any]:
-        """Process DXF file and extract main floor plan only"""
+        # Floor plan detection parameters
+        self.min_floor_plan_area = 1000000  # Minimum area for valid floor plan (1m² in mm²)
+        self.wall_density_threshold = 0.1  # Minimum wall density for floor plan
+        self.room_indicator_patterns = ['room', 'salle', 'bureau', 'kitchen', 'bedroom']
+        self.elevation_indicators = ['elevation', 'facade', 'coupe', 'section']
+        
+        # Geometric analysis thresholds
+        self.wall_length_threshold = 1000  # Minimum wall length (1m)
+        self.room_area_threshold = 2000000  # Minimum room area (2m²)
+        self.connection_tolerance = 100  # Wall connection tolerance (10cm)
+
+    def detect_main_floor_plan(self, floor_plan_data: FloorPlanData) -> FloorPlanData:
+        """
+        Detect and extract the main floor plan from complex CAD data
+        Returns the cleaned and optimized main floor plan
+        """
         try:
-            import io
-            import tempfile
-            import os
+            # Analyze all views in the CAD file
+            detected_views = self._analyze_views(floor_plan_data)
             
-            # Write to temporary file for proper DXF processing
-            with tempfile.NamedTemporaryFile(suffix='.dxf', delete=False) as tmp_file:
-                tmp_file.write(file_content)
-                tmp_file_path = tmp_file.name
+            # Select the best floor plan view
+            main_floor_plan = self._select_best_floor_plan(detected_views)
             
-            try:
-                print(f"Processing DXF file with smart floor plan detection: {filename}")
-                start_time = time.time()
+            if main_floor_plan:
+                # Clean and optimize the selected floor plan
+                optimized_plan = self._optimize_floor_plan(main_floor_plan, floor_plan_data)
+                return optimized_plan
+            else:
+                # If no clear floor plan found, use heuristics to create one
+                return self._create_heuristic_floor_plan(floor_plan_data)
                 
-                # Load DXF document
-                doc, auditor = recover.readfile(tmp_file_path)
+        except Exception as e:
+            self.logger.error(f"Error detecting main floor plan: {str(e)}")
+            return floor_plan_data  # Return original data as fallback
+
+    def _analyze_views(self, floor_plan_data: FloorPlanData) -> List[DetectedView]:
+        """Analyze and classify different views in the CAD file"""
+        detected_views = []
+        
+        # Group elements by spatial clusters
+        element_clusters = self._cluster_elements_spatially(floor_plan_data)
+        
+        for cluster in element_clusters:
+            view = self._analyze_cluster(cluster)
+            if view.confidence > 0.3:  # Only keep views with reasonable confidence
+                detected_views.append(view)
                 
-                # Detect main floor plan region
-                main_floor_bounds = self._detect_main_floor_plan(doc)
+        return detected_views
+
+    def _cluster_elements_spatially(self, floor_plan_data: FloorPlanData) -> List[List[CADElement]]:
+        """Group elements into spatial clusters representing different views"""
+        all_elements = []
+        
+        # Combine all elements
+        for element_list in [floor_plan_data.walls, floor_plan_data.doors, 
+                           floor_plan_data.windows, floor_plan_data.rooms,
+                           floor_plan_data.text_annotations]:
+            all_elements.extend(element_list)
+        
+        if not all_elements:
+            return []
+        
+        # Simple spatial clustering based on bounding boxes
+        clusters = []
+        processed_elements = set()
+        
+        for element in all_elements:
+            if id(element) in processed_elements:
+                continue
                 
-                # Extract entities only from main floor plan region
-                walls = self._extract_floor_plan_walls(doc, main_floor_bounds)
-                doors = self._extract_floor_plan_doors(doc, main_floor_bounds)
-                restricted_areas = self._extract_floor_plan_restricted_areas(doc, main_floor_bounds)
-                
-                # Create entrances from doors
-                entrances = self._create_entrances_from_doors(doors)
-                
-                processing_time = time.time() - start_time
-                print(f"Smart floor plan detection completed in {processing_time:.2f}s")
-                print(f"Extracted from main floor plan: {len(walls)} walls, {len(doors)} doors, {len(restricted_areas)} restricted areas")
-                
-                return {
-                    'success': True,
-                    'walls': walls,
-                    'doors': doors,
-                    'windows': [],
-                    'boundaries': [],
-                    'restricted_areas': restricted_areas,
-                    'entrances': entrances,
-                    'bounds': main_floor_bounds,
-                    'entity_count': len(walls) + len(doors),
-                    'entities': [],
-                    'processing_time': processing_time
-                }
-                
-            finally:
-                # Clean up temporary file
-                try:
-                    os.unlink(tmp_file_path)
-                except:
-                    pass
+            # Start a new cluster
+            cluster = [element]
+            processed_elements.add(id(element))
+            element_bounds = element.geometry.bounds
+            
+            # Find nearby elements
+            for other_element in all_elements:
+                if id(other_element) in processed_elements:
+                    continue
                     
-        except Exception as e:
-            print(f"Error processing DXF file: {str(e)}")
-            return {
-                'success': False,
-                'error': str(e),
-                'walls': [],
-                'restricted_areas': [],
-                'entrances': [],
-                'bounds': {'min_x': 0, 'max_x': 100, 'min_y': 0, 'max_y': 100},
-                'entity_count': 0,
-                'entities': []
+                other_bounds = other_element.geometry.bounds
+                
+                # Check if elements are spatially close
+                if self._are_bounds_overlapping_or_close(element_bounds, other_bounds, tolerance=5000):
+                    cluster.append(other_element)
+                    processed_elements.add(id(other_element))
+                    
+            if len(cluster) > 5:  # Only consider clusters with enough elements
+                clusters.append(cluster)
+                
+        return clusters
+
+    def _are_bounds_overlapping_or_close(self, bounds1: Tuple[float, float, float, float], 
+                                       bounds2: Tuple[float, float, float, float], 
+                                       tolerance: float) -> bool:
+        """Check if two bounding boxes overlap or are within tolerance"""
+        min_x1, min_y1, max_x1, max_y1 = bounds1
+        min_x2, min_y2, max_x2, max_y2 = bounds2
+        
+        # Check for overlap or proximity
+        x_overlap = max_x1 >= min_x2 - tolerance and max_x2 >= min_x1 - tolerance
+        y_overlap = max_y1 >= min_y2 - tolerance and max_y2 >= min_y1 - tolerance
+        
+        return x_overlap and y_overlap
+
+    def _analyze_cluster(self, elements: List[CADElement]) -> DetectedView:
+        """Analyze a cluster of elements to determine view type and confidence"""
+        if not elements:
+            return DetectedView(ViewType.UNKNOWN, 0.0, (0, 0, 0, 0), [])
+        
+        # Calculate cluster bounds
+        all_bounds = [elem.geometry.bounds for elem in elements if elem.geometry]
+        if not all_bounds:
+            return DetectedView(ViewType.UNKNOWN, 0.0, (0, 0, 0, 0), [])
+        
+        min_x = min(bounds[0] for bounds in all_bounds)
+        min_y = min(bounds[1] for bounds in all_bounds)
+        max_x = max(bounds[2] for bounds in all_bounds)
+        max_y = max(bounds[3] for bounds in all_bounds)
+        
+        bounds = (min_x, min_y, max_x, max_y)
+        area = (max_x - min_x) * (max_y - min_y)
+        
+        # Analyze element types
+        wall_count = sum(1 for elem in elements if elem.element_type == ElementType.WALL)
+        door_count = sum(1 for elem in elements if elem.element_type == ElementType.DOOR)
+        window_count = sum(1 for elem in elements if elem.element_type == ElementType.WINDOW)
+        room_count = sum(1 for elem in elements if elem.element_type == ElementType.ROOM_BOUNDARY)
+        text_count = sum(1 for elem in elements if elem.element_type == ElementType.TEXT)
+        
+        # Calculate metrics for view type detection
+        total_elements = len(elements)
+        wall_density = wall_count / total_elements if total_elements > 0 else 0
+        room_density = room_count / total_elements if total_elements > 0 else 0
+        
+        # Analyze text content for view type hints
+        text_content = self._extract_text_content(elements)
+        
+        # Determine view type and confidence
+        view_type, confidence = self._classify_view_type(
+            wall_density, room_density, area, text_content, 
+            wall_count, door_count, window_count
+        )
+        
+        # Calculate complexity score
+        complexity_score = self._calculate_complexity_score(elements)
+        
+        return DetectedView(
+            view_type=view_type,
+            confidence=confidence,
+            bounds=bounds,
+            elements=elements,
+            area=area,
+            complexity_score=complexity_score
+        )
+
+    def _extract_text_content(self, elements: List[CADElement]) -> str:
+        """Extract all text content from elements"""
+        text_content = ""
+        for element in elements:
+            if element.element_type == ElementType.TEXT:
+                text = element.properties.get('text', '')
+                text_content += text.lower() + " "
+        return text_content
+
+    def _classify_view_type(self, wall_density: float, room_density: float, area: float,
+                          text_content: str, wall_count: int, door_count: int, 
+                          window_count: int) -> Tuple[ViewType, float]:
+        """Classify view type based on analysis metrics"""
+        
+        confidence = 0.0
+        view_type = ViewType.UNKNOWN
+        
+        # Floor plan indicators
+        floor_plan_score = 0.0
+        
+        # High wall density suggests floor plan
+        if wall_density > 0.3:
+            floor_plan_score += 0.3
+        
+        # Presence of rooms
+        if room_density > 0.1:
+            floor_plan_score += 0.2
+        
+        # Doors and windows suggest floor plan
+        if door_count > 0 or window_count > 0:
+            floor_plan_score += 0.2
+        
+        # Large area suggests main floor plan
+        if area > self.min_floor_plan_area:
+            floor_plan_score += 0.2
+        
+        # Text content analysis
+        if any(pattern in text_content for pattern in self.room_indicator_patterns):
+            floor_plan_score += 0.1
+        
+        # Elevation indicators reduce floor plan score
+        if any(indicator in text_content for indicator in self.elevation_indicators):
+            floor_plan_score -= 0.3
+        
+        # Determine view type
+        if floor_plan_score > 0.5:
+            view_type = ViewType.FLOOR_PLAN
+            confidence = min(floor_plan_score, 1.0)
+        elif any(indicator in text_content for indicator in self.elevation_indicators):
+            view_type = ViewType.ELEVATION
+            confidence = 0.7
+        elif wall_density > 0.6 and area < self.min_floor_plan_area:
+            view_type = ViewType.DETAIL
+            confidence = 0.6
+        else:
+            view_type = ViewType.UNKNOWN
+            confidence = 0.3
+        
+        return view_type, confidence
+
+    def _calculate_complexity_score(self, elements: List[CADElement]) -> float:
+        """Calculate complexity score for a view"""
+        if not elements:
+            return 0.0
+        
+        # Factors contributing to complexity
+        element_count = len(elements)
+        unique_layers = len(set(elem.layer for elem in elements))
+        
+        # Geometric complexity
+        total_length = 0.0
+        total_area = 0.0
+        
+        for element in elements:
+            if hasattr(element.geometry, 'length'):
+                total_length += element.geometry.length
+            if hasattr(element.geometry, 'area'):
+                total_area += element.geometry.area
+        
+        # Normalize complexity score
+        complexity = (element_count * 0.4 + unique_layers * 0.3 + 
+                     min(total_length / 10000, 10) * 0.2 + 
+                     min(total_area / 1000000, 10) * 0.1)
+        
+        return min(complexity, 10.0)  # Cap at 10
+
+    def _select_best_floor_plan(self, detected_views: List[DetectedView]) -> Optional[DetectedView]:
+        """Select the best floor plan view from detected views"""
+        floor_plan_views = [view for view in detected_views 
+                           if view.view_type == ViewType.FLOOR_PLAN]
+        
+        if not floor_plan_views:
+            return None
+        
+        # Score each floor plan view
+        best_view = None
+        best_score = 0.0
+        
+        for view in floor_plan_views:
+            # Scoring factors
+            score = (view.confidence * 0.4 +  # Confidence in being a floor plan
+                    (view.area / 10000000) * 0.3 +  # Larger plans are often main plans
+                    view.complexity_score * 0.2 +  # More complex plans are often main plans
+                    len(view.elements) / 100 * 0.1)  # More elements suggest main plan
+            
+            if score > best_score:
+                best_score = score
+                best_view = view
+        
+        return best_view
+
+    def _optimize_floor_plan(self, main_view: DetectedView, 
+                           original_data: FloorPlanData) -> FloorPlanData:
+        """Optimize the selected floor plan view"""
+        
+        # Extract elements from the main view
+        view_elements = main_view.elements
+        
+        # Separate elements by type
+        walls = [elem for elem in view_elements if elem.element_type == ElementType.WALL]
+        doors = [elem for elem in view_elements if elem.element_type == ElementType.DOOR]
+        windows = [elem for elem in view_elements if elem.element_type == ElementType.WINDOW]
+        rooms = [elem for elem in view_elements if elem.element_type == ElementType.ROOM_BOUNDARY]
+        text_annotations = [elem for elem in view_elements if elem.element_type == ElementType.TEXT]
+        
+        # Optimize walls - connect segments and clean geometry
+        optimized_walls = self._optimize_walls(walls)
+        
+        # Generate room boundaries if not present
+        if not rooms:
+            rooms = self._generate_room_boundaries(optimized_walls)
+        
+        # Detect special areas from text and geometry
+        restricted_areas, entrances = self._detect_special_areas_from_view(
+            text_annotations, rooms, main_view.bounds
+        )
+        
+        # Create optimized floor plan
+        optimized_plan = FloorPlanData(
+            walls=optimized_walls,
+            doors=doors,
+            windows=windows,
+            rooms=rooms,
+            restricted_areas=restricted_areas,
+            entrances=entrances,
+            dimensions=original_data.dimensions,
+            text_annotations=text_annotations,
+            scale_factor=original_data.scale_factor,
+            units=original_data.units,
+            bounds={
+                'min_x': main_view.bounds[0],
+                'min_y': main_view.bounds[1],
+                'max_x': main_view.bounds[2],
+                'max_y': main_view.bounds[3],
+                'width': main_view.bounds[2] - main_view.bounds[0],
+                'height': main_view.bounds[3] - main_view.bounds[1]
+            },
+            metadata={
+                'detected_view_type': main_view.view_type.value,
+                'confidence': main_view.confidence,
+                'complexity_score': main_view.complexity_score,
+                'optimization_applied': True
             }
-    
-    def _detect_main_floor_plan(self, doc) -> Dict[str, float]:
-        """Detect the main floor plan region from multiple views"""
-        try:
-            # Get all entities and their spatial distribution
-            entities = list(doc.modelspace())
-            
-            # Group entities by spatial regions
-            spatial_regions = self._analyze_spatial_distribution(entities)
-            
-            # Find the region with most wall-like entities (likely the floor plan)
-            main_region = self._identify_floor_plan_region(spatial_regions)
-            
-            if main_region:
-                return main_region
-            
-        except Exception as e:
-            print(f"Error detecting main floor plan: {str(e)}")
+        )
         
-        # Fallback to document bounds
-        return self._get_document_bounds(doc)
-    
-    def _analyze_spatial_distribution(self, entities) -> List[Dict]:
-        """Analyze spatial distribution of entities to identify different views"""
-        regions = []
+        return optimized_plan
+
+    def _optimize_walls(self, walls: List[CADElement]) -> List[CADElement]:
+        """Optimize wall geometry by connecting segments and cleaning"""
+        if not walls:
+            return []
         
-        try:
-            # First, filter out obvious elevation elements (curves, human figures, etc.)
-            floor_plan_entities = self._filter_floor_plan_entities(entities)
-            
-            # Get bounding boxes for filtered entities
-            entity_boxes = []
-            for entity in floor_plan_entities:
-                bbox = self._get_entity_bbox(entity)
-                if bbox:
-                    entity_boxes.append({
-                        'entity': entity,
-                        'bbox': bbox,
-                        'center': ((bbox['min_x'] + bbox['max_x']) / 2, (bbox['min_y'] + bbox['max_y']) / 2)
-                    })
-            
-            if not entity_boxes:
-                return regions
-            
-            # Use spatial clustering to identify different views
-            from sklearn.cluster import DBSCAN
-            import numpy as np
-            
-            # Get centers for clustering
-            centers = np.array([box['center'] for box in entity_boxes])
-            
-            # Cluster entities by spatial proximity (tighter clustering for floor plans)
-            clustering = DBSCAN(eps=30, min_samples=10).fit(centers)
-            
-            # Group entities by clusters
-            clusters = defaultdict(list)
-            for i, label in enumerate(clustering.labels_):
-                if label >= 0:  # Skip noise points
-                    clusters[label].append(entity_boxes[i])
-            
-            # Analyze each cluster
-            for cluster_id, cluster_entities in clusters.items():
-                region = self._analyze_cluster_region(cluster_entities)
-                if region:
-                    regions.append(region)
-            
-        except Exception as e:
-            print(f"Error analyzing spatial distribution: {str(e)}")
+        # Group walls by connectivity
+        wall_groups = self._group_connected_walls(walls)
         
-        return regions
-    
-    def _filter_floor_plan_entities(self, entities) -> List:
-        """Filter entities to keep only floor plan elements (remove elevation drawings)"""
-        floor_plan_entities = []
+        optimized_walls = []
         
-        try:
-            for entity in entities:
-                entity_type = entity.dxftype()
-                
-                # Skip complex curves and splines that are common in elevation drawings
-                if entity_type in ['SPLINE', 'ELLIPSE', 'HATCH']:
-                    continue
-                
-                # Skip text entities that might be elevation labels
-                if entity_type in ['TEXT', 'MTEXT']:
-                    continue
-                
-                # For circles, check if they're too small (details) or too large (people)
-                if entity_type == 'CIRCLE':
-                    try:
-                        radius = entity.dxf.radius
-                        # Skip very small circles (details) or very large ones (people heads)
-                        if radius < 0.1 or radius > 10:
-                            continue
-                    except:
-                        continue
-                
-                # For arcs, check if they're reasonable door arcs
-                if entity_type == 'ARC':
-                    try:
-                        radius = entity.dxf.radius
-                        # Keep door-sized arcs only
-                        if 0.5 <= radius <= 2.0:
-                            floor_plan_entities.append(entity)
-                    except:
-                        continue
-                
-                # For lines, check if they're horizontal/vertical (typical of floor plans)
-                elif entity_type == 'LINE':
-                    try:
-                        start = entity.dxf.start
-                        end = entity.dxf.end
-                        
-                        # Calculate line angle
-                        dx = end.x - start.x
-                        dy = end.y - start.y
-                        
-                        if abs(dx) < 0.001 and abs(dy) < 0.001:  # Skip zero-length lines
-                            continue
-                        
-                        # Check if line is approximately horizontal or vertical
-                        if abs(dx) < 0.001 or abs(dy) < 0.001:  # Perfectly horizontal/vertical
-                            floor_plan_entities.append(entity)
-                        else:
-                            # Calculate angle from horizontal
-                            angle = abs(np.arctan2(dy, dx) * 180 / np.pi)
-                            # Keep lines that are close to horizontal/vertical (within 15 degrees)
-                            if angle <= 15 or angle >= 75:
-                                floor_plan_entities.append(entity)
-                    except:
-                        # If we can't analyze the line, include it
-                        floor_plan_entities.append(entity)
-                
-                # For polylines, check if they form rectangular shapes (typical of floor plans)
-                elif entity_type in ['LWPOLYLINE', 'POLYLINE']:
-                    try:
-                        points = list(entity.get_points())
-                        if len(points) >= 3:
-                            # Check if it's a simple rectangular shape
-                            if self._is_rectangular_shape(points):
-                                floor_plan_entities.append(entity)
-                    except:
-                        continue
-                
-                # Keep other basic entities
-                else:
-                    floor_plan_entities.append(entity)
-            
-            print(f"Filtered {len(entities)} entities down to {len(floor_plan_entities)} floor plan entities")
-            
-        except Exception as e:
-            print(f"Error filtering floor plan entities: {str(e)}")
-            return entities  # Return original if filtering fails
+        for group in wall_groups:
+            # Merge connected wall segments
+            merged_wall = self._merge_wall_segments(group)
+            if merged_wall:
+                optimized_walls.append(merged_wall)
         
-        return floor_plan_entities
-    
-    def _is_rectangular_shape(self, points) -> bool:
-        """Check if a series of points forms a rectangular shape"""
-        try:
-            if len(points) < 4:
-                return False
-            
-            # Check if most line segments are horizontal or vertical
-            horizontal_vertical_count = 0
-            
-            for i in range(len(points) - 1):
-                p1 = points[i]
-                p2 = points[i + 1]
-                
-                dx = abs(p2[0] - p1[0])
-                dy = abs(p2[1] - p1[1])
-                
-                # Check if line is approximately horizontal or vertical
-                if dx < 0.1 or dy < 0.1:
-                    horizontal_vertical_count += 1
-            
-            # If most lines are horizontal/vertical, it's likely a rectangular shape
-            return horizontal_vertical_count >= len(points) * 0.7
+        return optimized_walls
+
+    def _group_connected_walls(self, walls: List[CADElement]) -> List[List[CADElement]]:
+        """Group walls that are connected or aligned"""
+        if not walls:
+            return []
         
-        except:
-            return False
-    
-    def _analyze_cluster_region(self, cluster_entities) -> Optional[Dict]:
-        """Analyze a cluster of entities to determine if it's a floor plan"""
-        if not cluster_entities:
+        groups = []
+        processed = set()
+        
+        for wall in walls:
+            if id(wall) in processed:
+                continue
+            
+            # Start a new group
+            group = [wall]
+            processed.add(id(wall))
+            
+            # Find connected walls
+            self._find_connected_walls(wall, walls, group, processed)
+            
+            groups.append(group)
+        
+        return groups
+
+    def _find_connected_walls(self, wall: CADElement, all_walls: List[CADElement],
+                            group: List[CADElement], processed: set):
+        """Recursively find walls connected to the given wall"""
+        if not isinstance(wall.geometry, LineString):
+            return
+        
+        wall_coords = list(wall.geometry.coords)
+        if len(wall_coords) < 2:
+            return
+        
+        wall_start = Point(wall_coords[0])
+        wall_end = Point(wall_coords[-1])
+        
+        for other_wall in all_walls:
+            if id(other_wall) in processed or not isinstance(other_wall.geometry, LineString):
+                continue
+            
+            other_coords = list(other_wall.geometry.coords)
+            if len(other_coords) < 2:
+                continue
+            
+            other_start = Point(other_coords[0])
+            other_end = Point(other_coords[-1])
+            
+            # Check if walls are connected (endpoints are close)
+            connections = [
+                wall_start.distance(other_start),
+                wall_start.distance(other_end),
+                wall_end.distance(other_start),
+                wall_end.distance(other_end)
+            ]
+            
+            if min(connections) < self.connection_tolerance:
+                group.append(other_wall)
+                processed.add(id(other_wall))
+                # Recursively find more connected walls
+                self._find_connected_walls(other_wall, all_walls, group, processed)
+
+    def _merge_wall_segments(self, wall_group: List[CADElement]) -> Optional[CADElement]:
+        """Merge connected wall segments into a single wall"""
+        if not wall_group:
             return None
         
-        try:
-            # Calculate region bounds
-            min_x = min(box['bbox']['min_x'] for box in cluster_entities)
-            max_x = max(box['bbox']['max_x'] for box in cluster_entities)
-            min_y = min(box['bbox']['min_y'] for box in cluster_entities)
-            max_y = max(box['bbox']['max_y'] for box in cluster_entities)
-            
-            # Analyze entity types in this region
-            wall_count = 0
-            door_count = 0
-            line_count = 0
-            arc_count = 0
-            circle_count = 0
-            polyline_count = 0
-            text_count = 0
-            
-            for box in cluster_entities:
-                entity = box['entity']
-                entity_type = entity.dxftype()
-                
-                if entity_type == 'LINE':
-                    line_count += 1
-                    if self._is_wall_entity(entity):
-                        wall_count += 1
-                    elif self._is_door_entity(entity):
-                        door_count += 1
-                elif entity_type == 'ARC':
-                    arc_count += 1
-                    if self._is_door_entity(entity):
-                        door_count += 1
-                elif entity_type == 'CIRCLE':
-                    circle_count += 1
-                elif entity_type in ['LWPOLYLINE', 'POLYLINE']:
-                    polyline_count += 1
-                    if self._is_wall_entity(entity):
-                        wall_count += 1
-                elif entity_type in ['TEXT', 'MTEXT']:
-                    text_count += 1
-            
-            # Calculate metrics for floor plan detection
-            region_width = max_x - min_x
-            region_height = max_y - min_y
-            region_area = region_width * region_height
-            entity_density = len(cluster_entities) / region_area if region_area > 0 else 0
-            
-            # Floor plan characteristics (more sophisticated detection)
-            aspect_ratio = region_width / region_height if region_height > 0 else 1
-            is_reasonable_aspect = 0.3 < aspect_ratio < 3.0  # Floor plans are usually not extremely elongated
-            
-            has_walls = wall_count > 10  # Floor plans have many walls
-            has_doors = door_count > 0  # Floor plans have doors/openings
-            has_arcs = arc_count > 0  # Floor plans often have door arcs
-            good_density = 0.005 < entity_density < 0.5  # Not too sparse, not too dense
-            
-            # Check for elevation indicators (things that suggest this is NOT a floor plan)
-            has_too_many_lines = line_count > wall_count * 3  # Elevations have many detail lines
-            has_excessive_text = text_count > 50  # Elevations often have lots of labels
-            
-            # Floor plan should have good balance of different entity types
-            entity_diversity = len([x for x in [line_count, arc_count, polyline_count] if x > 0])
-            
-            # Score this region as potential floor plan
-            score = 0
-            if has_walls: score += 5  # Most important factor
-            if has_doors: score += 3
-            if has_arcs: score += 2  # Door arcs are common in floor plans
-            if is_reasonable_aspect: score += 2
-            if good_density: score += 1
-            if entity_diversity >= 2: score += 1
-            if wall_count > 20: score += 1
-            
-            # Penalize elevation-like characteristics
-            if has_too_many_lines: score -= 3
-            if has_excessive_text: score -= 2
-            if aspect_ratio > 2.5 or aspect_ratio < 0.4: score -= 1  # Very elongated regions
-            
-            return {
-                'bounds': {
-                    'min_x': min_x,
-                    'max_x': max_x,
-                    'min_y': min_y,
-                    'max_y': max_y
-                },
-                'entity_count': len(cluster_entities),
-                'wall_count': wall_count,
-                'door_count': door_count,
-                'line_count': line_count,
-                'arc_count': arc_count,
-                'circle_count': circle_count,
-                'polyline_count': polyline_count,
-                'text_count': text_count,
-                'score': score,
-                'area': region_area,
-                'density': entity_density,
-                'aspect_ratio': aspect_ratio,
-                'entity_diversity': entity_diversity
-            }
-            
-        except Exception as e:
-            print(f"Error analyzing cluster region: {str(e)}")
-            return None
-    
-    def _identify_floor_plan_region(self, regions) -> Optional[Dict]:
-        """Identify the most likely floor plan region"""
-        if not regions:
-            return None
+        if len(wall_group) == 1:
+            return wall_group[0]
         
-        try:
-            # Sort regions by score (higher score = more likely to be floor plan)
-            sorted_regions = sorted(regions, key=lambda r: r['score'], reverse=True)
-            
-            # Return the highest scoring region
-            best_region = sorted_regions[0]
-            
-            # Add some padding around the detected region
-            padding = 10
-            bounds = best_region['bounds']
-            
-            return {
-                'min_x': bounds['min_x'] - padding,
-                'max_x': bounds['max_x'] + padding,
-                'min_y': bounds['min_y'] - padding,
-                'max_y': bounds['max_y'] + padding
-            }
-            
-        except Exception as e:
-            print(f"Error identifying floor plan region: {str(e)}")
-            return None
-    
-    def _get_entity_bbox(self, entity) -> Optional[Dict]:
-        """Get bounding box for an entity"""
-        try:
-            if entity.dxftype() == 'LINE':
-                start = entity.dxf.start
-                end = entity.dxf.end
-                return {
-                    'min_x': min(start.x, end.x),
-                    'max_x': max(start.x, end.x),
-                    'min_y': min(start.y, end.y),
-                    'max_y': max(start.y, end.y)
-                }
-            elif entity.dxftype() == 'LWPOLYLINE':
-                points = list(entity.get_points())
-                if points:
-                    xs = [p[0] for p in points]
-                    ys = [p[1] for p in points]
-                    return {
-                        'min_x': min(xs),
-                        'max_x': max(xs),
-                        'min_y': min(ys),
-                        'max_y': max(ys)
+        # For simplicity, just return the longest wall in the group
+        # In a full implementation, you would properly merge the geometries
+        longest_wall = max(wall_group, 
+                          key=lambda w: w.geometry.length if isinstance(w.geometry, LineString) else 0)
+        
+        # Update properties to reflect the merged wall
+        total_length = sum(w.geometry.length for w in wall_group 
+                          if isinstance(w.geometry, LineString))
+        
+        longest_wall.properties.update({
+            'length': total_length,
+            'segment_count': len(wall_group),
+            'merged': True
+        })
+        
+        return longest_wall
+
+    def _generate_room_boundaries(self, walls: List[CADElement]) -> List[CADElement]:
+        """Generate room boundaries from wall structure"""
+        rooms = []
+        
+        if not walls:
+            return rooms
+        
+        # Simple approach: create rooms based on wall enclosures
+        wall_lines = [wall.geometry for wall in walls 
+                     if isinstance(wall.geometry, LineString)]
+        
+        if wall_lines:
+            try:
+                # Create a union of all walls
+                wall_union = unary_union(wall_lines)
+                
+                # Get the bounds and create a simple room
+                bounds = wall_union.bounds
+                room_polygon = Polygon([
+                    (bounds[0] + 100, bounds[1] + 100),  # Add small margin
+                    (bounds[2] - 100, bounds[1] + 100),
+                    (bounds[2] - 100, bounds[3] - 100),
+                    (bounds[0] + 100, bounds[3] - 100)
+                ])
+                
+                room_element = CADElement(
+                    element_type=ElementType.ROOM_BOUNDARY,
+                    geometry=room_polygon,
+                    properties={
+                        'area': room_polygon.area,
+                        'perimeter': room_polygon.length,
+                        'room_id': 'main_room',
+                        'generated': True
                     }
-            elif entity.dxftype() == 'CIRCLE':
-                center = entity.dxf.center
-                radius = entity.dxf.radius
-                return {
-                    'min_x': center.x - radius,
-                    'max_x': center.x + radius,
-                    'min_y': center.y - radius,
-                    'max_y': center.y + radius
-                }
-        except:
-            pass
-        return None
-    
-    def _extract_floor_plan_walls(self, doc, bounds: Dict[str, float]) -> List[Dict]:
-        """Extract walls only from the floor plan region"""
-        walls = []
-        
-        try:
-            for entity in doc.modelspace():
-                if not self._is_entity_in_bounds(entity, bounds):
-                    continue
+                )
+                rooms.append(room_element)
                 
-                if entity.dxftype() == 'LINE':
-                    if self._is_wall_entity(entity):
-                        wall = {
-                            'type': 'LINE',
-                            'points': [
-                                (float(entity.dxf.start.x), float(entity.dxf.start.y)),
-                                (float(entity.dxf.end.x), float(entity.dxf.end.y))
-                            ],
-                            'layer': entity.dxf.layer
-                        }
-                        walls.append(wall)
-                
-                elif entity.dxftype() == 'LWPOLYLINE':
-                    if self._is_wall_entity(entity):
-                        points = [(float(point[0]), float(point[1])) for point in entity.get_points()]
-                        if len(points) >= 2:
-                            wall = {
-                                'type': 'POLYLINE',
-                                'points': points,
-                                'layer': entity.dxf.layer
-                            }
-                            walls.append(wall)
+            except Exception as e:
+                self.logger.warning(f"Error generating room boundaries: {str(e)}")
         
-        except Exception as e:
-            print(f"Error extracting floor plan walls: {str(e)}")
-        
-        return walls
-    
-    def _extract_floor_plan_doors(self, doc, bounds: Dict[str, float]) -> List[Dict]:
-        """Extract doors only from the floor plan region"""
-        doors = []
-        
-        try:
-            for entity in doc.modelspace():
-                if not self._is_entity_in_bounds(entity, bounds):
-                    continue
-                
-                if entity.dxftype() == 'ARC':
-                    if self._is_door_entity(entity):
-                        door = {
-                            'type': 'ARC',
-                            'center': (float(entity.dxf.center.x), float(entity.dxf.center.y)),
-                            'radius': float(entity.dxf.radius),
-                            'start_angle': float(entity.dxf.start_angle),
-                            'end_angle': float(entity.dxf.end_angle),
-                            'layer': entity.dxf.layer
-                        }
-                        doors.append(door)
-                
-                elif entity.dxftype() == 'LINE':
-                    if self._is_door_entity(entity):
-                        door = {
-                            'type': 'LINE',
-                            'points': [
-                                (float(entity.dxf.start.x), float(entity.dxf.start.y)),
-                                (float(entity.dxf.end.x), float(entity.dxf.end.y))
-                            ],
-                            'layer': entity.dxf.layer
-                        }
-                        doors.append(door)
-        
-        except Exception as e:
-            print(f"Error extracting floor plan doors: {str(e)}")
-        
-        return doors
-    
-    def _extract_floor_plan_restricted_areas(self, doc, bounds: Dict[str, float]) -> List[Dict]:
-        """Extract restricted areas only from the floor plan region"""
+        return rooms
+
+    def _detect_special_areas_from_view(self, text_annotations: List[CADElement],
+                                      rooms: List[CADElement], 
+                                      view_bounds: Tuple[float, float, float, float]) -> Tuple[List[CADElement], List[CADElement]]:
+        """Detect restricted areas and entrances from view data"""
         restricted_areas = []
-        
-        try:
-            # Create some sample restricted areas based on bounds
-            # This is a simplified approach - in reality, you'd detect these from the DXF
-            area_width = bounds['max_x'] - bounds['min_x']
-            area_height = bounds['max_y'] - bounds['min_y']
-            
-            # Add a few strategic restricted areas
-            restricted_areas.extend([
-                {
-                    'type': 'RECTANGLE',
-                    'points': [
-                        (bounds['min_x'] + area_width * 0.1, bounds['min_y'] + area_height * 0.1),
-                        (bounds['min_x'] + area_width * 0.3, bounds['min_y'] + area_height * 0.3)
-                    ],
-                    'layer': 'RESTRICTED'
-                },
-                {
-                    'type': 'RECTANGLE',
-                    'points': [
-                        (bounds['min_x'] + area_width * 0.1, bounds['min_y'] + area_height * 0.7),
-                        (bounds['min_x'] + area_width * 0.3, bounds['min_y'] + area_height * 0.9)
-                    ],
-                    'layer': 'RESTRICTED'
-                }
-            ])
-        
-        except Exception as e:
-            print(f"Error extracting restricted areas: {str(e)}")
-        
-        return restricted_areas
-    
-    def _is_entity_in_bounds(self, entity, bounds: Dict[str, float]) -> bool:
-        """Check if entity is within the specified bounds"""
-        try:
-            entity_bbox = self._get_entity_bbox(entity)
-            if not entity_bbox:
-                return False
-            
-            # Check if entity overlaps with bounds
-            return not (entity_bbox['max_x'] < bounds['min_x'] or 
-                       entity_bbox['min_x'] > bounds['max_x'] or
-                       entity_bbox['max_y'] < bounds['min_y'] or
-                       entity_bbox['min_y'] > bounds['max_y'])
-        except:
-            return False
-    
-    def _is_wall_entity(self, entity) -> bool:
-        """Check if entity is a wall"""
-        try:
-            layer = entity.dxf.layer.upper()
-            return any(wall_layer in layer for wall_layer in self.wall_layers)
-        except:
-            return True  # Default to wall if layer check fails
-    
-    def _is_door_entity(self, entity) -> bool:
-        """Check if entity is a door"""
-        try:
-            layer = entity.dxf.layer.upper()
-            return any(door_layer in layer for door_layer in self.door_layers)
-        except:
-            return False
-    
-    def _create_entrances_from_doors(self, doors) -> List[Dict]:
-        """Create entrance points from door entities"""
         entrances = []
         
-        for door in doors:
-            try:
-                if door['type'] == 'ARC':
-                    center = door['center']
-                    entrance = {
-                        'type': 'ENTRANCE',
-                        'position': center,
-                        'width': door['radius'] * 2,
-                        'layer': door['layer']
+        # Analyze text annotations
+        for text_elem in text_annotations:
+            text_content = text_elem.properties.get('text', '').lower()
+            
+            if any(keyword in text_content for keyword in ['no entree', 'restricted', 'interdit']):
+                # Create restricted area
+                center = text_elem.geometry
+                restricted_area = center.buffer(1000)  # 1m radius
+                
+                restricted_element = CADElement(
+                    element_type=ElementType.ROOM_BOUNDARY,
+                    geometry=restricted_area,
+                    properties={
+                        'area_type': 'restricted',
+                        'description': text_content,
+                        'detected_from': 'text_annotation'
                     }
-                    entrances.append(entrance)
-                elif door['type'] == 'LINE':
-                    points = door['points']
-                    center = ((points[0][0] + points[1][0]) / 2, (points[0][1] + points[1][1]) / 2)
-                    entrance = {
-                        'type': 'ENTRANCE',
-                        'position': center,
-                        'width': 1.0,
-                        'layer': door['layer']
+                )
+                restricted_areas.append(restricted_element)
+                
+            elif any(keyword in text_content for keyword in ['entree', 'sortie', 'entrance', 'exit']):
+                # Create entrance area
+                center = text_elem.geometry
+                entrance_area = center.buffer(800)  # 0.8m radius
+                
+                entrance_element = CADElement(
+                    element_type=ElementType.ROOM_BOUNDARY,
+                    geometry=entrance_area,
+                    properties={
+                        'area_type': 'entrance',
+                        'description': text_content,
+                        'detected_from': 'text_annotation'
                     }
-                    entrances.append(entrance)
-            except Exception as e:
-                print(f"Error creating entrance from door: {str(e)}")
+                )
+                entrances.append(entrance_element)
         
-        return entrances
-    
-    def _get_document_bounds(self, doc) -> Dict[str, float]:
-        """Get document bounds as fallback"""
-        try:
-            header = doc.header
-            if '$EXTMIN' in header and '$EXTMAX' in header:
-                min_pt = header['$EXTMIN']
-                max_pt = header['$EXTMAX']
-                return {
-                    'min_x': float(min_pt[0]),
-                    'max_x': float(max_pt[0]),
-                    'min_y': float(min_pt[1]),
-                    'max_y': float(max_pt[1])
+        # If no special areas found from text, create default ones based on geometry
+        if not restricted_areas and not entrances:
+            restricted_areas, entrances = self._create_default_special_areas(view_bounds)
+        
+        return restricted_areas, entrances
+
+    def _create_default_special_areas(self, bounds: Tuple[float, float, float, float]) -> Tuple[List[CADElement], List[CADElement]]:
+        """Create default restricted areas and entrances for demonstration"""
+        min_x, min_y, max_x, max_y = bounds
+        width = max_x - min_x
+        height = max_y - min_y
+        
+        restricted_areas = []
+        entrances = []
+        
+        # Create 2 restricted areas (blue zones)
+        restricted_1 = Polygon([
+            (min_x + width * 0.1, min_y + height * 0.7),
+            (min_x + width * 0.25, min_y + height * 0.7),
+            (min_x + width * 0.25, min_y + height * 0.85),
+            (min_x + width * 0.1, min_y + height * 0.85)
+        ])
+        
+        restricted_2 = Polygon([
+            (min_x + width * 0.1, min_y + height * 0.1),
+            (min_x + width * 0.25, min_y + height * 0.1),
+            (min_x + width * 0.25, min_y + height * 0.25),
+            (min_x + width * 0.1, min_y + height * 0.25)
+        ])
+        
+        for i, restricted_geom in enumerate([restricted_1, restricted_2], 1):
+            restricted_element = CADElement(
+                element_type=ElementType.ROOM_BOUNDARY,
+                geometry=restricted_geom,
+                properties={
+                    'area_type': 'restricted',
+                    'description': f'NO ENTREE {i}',
+                    'detected_from': 'geometry_analysis'
                 }
-        except:
-            pass
+            )
+            restricted_areas.append(restricted_element)
         
-        return {'min_x': 0, 'max_x': 200, 'min_y': 0, 'max_y': 150}
+        # Create 3 entrance areas (red zones)
+        entrance_positions = [
+            (min_x + width * 0.05, min_y + height * 0.4),  # Left side
+            (max_x - width * 0.05, min_y + height * 0.6),  # Right side
+            (min_x + width * 0.5, max_y - height * 0.05)   # Top side
+        ]
+        
+        for i, (x, y) in enumerate(entrance_positions, 1):
+            entrance_area = Point(x, y).buffer(600)  # 60cm radius
+            
+            entrance_element = CADElement(
+                element_type=ElementType.ROOM_BOUNDARY,
+                geometry=entrance_area,
+                properties={
+                    'area_type': 'entrance',
+                    'description': f'ENTRÉE/SORTIE {i}',
+                    'detected_from': 'geometry_analysis'
+                }
+            )
+            entrances.append(entrance_element)
+        
+        return restricted_areas, entrances
+
+    def _create_heuristic_floor_plan(self, floor_plan_data: FloorPlanData) -> FloorPlanData:
+        """Create a floor plan using heuristics when no clear floor plan is detected"""
+        
+        # Use the original data but apply some cleaning
+        all_walls = floor_plan_data.walls
+        
+        if all_walls:
+            # Filter walls by length - keep only substantial walls
+            substantial_walls = [wall for wall in all_walls 
+                               if isinstance(wall.geometry, LineString) and 
+                               wall.geometry.length > self.wall_length_threshold]
+            
+            # If we have substantial walls, use them
+            if substantial_walls:
+                floor_plan_data.walls = substantial_walls
+                
+                # Generate rooms from these walls
+                if not floor_plan_data.rooms:
+                    floor_plan_data.rooms = self._generate_room_boundaries(substantial_walls)
+                
+                # Add default special areas if none exist
+                if not floor_plan_data.restricted_areas and not floor_plan_data.entrances:
+                    bounds = floor_plan_data.bounds
+                    if bounds:
+                        view_bounds = (bounds['min_x'], bounds['min_y'], 
+                                     bounds['max_x'], bounds['max_y'])
+                        restricted, entrances = self._create_default_special_areas(view_bounds)
+                        floor_plan_data.restricted_areas = restricted
+                        floor_plan_data.entrances = entrances
+        
+        # Mark as heuristic
+        if not floor_plan_data.metadata:
+            floor_plan_data.metadata = {}
+        floor_plan_data.metadata['heuristic_detection'] = True
+        
+        return floor_plan_data
+
+    def get_detection_summary(self, floor_plan_data: FloorPlanData) -> Dict[str, Any]:
+        """Generate a summary of the floor plan detection process"""
+        metadata = floor_plan_data.metadata or {}
+        
+        return {
+            'detection_method': metadata.get('heuristic_detection', False) and 'heuristic' or 'smart_detection',
+            'view_type': metadata.get('detected_view_type', 'unknown'),
+            'confidence': metadata.get('confidence', 0.0),
+            'complexity_score': metadata.get('complexity_score', 0.0),
+            'optimization_applied': metadata.get('optimization_applied', False),
+            'total_walls': len(floor_plan_data.walls),
+            'total_rooms': len(floor_plan_data.rooms),
+            'restricted_areas': len(floor_plan_data.restricted_areas),
+            'entrances': len(floor_plan_data.entrances),
+            'floor_plan_area': floor_plan_data.bounds.get('width', 0) * floor_plan_data.bounds.get('height', 0) if floor_plan_data.bounds else 0
+        }

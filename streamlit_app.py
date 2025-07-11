@@ -50,6 +50,9 @@ from smart_ilot_placer import SmartIlotPlacer
 from advanced_3d_renderer import Advanced3DRenderer
 from webgl_3d_renderer import WebGL3DRenderer
 
+# Import Phase 1 Enhanced Components
+from phase1_integration_layer import phase1_processor
+
 # Page configuration
 st.set_page_config(
     page_title="CAD Analyzer Pro",
@@ -589,41 +592,105 @@ class CADAnalyzerApp:
                         st.error("File appears to be empty or corrupted")
                         return
 
-                    # Process based on file type with improved error handling
-                    if uploaded_file.name.lower().endswith('.dxf'):
-                        st.info("Processing DXF file - extracting floor plan...")
+                    # Phase 1 Enhanced Processing Option
+                    st.markdown("### 🚀 Enhanced Processing Mode")
+                    use_phase1_enhanced = st.checkbox(
+                        "Use Phase 1 Enhanced Processing", 
+                        value=True,
+                        help="Advanced CAD parsing with smart floor plan detection and geometric element recognition"
+                    )
+                    
+                    if use_phase1_enhanced:
+                        st.info("🔬 Using Phase 1 Enhanced Processing: Advanced CAD Parser + Smart Floor Plan Detector + Geometric Element Recognizer")
                         
-                        # Try multiple processors for better success rate
-                        processors = [
-                            ("Targeted Extractor", self.targeted_extractor),
-                            ("Fast Processor", self.fast_dxf_processor),
-                            ("Real Processor", self.real_dxf_processor),
-                            ("Optimized Processor", self.dxf_processor)
-                        ]
+                        # Use Phase 1 enhanced processing
+                        result = phase1_processor.process_cad_file_enhanced(file_content, uploaded_file.name)
                         
-                        result = None
-                        for processor_name, processor in processors:
-                            try:
-                                if hasattr(processor, 'process_dxf_file'):
-                                    result = processor.process_dxf_file(file_content, uploaded_file.name)
-                                else:
-                                    result = processor.process_file_ultra_fast(file_content, uploaded_file.name)
-                                
-                                if result and result.get('success'):
-                                    st.success(f"Successfully processed with {processor_name}")
-                                    break
-                                    
-                            except Exception as e:
-                                st.warning(f"{processor_name} failed: {str(e)}")
-                                continue
-                        
-                        if not result or not result.get('success'):
-                            st.error("All DXF processors failed. Please check file format.")
-                            return
+                        if result and result.get('processing_metadata', {}).get('phase1_complete'):
+                            st.success("✅ Phase 1 Enhanced Processing Complete!")
                             
+                            # Display enhanced processing metrics
+                            col1, col2, col3 = st.columns(3)
+                            with col1:
+                                st.metric("Processing Time", f"{result.get('processing_time', 0):.2f}s")
+                            with col2:
+                                st.metric("Elements Detected", result.get('element_counts', {}).get('walls', 0) + 
+                                         result.get('element_counts', {}).get('doors', 0) + 
+                                         result.get('element_counts', {}).get('windows', 0))
+                            with col3:
+                                st.metric("Quality Score", f"{result.get('quality_metrics', {}).get('overall_quality_score', 0):.1f}%")
+                            
+                            # Display enhancement details
+                            enhancement_level = result.get('performance_metrics', {}).get('enhancement_level', 'Unknown')
+                            detection_confidence = result.get('processing_metadata', {}).get('detection_confidence', 0)
+                            st.info(f"Enhancement: {enhancement_level} | Detection Confidence: {detection_confidence:.1f}")
+                        else:
+                            st.error("Phase 1 Enhanced Processing failed. Falling back to standard processing.")
+                            # Fallback to standard processing
+                            if uploaded_file.name.lower().endswith('.dxf'):
+                                st.info("Processing DXF file with standard processors...")
+                                processors = [
+                                    ("Fast Processor", self.fast_dxf_processor),
+                                    ("Real Processor", self.real_dxf_processor),
+                                    ("Optimized Processor", self.dxf_processor)
+                                ]
+                                
+                                result = None
+                                for processor_name, processor in processors:
+                                    try:
+                                        if hasattr(processor, 'process_dxf_file'):
+                                            result = processor.process_dxf_file(file_content, uploaded_file.name)
+                                        else:
+                                            result = processor.process_file_ultra_fast(file_content, uploaded_file.name)
+                                        
+                                        if result and result.get('success'):
+                                            st.success(f"Successfully processed with {processor_name}")
+                                            break
+                                            
+                                    except Exception as e:
+                                        st.warning(f"{processor_name} failed: {str(e)}")
+                                        continue
+                            else:
+                                # Use ultra-high performance analyzer for other files
+                                result = self.floor_analyzer.process_file_ultra_fast(file_content, uploaded_file.name)
                     else:
-                        # Use ultra-high performance analyzer for other files
-                        result = self.floor_analyzer.process_file_ultra_fast(file_content, uploaded_file.name)
+                        # Standard processing with fallback processors
+                        st.info("Using standard processing with multiple fallback processors...")
+                        
+                        # Process based on file type with improved error handling
+                        if uploaded_file.name.lower().endswith('.dxf'):
+                            st.info("Processing DXF file - extracting floor plan...")
+                            
+                            # Try multiple processors for better success rate
+                            processors = [
+                                ("Targeted Extractor", self.targeted_extractor),
+                                ("Fast Processor", self.fast_dxf_processor),
+                                ("Real Processor", self.real_dxf_processor),
+                                ("Optimized Processor", self.dxf_processor)
+                            ]
+                            
+                            result = None
+                            for processor_name, processor in processors:
+                                try:
+                                    if hasattr(processor, 'process_dxf_file'):
+                                        result = processor.process_dxf_file(file_content, uploaded_file.name)
+                                    else:
+                                        result = processor.process_file_ultra_fast(file_content, uploaded_file.name)
+                                    
+                                    if result and result.get('success'):
+                                        st.success(f"Successfully processed with {processor_name}")
+                                        break
+                                        
+                                except Exception as e:
+                                    st.warning(f"{processor_name} failed: {str(e)}")
+                                    continue
+                            
+                            if not result or not result.get('success'):
+                                st.error("All DXF processors failed. Please check file format.")
+                                return
+                        else:
+                            # Use ultra-high performance analyzer for other files
+                            result = self.floor_analyzer.process_file_ultra_fast(file_content, uploaded_file.name)
 
                     if not result or not result.get('success'):
                         st.error(f"Processing failed: {result.get('error', 'Unknown error') if result else 'No result'}")
