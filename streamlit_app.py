@@ -56,6 +56,10 @@ from phase1_integration_layer import phase1_processor
 # Import Phase 2 Advanced Components
 from phase2_integration_layer import phase2_processor, Phase2Configuration
 
+# Import Phase 3 & 4 Advanced Components  
+from phase3_integration_layer import phase3_processor, Phase3Configuration
+from phase4_integration_layer import phase4_processor, Phase4Configuration
+
 # Page configuration
 st.set_page_config(
     page_title="CAD Analyzer Pro",
@@ -598,18 +602,30 @@ class CADAnalyzerApp:
                     # Enhanced Processing Options
                     st.markdown("### 🚀 Enhanced Processing Mode")
                     
-                    col1, col2 = st.columns(2)
+                    col1, col2, col3, col4 = st.columns(4)
                     with col1:
                         use_phase1_enhanced = st.checkbox(
-                            "Phase 1 Enhanced Processing", 
+                            "Phase 1 Enhanced", 
                             value=True,
                             help="Advanced CAD parsing with smart floor plan detection and geometric element recognition"
                         )
                     with col2:
                         use_phase2_advanced = st.checkbox(
-                            "Phase 2 Advanced Processing", 
+                            "Phase 2 Advanced", 
                             value=False,
                             help="Advanced îlot placement with multiple algorithms and intelligent corridor generation"
+                        )
+                    with col3:
+                        use_phase3_visualization = st.checkbox(
+                            "Phase 3 Visualization", 
+                            value=False,
+                            help="Pixel-perfect visualization with exact reference matching and multi-stage rendering"
+                        )
+                    with col4:
+                        use_phase4_export = st.checkbox(
+                            "Phase 4 Export", 
+                            value=False,
+                            help="Comprehensive export with multiple formats and system integration"
                         )
                     
                     if use_phase1_enhanced:
@@ -690,6 +706,108 @@ class CADAnalyzerApp:
                                     
                                     # Update result with Phase 2 data
                                     result.update(phase2_result)
+                                    
+                                    # Phase 3 Pixel-Perfect Visualization (if enabled)
+                                    if use_phase3_visualization:
+                                        st.markdown("---")
+                                        st.info("🎨 Starting Phase 3 Pixel-Perfect Visualization: Multi-Stage Rendering + Reference Matching")
+                                        
+                                        phase3_config = Phase3Configuration(
+                                            visualization_stage="corridors_added",
+                                            visualization_style="reference_match",
+                                            canvas_size=(1800, 1800),
+                                            show_labels=True,
+                                            enable_multi_stage=True,
+                                            export_ready=True
+                                        )
+                                        
+                                        phase3_result = phase3_processor.create_advanced_visualizations(result, phase3_config)
+                                        
+                                        if phase3_result.get('success') and phase3_result.get('phase3_complete'):
+                                            st.success("✅ Phase 3 Pixel-Perfect Visualization Complete!")
+                                            
+                                            # Display Phase 3 metrics
+                                            col1, col2, col3 = st.columns(3)
+                                            with col1:
+                                                st.metric("Visualizations Created", phase3_result.get('metadata', {}).get('total_visualizations', 0))
+                                            with col2:
+                                                st.metric("Canvas Resolution", phase3_result.get('metadata', {}).get('canvas_resolution', '1800x1800'))
+                                            with col3:
+                                                st.metric("Style Applied", phase3_result.get('configuration_used', {}).get('style', 'reference_match'))
+                                            
+                                            # Update result with Phase 3 data
+                                            result['phase3_visualizations'] = phase3_result.get('visualizations', {})
+                                            result['phase3_metadata'] = phase3_result.get('metadata', {})
+                                            
+                                            # Phase 4 Export & Integration (if enabled)
+                                            if use_phase4_export:
+                                                st.markdown("---")
+                                                st.info("📦 Starting Phase 4 Export & Integration: Multi-Format Export + System Integration")
+                                                
+                                                phase4_config = Phase4Configuration(
+                                                    export_formats=['json', 'csv', 'html', 'png', 'zip_package'],
+                                                    summary_level="comprehensive",
+                                                    include_visualizations=True,
+                                                    include_metrics=True,
+                                                    file_prefix="cad_analysis",
+                                                    create_zip_package=True
+                                                )
+                                                
+                                                phase4_result = phase4_processor.process_export_and_integration(
+                                                    result, 
+                                                    phase3_result.get('visualizations', {}), 
+                                                    phase4_config
+                                                )
+                                                
+                                                if phase4_result.get('success') and phase4_result.get('phase4_complete'):
+                                                    st.success("✅ Phase 4 Export & Integration Complete!")
+                                                    
+                                                    # Display Phase 4 metrics
+                                                    export_package = phase4_result.get('export_package', {})
+                                                    processing_info = export_package.get('processing_info', {})
+                                                    
+                                                    col1, col2, col3 = st.columns(3)
+                                                    with col1:
+                                                        st.metric("Formats Generated", processing_info.get('formats_generated', 0))
+                                                    with col2:
+                                                        st.metric("Export Time", f"{processing_info.get('export_time', 0):.2f}s")
+                                                    with col3:
+                                                        st.metric("Download Ready", "Yes" if phase4_result.get('download_ready') else "No")
+                                                    
+                                                    # Create download buttons
+                                                    downloads = phase4_processor.create_streamlit_downloads(export_package)
+                                                    
+                                                    if downloads:
+                                                        st.markdown("### 📥 Download Export Files")
+                                                        download_cols = st.columns(len(downloads))
+                                                        
+                                                        for i, (format_name, download_data) in enumerate(downloads.items()):
+                                                            with download_cols[i % len(download_cols)]:
+                                                                if download_data['encoding'] == 'base64':
+                                                                    # For binary files
+                                                                    import base64
+                                                                    file_data = base64.b64decode(download_data['data'])
+                                                                else:
+                                                                    # For text files
+                                                                    file_data = download_data['data']
+                                                                
+                                                                st.download_button(
+                                                                    label=f"📄 {format_name.upper()}",
+                                                                    data=file_data,
+                                                                    file_name=download_data['filename'],
+                                                                    mime=download_data['mime'],
+                                                                    help=f"Download {format_name} format ({download_data['size_mb']:.1f}MB)"
+                                                                )
+                                                    
+                                                    # Update result with Phase 4 data
+                                                    result['phase4_export_package'] = export_package
+                                                    result['phase4_downloads'] = downloads
+                                                else:
+                                                    st.warning("Phase 4 Export & Integration encountered issues.")
+                                                    st.info(f"Reason: {phase4_result.get('error', 'Unknown error')}")
+                                        else:
+                                            st.warning("Phase 3 Pixel-Perfect Visualization encountered issues.")
+                                            st.info(f"Reason: {phase3_result.get('error', 'Unknown error')}")
                                 else:
                                     st.warning("Phase 2 Advanced Processing encountered issues. Continuing with Phase 1 results.")
                                     st.info(f"Reason: {phase2_result.get('reason', 'Unknown error')}")
