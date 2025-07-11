@@ -53,6 +53,9 @@ from webgl_3d_renderer import WebGL3DRenderer
 # Import Phase 1 Enhanced Components
 from phase1_integration_layer import phase1_processor
 
+# Import Phase 2 Advanced Components
+from phase2_integration_layer import phase2_processor, Phase2Configuration
+
 # Page configuration
 st.set_page_config(
     page_title="CAD Analyzer Pro",
@@ -592,13 +595,22 @@ class CADAnalyzerApp:
                         st.error("File appears to be empty or corrupted")
                         return
 
-                    # Phase 1 Enhanced Processing Option
+                    # Enhanced Processing Options
                     st.markdown("### 🚀 Enhanced Processing Mode")
-                    use_phase1_enhanced = st.checkbox(
-                        "Use Phase 1 Enhanced Processing", 
-                        value=True,
-                        help="Advanced CAD parsing with smart floor plan detection and geometric element recognition"
-                    )
+                    
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        use_phase1_enhanced = st.checkbox(
+                            "Phase 1 Enhanced Processing", 
+                            value=True,
+                            help="Advanced CAD parsing with smart floor plan detection and geometric element recognition"
+                        )
+                    with col2:
+                        use_phase2_advanced = st.checkbox(
+                            "Phase 2 Advanced Processing", 
+                            value=False,
+                            help="Advanced îlot placement with multiple algorithms and intelligent corridor generation"
+                        )
                     
                     if use_phase1_enhanced:
                         st.info("🔬 Using Phase 1 Enhanced Processing: Advanced CAD Parser + Smart Floor Plan Detector + Geometric Element Recognizer")
@@ -624,6 +636,63 @@ class CADAnalyzerApp:
                             enhancement_level = result.get('performance_metrics', {}).get('enhancement_level', 'Unknown')
                             detection_confidence = result.get('processing_metadata', {}).get('detection_confidence', 0)
                             st.info(f"Enhancement: {enhancement_level} | Detection Confidence: {detection_confidence:.1f}")
+                            
+                            # Phase 2 Advanced Processing (if enabled)
+                            if use_phase2_advanced:
+                                st.markdown("---")
+                                st.info("🚀 Starting Phase 2 Advanced Processing: Advanced Îlot Placement + Intelligent Corridor Generation")
+                                
+                                # Configure Phase 2 with sidebar settings
+                                phase2_config = Phase2Configuration(
+                                    ilot_size_distribution=st.session_state.get('ilot_size_distribution', {
+                                        'Small (0-1m²)': 30,
+                                        'Medium (1-3m²)': 40, 
+                                        'Large (3-5m²)': 20,
+                                        'Extra Large (5-10m²)': 10
+                                    }),
+                                    ilot_min_spacing=st.session_state.get('min_spacing', 1.0),
+                                    ilot_wall_clearance=0.5,
+                                    ilot_utilization_target=0.7,
+                                    ilot_placement_strategy="hybrid",
+                                    corridor_main_width=1.5,
+                                    corridor_secondary_width=1.2,
+                                    corridor_access_width=1.0,
+                                    corridor_pathfinding_algorithm="a_star",
+                                    corridor_optimize_traffic=True,
+                                    enable_iterative_optimization=True,
+                                    max_optimization_iterations=3,
+                                    quality_threshold=0.8
+                                )
+                                
+                                # Run Phase 2 processing
+                                phase2_result = phase2_processor.process_ilot_placement_and_corridors(result, phase2_config)
+                                
+                                if phase2_result.get('success') and phase2_result.get('phase2_complete'):
+                                    st.success("✅ Phase 2 Advanced Processing Complete!")
+                                    
+                                    # Display Phase 2 metrics
+                                    col1, col2, col3, col4 = st.columns(4)
+                                    with col1:
+                                        st.metric("Îlots Placed", phase2_result.get('ilot_metrics', {}).get('total_ilots_placed', 0))
+                                    with col2:
+                                        st.metric("Corridors Created", phase2_result.get('corridor_metrics', {}).get('total_corridors', 0))
+                                    with col3:
+                                        st.metric("Space Utilization", f"{phase2_result.get('combined_metrics', {}).get('overall_utilization', 0)*100:.1f}%")
+                                    with col4:
+                                        st.metric("Quality Score", f"{phase2_result.get('overall_quality_score', 0)*100:.1f}%")
+                                    
+                                    # Display processing details
+                                    processing_info = phase2_result.get('processing_info', {})
+                                    config_summary = phase2_result.get('configuration_summary', {})
+                                    st.info(f"Strategy: {config_summary.get('ilot_placement_strategy', 'Unknown')} | "
+                                           f"Algorithm: {config_summary.get('corridor_pathfinding_algorithm', 'Unknown')} | "
+                                           f"Processing Time: {processing_info.get('total_processing_time', 0):.2f}s")
+                                    
+                                    # Update result with Phase 2 data
+                                    result.update(phase2_result)
+                                else:
+                                    st.warning("Phase 2 Advanced Processing encountered issues. Continuing with Phase 1 results.")
+                                    st.info(f"Reason: {phase2_result.get('reason', 'Unknown error')}")
                         else:
                             st.error("Phase 1 Enhanced Processing failed. Falling back to standard processing.")
                             # Fallback to standard processing
