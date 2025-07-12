@@ -6,6 +6,9 @@ import streamlit as st
 from typing import Dict, List, Any
 import logging
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+
 class DataValidator:
     """Validates that all data comes from authentic sources, not mock/fallback data"""
     

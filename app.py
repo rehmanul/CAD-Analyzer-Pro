@@ -20,10 +20,10 @@ def main():
     """Main entry point for Streamlit app"""
     try:
         # Import the main application
-        from main_production_app import ProductionCADAnalyzer
+        from streamlit_app import CADAnalyzerApp
         
         # Create and run the application
-        app = ProductionCADAnalyzer()
+        app = CADAnalyzerApp()
         app.run()
         
     except ImportError as e:
