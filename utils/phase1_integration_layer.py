@@ -75,7 +75,7 @@ class Phase1IntegrationLayer:
             
         except Exception as e:
             self.logger.error(f"Error in enhanced CAD processing: {str(e)}")
-            return self._create_error_result(filename, str(e))
+            return self._create_authentic_error_result(filename, str(e))
 
     def _parse_cad_file_with_temp(self, file_content: bytes, filename: str) -> Optional[FloorPlanData]:
         """Parse CAD file using temporary file approach"""
@@ -338,13 +338,13 @@ class Phase1IntegrationLayer:
                 'total_elements_detected': 0
             }
 
-    def _create_fallback_result(self, filename: str, reason: str) -> Dict[str, Any]:
-        """Create a fallback result when processing fails"""
+    def _create_authentic_error_result(self, filename: str, reason: str) -> Dict[str, Any]:
+        """Create authentic error result - NO FALLBACK DATA"""
         return {
             'filename': filename,
             'processing_time': 0.1,
-            'status': 'fallback',
-            'reason': reason,
+            'status': 'authentic_processing_failed',
+            'reason': f"Authentic CAD processing failed: {reason}",
             'element_counts': {'walls': 0, 'doors': 0, 'windows': 0, 'rooms': 0},
             'walls': [],
             'doors': [],
@@ -352,19 +352,20 @@ class Phase1IntegrationLayer:
             'rooms': [],
             'openings': [],
             'text_annotations': [],
-            'floor_plan_bounds': {'min_x': 0, 'min_y': 0, 'max_x': 1000, 'max_y': 1000, 'width': 1000, 'height': 1000},
-            'scale_factor': 1.0,
-            'units': 'mm',
+            'floor_plan_bounds': None,
+            'scale_factor': None,
+            'units': None,
             'performance_metrics': {
-                'enhancement_level': 'FALLBACK',
+                'enhancement_level': 'AUTHENTIC_PROCESSING_ONLY',
                 'processing_speed_mbps': 0
             },
             'quality_metrics': {
                 'overall_quality_score': 0.0
-            }
+            },
+            'message': 'Please provide a valid CAD file for authentic processing. No synthetic data is generated.'
         }
 
-    def _create_error_result(self, filename: str, error_message: str) -> Dict[str, Any]:
+    def _create_error_result_deprecated(self, filename: str, error_message: str) -> Dict[str, Any]:
         """Create an error result when processing completely fails"""
         return {
             'filename': filename,

@@ -328,79 +328,17 @@ class ProperDXFProcessor:
         layer_upper = layer_name.upper()
         return any(window_layer in layer_upper for window_layer in self.window_layers)
     
-    def _create_fallback_structure(self, filename: str) -> Dict[str, Any]:
-        """Create fallback architectural structure when DXF processing fails"""
-        # Create realistic architectural structure
-        bounds = {'min_x': 0, 'max_x': 200, 'min_y': 0, 'max_y': 150}
-        
-        # Create walls forming complex rooms (matching your expected output)
-        walls = [
-            # Outer walls (main boundary)
-            {'type': 'LINE', 'points': [(0, 0), (200, 0)], 'layer': 'WALLS'},
-            {'type': 'LINE', 'points': [(200, 0), (200, 150)], 'layer': 'WALLS'},
-            {'type': 'LINE', 'points': [(200, 150), (0, 150)], 'layer': 'WALLS'},
-            {'type': 'LINE', 'points': [(0, 150), (0, 0)], 'layer': 'WALLS'},
-            
-            # Complex internal room structure
-            {'type': 'LINE', 'points': [(0, 75), (120, 75)], 'layer': 'WALLS'},
-            {'type': 'LINE', 'points': [(120, 0), (120, 150)], 'layer': 'WALLS'},
-            {'type': 'LINE', 'points': [(60, 75), (60, 150)], 'layer': 'WALLS'},
-            {'type': 'LINE', 'points': [(160, 75), (160, 150)], 'layer': 'WALLS'},
-            
-            # Additional room divisions
-            {'type': 'LINE', 'points': [(120, 40), (200, 40)], 'layer': 'WALLS'},
-            {'type': 'LINE', 'points': [(120, 110), (200, 110)], 'layer': 'WALLS'},
-            {'type': 'LINE', 'points': [(30, 40), (60, 40)], 'layer': 'WALLS'},
-            {'type': 'LINE', 'points': [(30, 0), (30, 75)], 'layer': 'WALLS'},
-            {'type': 'LINE', 'points': [(80, 40), (120, 40)], 'layer': 'WALLS'},
-            {'type': 'LINE', 'points': [(80, 0), (80, 40)], 'layer': 'WALLS'},
-            
-            # More complex room structure
-            {'type': 'LINE', 'points': [(160, 40), (180, 40)], 'layer': 'WALLS'},
-            {'type': 'LINE', 'points': [(180, 40), (180, 75)], 'layer': 'WALLS'},
-            {'type': 'LINE', 'points': [(140, 110), (140, 130)], 'layer': 'WALLS'},
-            {'type': 'LINE', 'points': [(140, 130), (180, 130)], 'layer': 'WALLS'},
-        ]
-        
-        # Create restricted areas (stairs, elevators)
-        restricted_areas = [
-            {
-                'bounds': {
-                    'min_x': 10, 'max_x': 30,
-                    'min_y': 10, 'max_y': 30
-                }
-            },
-            {
-                'bounds': {
-                    'min_x': 130, 'max_x': 150,
-                    'min_y': 80, 'max_y': 100
-                }
-            }
-        ]
-        
-        # Create entrances
-        entrances = [
-            {
-                'center': (100, 0),
-                'radius': 3,
-                'bounds': {'min_x': 97, 'max_x': 103, 'min_y': -3, 'max_y': 3}
-            },
-            {
-                'center': (200, 75),
-                'radius': 2,
-                'bounds': {'min_x': 198, 'max_x': 202, 'min_y': 73, 'max_y': 77}
-            }
-        ]
-        
+    def _handle_processing_failure(self, filename: str, error: str) -> Dict[str, Any]:
+        """Handle processing failure with authentic error reporting - NO FALLBACK DATA"""
         return {
-            'success': True,
-            'walls': walls,
+            'filename': filename,
+            'success': False,
+            'error': f"Authentic DXF processing failed: {error}",
+            'entity_count': 0,
+            'bounds': None,
+            'walls': [],
             'doors': [],
             'windows': [],
-            'boundaries': [],
-            'restricted_areas': restricted_areas,
-            'entrances': entrances,
-            'bounds': bounds,
-            'entity_count': len(walls),
-            'entities': []
+            'text_elements': [],
+            'message': "Please provide a valid DXF file for authentic processing"
         }
