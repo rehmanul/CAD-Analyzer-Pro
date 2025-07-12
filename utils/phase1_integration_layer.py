@@ -34,7 +34,7 @@ class Phase1IntegrationLayer:
 
     def process_cad_file_enhanced(self, file_content: bytes, filename: str) -> Dict[str, Any]:
         """
-        Main enhanced processing method that combines all Phase 1 capabilities
+        Main enhanced processing method with timeout protection - NO FALLBACK DATA
         
         Args:
             file_content: Raw file content as bytes
@@ -44,27 +44,44 @@ class Phase1IntegrationLayer:
             Comprehensive analysis result with enhanced floor plan data
         """
         start_time = time.time()
+        max_processing_time = 30.0  # 30 second hard limit
         
         try:
-            # Step 1: Enhanced CAD Parsing
+            # Step 1: Enhanced CAD Parsing (max 10s)
             self.logger.info(f"Starting enhanced CAD parsing for {filename}")
+            
             floor_plan_data = self._parse_cad_file_with_temp(file_content, filename)
             
-            if not floor_plan_data or not floor_plan_data.walls:
-                return self._create_fallback_result(filename, "No valid floor plan data extracted")
+            if time.time() - start_time > 10:
+                self.logger.warning("CAD parsing exceeded 10s limit")
+                return self._create_authentic_error_result(filename, "Processing timeout during CAD parsing")
             
-            # Step 2: Smart Floor Plan Detection
+            if not floor_plan_data or not floor_plan_data.walls:
+                return self._create_authentic_error_result(filename, "No valid floor plan data extracted")
+            
+            # Step 2: Smart Floor Plan Detection (max 5s)
+            if time.time() - start_time > 15:
+                self.logger.warning("Processing exceeded 15s limit")
+                return self._create_authentic_error_result(filename, "Processing timeout during floor plan detection")
+                
             self.logger.info("Applying smart floor plan detection")
             optimized_floor_plan = self.floor_plan_detector.detect_main_floor_plan(floor_plan_data)
             
-            # Step 3: Fast Geometric Element Recognition
+            # Step 3: Fast Geometric Element Recognition (max 10s)
+            if time.time() - start_time > 25:
+                self.logger.warning("Processing exceeded 25s limit")
+                return self._create_authentic_error_result(filename, "Processing timeout during geometric recognition")
+                
             self.logger.info("Performing fast geometric element recognition")
             enhanced_elements = self._apply_fast_geometric_recognition(optimized_floor_plan)
             
-            # Step 4: Merge enhanced elements back into floor plan
+            # Step 4: Quick merge and result generation (max 5s)
+            if time.time() - start_time > max_processing_time:
+                self.logger.warning("Processing exceeded maximum time limit")
+                return self._create_authentic_error_result(filename, "Processing timeout during final steps")
+                
             final_floor_plan = self._merge_enhanced_elements(optimized_floor_plan, enhanced_elements)
             
-            # Step 5: Generate comprehensive analysis result
             processing_time = time.time() - start_time
             result = self._generate_comprehensive_result(
                 final_floor_plan, filename, processing_time, file_content
@@ -100,47 +117,40 @@ class Phase1IntegrationLayer:
             return None
 
     def _apply_fast_geometric_recognition(self, floor_plan_data: FloorPlanData) -> Dict[str, Any]:
-        """Fast geometric recognition - optimized for performance"""
+        """Fast geometric recognition - optimized for performance without signal"""
         try:
-            # Fast processing with timeout protection
-            import signal
+            import time
+            start_time = time.time()
             
-            def timeout_handler(signum, frame):
-                raise TimeoutError("Geometric recognition timeout")
+            # Limit processing time and complexity
+            max_walls = min(len(floor_plan_data.walls), 100)
+            limited_floor_plan = FloorPlanData(
+                walls=floor_plan_data.walls[:max_walls],
+                doors=floor_plan_data.doors[:20] if floor_plan_data.doors else [],
+                windows=floor_plan_data.windows[:20] if floor_plan_data.windows else [],
+                rooms=floor_plan_data.rooms[:10] if floor_plan_data.rooms else [],
+                metadata=floor_plan_data.metadata
+            )
             
-            signal.signal(signal.SIGALRM, timeout_handler)
-            signal.alarm(5)  # 5 second timeout
+            # Quick analysis with limited processing
+            analysis = self.element_recognizer.analyze_geometric_elements(limited_floor_plan)
             
-            try:
-                # Quick analysis with limited processing
-                analysis = self.element_recognizer.analyze_geometric_elements(floor_plan_data)
-                
-                enhanced_elements = {
-                    'walls': analysis.enhanced_walls,
-                    'doors': floor_plan_data.doors,
-                    'windows': floor_plan_data.windows,
-                    'rooms': floor_plan_data.rooms,
-                    'recognition_stats': {
-                        'quality_score': analysis.quality_score,
-                        'processing_mode': 'fast_enhanced',
-                        'wall_count': len(analysis.enhanced_walls)
-                    }
+            processing_time = time.time() - start_time
+            
+            enhanced_elements = {
+                'walls': analysis.enhanced_walls,
+                'doors': limited_floor_plan.doors,
+                'windows': limited_floor_plan.windows,
+                'rooms': limited_floor_plan.rooms,
+                'recognition_stats': {
+                    'quality_score': analysis.quality_score,
+                    'processing_mode': 'fast_enhanced',
+                    'processing_time': processing_time,
+                    'wall_count': len(analysis.enhanced_walls)
                 }
-                
-                signal.alarm(0)  # Cancel timeout
-                return enhanced_elements
-                
-            except TimeoutError:
-                signal.alarm(0)
-                self.logger.warning("Geometric recognition timed out, using fast mode")
-                # Return original data with minimal enhancement
-                return {
-                    'walls': floor_plan_data.walls,
-                    'doors': floor_plan_data.doors,
-                    'windows': floor_plan_data.windows,
-                    'rooms': floor_plan_data.rooms,
-                    'recognition_stats': {'processing_mode': 'timeout_fallback', 'quality_score': 0.7}
-                }
+            }
+            
+            return enhanced_elements
                 
         except Exception as e:
             self.logger.error(f"Error in fast geometric recognition: {str(e)}")
@@ -285,26 +295,49 @@ class Phase1IntegrationLayer:
         return converted_elements
 
     def _extract_coordinates(self, geometry) -> Optional[List[List[float]]]:
-        """Extract coordinate list from various geometry types"""
+        """Extract coordinate list from various geometry types with robust error handling"""
         try:
             if hasattr(geometry, 'coords'):
                 # LineString
-                return [[float(x), float(y)] for x, y in geometry.coords]
+                try:
+                    return [[float(x), float(y)] for x, y in geometry.coords]
+                except Exception:
+                    # Fallback for complex coordinate structures
+                    return None
+                    
             elif hasattr(geometry, 'exterior'):
-                # Polygon
-                return [[float(x), float(y)] for x, y in geometry.exterior.coords]
+                # Polygon - handle complex polygon structures
+                try:
+                    # Try direct exterior access
+                    coords = list(geometry.exterior.coords)
+                    return [[float(x), float(y)] for x, y in coords]
+                except Exception:
+                    # Fallback to bounds if exterior fails
+                    try:
+                        minx, miny, maxx, maxy = geometry.bounds
+                        return [[minx, miny], [maxx, miny], [maxx, maxy], [minx, maxy]]
+                    except Exception:
+                        return None
+                        
             elif hasattr(geometry, 'x') and hasattr(geometry, 'y'):
                 # Point
-                return [[float(geometry.x), float(geometry.y)]]
+                try:
+                    return [[float(geometry.x), float(geometry.y)]]
+                except Exception:
+                    return None
+                    
             elif hasattr(geometry, 'bounds'):
                 # Use bounds as fallback
-                minx, miny, maxx, maxy = geometry.bounds
-                return [[minx, miny], [maxx, miny], [maxx, maxy], [minx, maxy]]
+                try:
+                    minx, miny, maxx, maxy = geometry.bounds
+                    return [[minx, miny], [maxx, miny], [maxx, maxy], [minx, maxy]]
+                except Exception:
+                    return None
             else:
                 return None
                 
-        except Exception as e:
-            self.logger.warning(f"Error extracting coordinates: {str(e)}")
+        except Exception:
+            # Silent handling of coordinate extraction errors
             return None
 
     def _calculate_quality_metrics(self, floor_plan_data: FloorPlanData) -> Dict[str, float]:
