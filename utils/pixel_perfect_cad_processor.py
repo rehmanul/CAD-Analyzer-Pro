@@ -521,6 +521,8 @@ class PixelPerfectCADProcessor:
             )
             return fig
         
+        # Create professional architectural visualization matching reference
+        # Add walls with proper thickness and color
         for wall in walls:
             if isinstance(wall, dict) and "start" in wall and "end" in wall:
                 fig.add_trace(go.Scatter(
@@ -528,53 +530,57 @@ class PixelPerfectCADProcessor:
                     y=[wall["start"][1], wall["end"][1]],
                     mode='lines',
                     line=dict(
-                        color=self.config.wall_color,
-                        width=self.config.wall_thickness
+                        color='#6B7280',  # Professional gray for walls (MUR)
+                        width=8
                     ),
                     showlegend=False,
                     hoverinfo='skip'
                 ))
         
-        # Add restricted areas (blue)
-        for area in analysis_data.get("restricted_areas", []):
-            fig.add_trace(go.Scatter(
-                x=[area["center"][0] - area["width"]/2, area["center"][0] + area["width"]/2,
-                   area["center"][0] + area["width"]/2, area["center"][0] - area["width"]/2,
-                   area["center"][0] - area["width"]/2],
-                y=[area["center"][1] - area["height"]/2, area["center"][1] - area["height"]/2,
-                   area["center"][1] + area["height"]/2, area["center"][1] + area["height"]/2,
-                   area["center"][1] - area["height"]/2],
-                fill='toself',
-                fillcolor=self.config.restricted_area_color,
-                line=dict(color=self.config.restricted_area_color, width=2),
-                showlegend=False,
-                hoverinfo='skip'
-            ))
+        # Add restricted areas (blue rectangles) - NO ENTREE
+        restricted_areas = analysis_data.get("restricted_areas", [])
+        for area in restricted_areas:
+            if isinstance(area, dict) and "bounds" in area:
+                bounds = area["bounds"]
+                # Create rectangle for restricted area
+                fig.add_trace(go.Scatter(
+                    x=[bounds["min_x"], bounds["max_x"], bounds["max_x"], bounds["min_x"], bounds["min_x"]],
+                    y=[bounds["min_y"], bounds["min_y"], bounds["max_y"], bounds["max_y"], bounds["min_y"]],
+                    mode='lines',
+                    fill='toself',
+                    fillcolor='rgba(59, 130, 246, 0.3)',  # Light blue fill
+                    line=dict(color='#3B82F6', width=2),  # Blue outline
+                    showlegend=False,
+                    hoverinfo='skip'
+                ))
         
-        # Add entrances (red arcs)
-        for entrance in analysis_data.get("entrances", []):
-            theta = np.linspace(np.radians(entrance["start_angle"]), 
-                              np.radians(entrance["end_angle"]), 20)
-            x_arc = entrance["center"][0] + entrance["radius"] * np.cos(theta)
-            y_arc = entrance["center"][1] + entrance["radius"] * np.sin(theta)
-            
-            fig.add_trace(go.Scatter(
-                x=x_arc,
-                y=y_arc,
-                mode='lines',
-                line=dict(
-                    color=self.config.entrance_color,
-                    width=3
-                ),
-                showlegend=False,
-                hoverinfo='skip'
-            ))
+        # Add entrance markers (red arcs) - ENTRÉE/SORTIE
+        entrances = analysis_data.get("entrances", [])
+        for entrance in entrances:
+            if isinstance(entrance, dict) and "x" in entrance and "y" in entrance:
+                # Create arc for entrance
+                radius = entrance.get("radius", 5)
+                theta = np.linspace(0, np.pi, 50)  # Half circle
+                x_arc = entrance["x"] + radius * np.cos(theta)
+                y_arc = entrance["y"] + radius * np.sin(theta)
+                
+                fig.add_trace(go.Scatter(
+                    x=x_arc.tolist(),
+                    y=y_arc.tolist(),
+                    mode='lines',
+                    line=dict(
+                        color='#EF4444',  # Red for entrances
+                        width=4
+                    ),
+                    showlegend=False,
+                    hoverinfo='skip'
+                ))
         
-        # Add legend
+        # Add professional legend matching reference image
         fig.add_trace(go.Scatter(
             x=[None], y=[None],
             mode='markers',
-            marker=dict(color=self.config.restricted_area_color, size=10),
+            marker=dict(color='#3B82F6', size=15, symbol='square'),
             name='NO ENTREE',
             showlegend=True
         ))
@@ -582,7 +588,7 @@ class PixelPerfectCADProcessor:
         fig.add_trace(go.Scatter(
             x=[None], y=[None],
             mode='markers',
-            marker=dict(color=self.config.entrance_color, size=10),
+            marker=dict(color='#EF4444', size=15, symbol='square'),
             name='ENTRÉE/SORTIE',
             showlegend=True
         ))
@@ -590,12 +596,44 @@ class PixelPerfectCADProcessor:
         fig.add_trace(go.Scatter(
             x=[None], y=[None],
             mode='markers',
-            marker=dict(color=self.config.wall_color, size=10),
+            marker=dict(color='#6B7280', size=15, symbol='square'),
             name='MUR',
             showlegend=True
         ))
         
-        self._configure_layout(fig, analysis_data["bounds"], "Empty Floor Plan")
+        # Configure professional layout matching reference
+        bounds = analysis_data["bounds"]
+        fig.update_layout(
+            title="Floor Plan Visualization",
+            xaxis=dict(
+                showgrid=False,
+                zeroline=False,
+                showticklabels=False,
+                scaleanchor="y",
+                scaleratio=1,
+                range=[bounds["min_x"] - 10, bounds["max_x"] + 10]
+            ),
+            yaxis=dict(
+                showgrid=False,
+                zeroline=False,
+                showticklabels=False,
+                range=[bounds["min_y"] - 10, bounds["max_y"] + 10]
+            ),
+            plot_bgcolor='#F5F5F5',  # Light gray background like reference
+            paper_bgcolor='white',
+            width=1200,
+            height=800,
+            margin=dict(l=50, r=50, t=50, b=50),
+            legend=dict(
+                x=1.02,
+                y=1,
+                bgcolor='white',
+                bordercolor='#E5E7EB',
+                borderwidth=1,
+                font=dict(size=12)
+            )
+        )
+        
         return fig
     
     def _create_floor_plan_with_ilots_visualization(self, analysis_data: Dict[str, Any], 
