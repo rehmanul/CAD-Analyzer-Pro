@@ -58,6 +58,12 @@ except ImportError:
     phase1_processor = None
 
 try:
+    from dxf_validator import DXFValidator
+    dxf_validator = DXFValidator()
+except ImportError:
+    dxf_validator = None
+
+try:
     from phase2_integration_layer import phase2_processor, Phase2Configuration
 except ImportError:
     phase2_processor = None
@@ -600,6 +606,12 @@ class CADAnalyzerApp:
                 st.error(f"File too large: {file_size_mb:.1f}MB. Maximum allowed: 200MB")
                 return
 
+            # Validate file extension
+            file_ext = uploaded_file.name.lower().split('.')[-1] if '.' in uploaded_file.name else ''
+            if file_ext not in ['dxf', 'dwg', 'pdf', 'png', 'jpg', 'jpeg']:
+                st.error(f"Unsupported file format: .{file_ext}. Please upload DXF, DWG, PDF, PNG, or JPG files.")
+                return
+
             with st.spinner(f"Processing {uploaded_file.name} ({file_size_mb:.1f}MB)..."):
                 try:
                     # Reset uploaded file pointer
@@ -610,6 +622,28 @@ class CADAnalyzerApp:
                     if not file_content:
                         st.error("File appears to be empty or corrupted")
                         return
+                    
+                    # Additional DXF file validation
+                    if file_ext == 'dxf' and dxf_validator:
+                        validation_result = dxf_validator.validate_dxf_file(file_content, uploaded_file.name)
+                        
+                        if not validation_result['is_valid']:
+                            st.error("❌ Invalid DXF file detected!")
+                            
+                            with st.expander("🔍 Detailed Validation Report"):
+                                report = dxf_validator.format_validation_report(validation_result)
+                                st.text(report)
+                            
+                            st.info("💡 Try these solutions:")
+                            st.info("• Re-export the DXF from your CAD software")
+                            st.info("• Ensure the file was not corrupted during transfer")
+                            st.info("• Check that the file is actually a DXF file (not renamed)")
+                            return
+                        else:
+                            st.success("✅ DXF file validation passed")
+                            with st.expander("📊 File Information"):
+                                report = dxf_validator.format_validation_report(validation_result)
+                                st.text(report)
 
                     # Enhanced Processing Options
                     st.markdown("### 🚀 Enhanced Processing Mode")
@@ -862,34 +896,49 @@ class CADAnalyzerApp:
                             
                             # Try multiple processors for better success rate
                             processors = [
-                                ("Targeted Extractor", self.targeted_extractor),
-                                ("Fast Processor", self.fast_dxf_processor),
-                                ("Real Processor", self.real_dxf_processor),
-                                ("Optimized Processor", self.dxf_processor)
+                                ("Real DXF Processor", self.real_dxf_processor),
+                                ("Proper DXF Processor", self.proper_dxf_processor),
+                                ("Fast DXF Processor", self.fast_dxf_processor),
+                                ("Optimized DXF Processor", self.dxf_processor)
                             ]
                             
                             result = None
+                            last_error = None
+                            
                             for processor_name, processor in processors:
                                 try:
+                                    st.info(f"Trying {processor_name}...")
+                                    
                                     if hasattr(processor, 'process_dxf_file'):
                                         result = processor.process_dxf_file(file_content, uploaded_file.name)
                                     else:
                                         result = processor.process_file_ultra_fast(file_content, uploaded_file.name)
                                     
                                     if result and result.get('success'):
-                                        st.success(f"Successfully processed with {processor_name}")
+                                        st.success(f"✅ Successfully processed with {processor_name}")
                                         break
                                         
                                 except Exception as e:
-                                    st.warning(f"{processor_name} failed: {str(e)}")
+                                    last_error = str(e)
+                                    st.warning(f"❌ {processor_name} failed: {str(e)}")
                                     continue
                             
                             if not result or not result.get('success'):
-                                st.error("All DXF processors failed. Please check file format.")
+                                st.error("❌ All DXF processors failed.")
+                                if last_error:
+                                    st.error(f"Last error: {last_error}")
+                                st.info("💡 Troubleshooting tips:")
+                                st.info("• Ensure the DXF file is not corrupted")
+                                st.info("• Try re-exporting the DXF from your CAD software")
+                                st.info("• Check that the file contains actual geometric data")
                                 return
                         else:
                             # Use ultra-high performance analyzer for other files
-                            result = self.floor_analyzer.process_file_ultra_fast(file_content, uploaded_file.name)
+                            try:
+                                result = self.floor_analyzer.process_file_ultra_fast(file_content, uploaded_file.name)
+                            except Exception as e:
+                                st.error(f"Error processing file: {str(e)}")
+                                return
 
                     if not result or not result.get('success'):
                         st.error(f"Processing failed: {result.get('error', 'Unknown error') if result else 'No result'}")
@@ -1093,6 +1142,17 @@ class CADAnalyzerApp:
             )
 
         return fig
+
+    def _validate_dxf_content(self, file_content: bytes) -> bool:
+        """Validate DXF file content"""
+        try:
+            # Check for DXF header
+            content_str = file_content.decode('utf-8', errors='ignore')[:1000]
+            dxf_indicators = ['0\nSECTION', 'HEADER', 'ENTITIES', 'AutoCAD']
+            
+            return any(indicator in content_str for indicator in dxf_indicators)
+        except:
+            return False
 
     def create_fallback_visualization(self, result):
         """Fallback visualization using simple plotly traces"""

@@ -26,6 +26,18 @@ class RealDXFProcessor:
             import tempfile
             import os
             
+            # Validate file content first
+            if len(file_content) < 100:
+                raise ValueError("DXF file too small or empty")
+            
+            # Check for DXF header
+            try:
+                content_preview = file_content[:1000].decode('utf-8', errors='ignore')
+                if '0\nSECTION' not in content_preview and 'HEADER' not in content_preview:
+                    raise ValueError("Invalid DXF file format - missing required headers")
+            except UnicodeDecodeError:
+                raise ValueError("DXF file contains invalid characters")
+            
             # Write to temporary file for proper DXF processing
             with tempfile.NamedTemporaryFile(suffix='.dxf', delete=False) as tmp_file:
                 tmp_file.write(file_content)
@@ -35,8 +47,20 @@ class RealDXFProcessor:
                 print(f"Processing real DXF file: {filename}")
                 start_time = time.time()
                 
-                # Load DXF document
-                doc, auditor = recover.readfile(tmp_file_path)
+                # Load DXF document with error handling
+                try:
+                    doc, auditor = recover.readfile(tmp_file_path)
+                    
+                    if auditor.has_errors:
+                        print(f"DXF file has recoverable errors: {len(auditor.errors)} errors found")
+                        for error in auditor.errors[:3]:  # Show first 3 errors
+                            print(f"  - {error}")
+                    
+                    if auditor.has_fixes:
+                        print(f"DXF file had {len(auditor.fixes)} issues that were automatically fixed")
+                        
+                except Exception as dxf_error:
+                    raise ValueError(f"Cannot read DXF file: {str(dxf_error)}")
                 
                 # Get real bounds from header
                 bounds = self._get_real_bounds(doc)

@@ -20,6 +20,18 @@ class ProperDXFProcessor:
     def process_dxf_file(self, file_content: bytes, filename: str) -> Dict[str, Any]:
         """Process DXF file and extract proper architectural elements"""
         try:
+            # Validate file content
+            if not file_content or len(file_content) < 50:
+                raise ValueError("File is empty or too small to be a valid DXF file")
+            
+            # Check for basic DXF structure
+            try:
+                content_sample = file_content[:2000].decode('utf-8', errors='ignore')
+                if not any(marker in content_sample for marker in ['0\nSECTION', 'HEADER', 'ENTITIES']):
+                    raise ValueError("File does not appear to be a valid DXF file")
+            except Exception:
+                raise ValueError("Cannot read file content as DXF")
+            
             # Try to read DXF file with timeout protection
             import io
             import tempfile
@@ -31,7 +43,14 @@ class ProperDXFProcessor:
                 tmp_file_path = tmp_file.name
             
             try:
+                print(f"Processing DXF file: {filename} ({len(file_content)} bytes)")
                 doc, auditor = recover.readfile(tmp_file_path)
+                
+                if auditor.has_errors:
+                    print(f"DXF file has {len(auditor.errors)} errors, but proceeding with recovery")
+                    
+            except Exception as e:
+                raise ValueError(f"Failed to read DXF file: {str(e)}")
             finally:
                 # Clean up temporary file
                 try:
