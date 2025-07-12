@@ -404,7 +404,6 @@ st.markdown("""
         if 'last_error' not in st.session_state:
             st.session_state.last_error = None
 
-
     .stButton > button:hover {
         background: linear-gradient(145deg, #4f46e5, #4338ca);
         transform: translateY(-1px);
