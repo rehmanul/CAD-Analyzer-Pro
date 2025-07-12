@@ -133,13 +133,13 @@ class PixelPerfectCADProcessor:
         }
         
         try:
-            # Enhanced DXF Processing
+            # Use existing real DXF processors
             if filename.lower().endswith('.dxf'):
-                results = self._process_dxf_enhanced(file_content)
+                results = self._process_dxf_with_real_processor(file_content, filename)
             elif filename.lower().endswith('.dwg'):
                 results = self._process_dwg_enhanced(file_content)
             else:
-                # Fallback to geometric extraction
+                # Use other file processors
                 results = self._extract_geometric_elements(file_content)
             
             # Smart Floor Plan Detection
@@ -152,12 +152,61 @@ class PixelPerfectCADProcessor:
             results["quality_score"] = self._calculate_quality_score(results)
             
         except Exception as e:
-            # Create structured floor plan for demonstration
-            results = self._create_reference_floor_plan_structure()
-            results["processing_method"] = "reference_structure_generation"
-            results["note"] = f"Generated reference structure: {str(e)}"
+            # Return error - no fallback data
+            return {
+                "error": f"Failed to process CAD file: {str(e)}",
+                "processing_method": "failed",
+                "walls": [],
+                "doors": [],
+                "windows": [],
+                "restricted_areas": [],
+                "entrances": [],
+                "rooms": [],
+                "bounds": {"min_x": 0, "max_x": 0, "min_y": 0, "max_y": 0},
+                "scale": 1.0,
+                "units": "meters"
+            }
         
         return results
+    
+    def _process_dxf_with_real_processor(self, file_content: bytes, filename: str) -> Dict[str, Any]:
+        """Process DXF using the real processors that are working"""
+        try:
+            # Import and use the real DXF processor
+            from real_dxf_processor import RealDXFProcessor
+            processor = RealDXFProcessor()
+            
+            # Process the file
+            analysis_result = processor.process_dxf_file(file_content, filename)
+            
+            if analysis_result and not analysis_result.get('error'):
+                return analysis_result
+            else:
+                return {
+                    "error": f"Real DXF processor failed: {analysis_result.get('error', 'Unknown error')}",
+                    "processing_method": "failed",
+                    "walls": [],
+                    "doors": [],
+                    "windows": [],
+                    "restricted_areas": [],
+                    "entrances": [],
+                    "bounds": {"min_x": 0, "max_x": 0, "min_y": 0, "max_y": 0},
+                    "scale": 1.0,
+                    "units": "meters"
+                }
+        except Exception as e:
+            return {
+                "error": f"Failed to load real DXF processor: {str(e)}",
+                "processing_method": "failed",
+                "walls": [],
+                "doors": [],
+                "windows": [],
+                "restricted_areas": [],
+                "entrances": [],
+                "bounds": {"min_x": 0, "max_x": 0, "min_y": 0, "max_y": 0},
+                "scale": 1.0,
+                "units": "meters"
+            }
     
     def _process_dxf_enhanced(self, file_content: bytes) -> Dict[str, Any]:
         """Enhanced DXF processing with layer-aware extraction"""
@@ -219,7 +268,18 @@ class PixelPerfectCADProcessor:
             }
             
         except Exception as e:
-            return self._create_reference_floor_plan_structure()
+            return {
+                "error": f"Failed to process DXF file: {str(e)}",
+                "processing_method": "failed",
+                "walls": [],
+                "doors": [],
+                "windows": [],
+                "restricted_areas": [],
+                "entrances": [],
+                "bounds": {"min_x": 0, "max_x": 0, "min_y": 0, "max_y": 0},
+                "scale": 1.0,
+                "units": "meters"
+            }
     
     def _create_reference_floor_plan_structure(self) -> Dict[str, Any]:
         """Create structured floor plan matching reference Image 1"""
@@ -295,8 +355,16 @@ class PixelPerfectCADProcessor:
     
     def _advanced_ilot_placement(self, analysis_data: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Advanced îlot placement with 4 strategies"""
+        # Check if analysis data is valid
+        if analysis_data.get("error"):
+            return []
+        
         bounds = analysis_data["bounds"]
         restricted_areas = analysis_data.get("restricted_areas", [])
+        
+        # Validate bounds
+        if (bounds["max_x"] <= bounds["min_x"] or bounds["max_y"] <= bounds["min_y"]):
+            return []
         
         # Create placement grid
         grid_size = 8
@@ -306,6 +374,10 @@ class PixelPerfectCADProcessor:
             for y in range(int(bounds["min_y"]) + 5, int(bounds["max_y"]) - 5, grid_size):
                 if self._is_valid_placement_location(x, y, restricted_areas, analysis_data):
                     placement_candidates.append([x, y])
+        
+        # Only proceed if we have valid placement candidates
+        if not placement_candidates:
+            return []
         
         # Generate îlots with different sizes
         ilots = []
@@ -335,6 +407,10 @@ class PixelPerfectCADProcessor:
         """Advanced corridor generation with pathfinding algorithms"""
         corridors = []
         
+        # Check if we have valid data
+        if analysis_data.get("error") or not ilots:
+            return corridors
+        
         # Create connectivity graph
         G = nx.Graph()
         for i, ilot in enumerate(ilots):
@@ -347,6 +423,10 @@ class PixelPerfectCADProcessor:
                               (ilots[i]["center"][1] - ilots[j]["center"][1])**2)
                 if dist < 25:  # Connect nearby îlots
                     G.add_edge(i, j, weight=dist)
+        
+        # Only generate corridors if we have edges
+        if G.number_of_edges() == 0:
+            return corridors
         
         # Find minimum spanning tree for optimal corridors
         mst = nx.minimum_spanning_tree(G)
@@ -396,19 +476,42 @@ class PixelPerfectCADProcessor:
         """Create empty floor plan exactly matching reference Image 1"""
         fig = go.Figure()
         
-        # Add walls (gray)
-        for wall in analysis_data["walls"]:
-            fig.add_trace(go.Scatter(
-                x=[wall["start"][0], wall["end"][0]],
-                y=[wall["start"][1], wall["end"][1]],
-                mode='lines',
-                line=dict(
-                    color=self.config.wall_color,
-                    width=self.config.wall_thickness
-                ),
-                showlegend=False,
-                hoverinfo='skip'
-            ))
+        # Check if we have valid data
+        if analysis_data.get("error"):
+            fig.add_annotation(
+                text=f"Error: {analysis_data['error']}",
+                x=0.5, y=0.5,
+                xref="paper", yref="paper",
+                showarrow=False,
+                font=dict(size=16, color="red")
+            )
+            return fig
+        
+        # Add walls (gray) - only if we have walls
+        walls = analysis_data.get("walls", [])
+        if not walls:
+            fig.add_annotation(
+                text="No walls detected in the CAD file",
+                x=0.5, y=0.5,
+                xref="paper", yref="paper",
+                showarrow=False,
+                font=dict(size=16, color="orange")
+            )
+            return fig
+        
+        for wall in walls:
+            if isinstance(wall, dict) and "start" in wall and "end" in wall:
+                fig.add_trace(go.Scatter(
+                    x=[wall["start"][0], wall["end"][0]],
+                    y=[wall["start"][1], wall["end"][1]],
+                    mode='lines',
+                    line=dict(
+                        color=self.config.wall_color,
+                        width=self.config.wall_thickness
+                    ),
+                    showlegend=False,
+                    hoverinfo='skip'
+                ))
         
         # Add restricted areas (blue)
         for area in analysis_data.get("restricted_areas", []):
@@ -478,6 +581,18 @@ class PixelPerfectCADProcessor:
         """Create floor plan with îlots exactly matching reference Image 2"""
         fig = self._create_empty_floor_plan_visualization(analysis_data)
         
+        # Check if we have valid data
+        if analysis_data.get("error") or not ilots:
+            if not ilots:
+                fig.add_annotation(
+                    text="No îlots could be placed",
+                    x=0.5, y=0.3,
+                    xref="paper", yref="paper",
+                    showarrow=False,
+                    font=dict(size=14, color="orange")
+                )
+            return fig
+        
         # Add îlots (pink rectangles)
         for ilot in ilots:
             x_center, y_center = ilot["center"]
@@ -503,6 +618,18 @@ class PixelPerfectCADProcessor:
                                                 corridors: List[Dict[str, Any]]) -> go.Figure:
         """Create complete floor plan with corridors exactly matching reference Image 3"""
         fig = self._create_floor_plan_with_ilots_visualization(analysis_data, ilots)
+        
+        # Check if we have valid data
+        if analysis_data.get("error") or not corridors:
+            if not corridors:
+                fig.add_annotation(
+                    text="No corridors could be generated",
+                    x=0.5, y=0.2,
+                    xref="paper", yref="paper",
+                    showarrow=False,
+                    font=dict(size=14, color="orange")
+                )
+            return fig
         
         # Add corridors (pink lines)
         for corridor in corridors:
@@ -739,12 +866,34 @@ class PixelPerfectCADProcessor:
     
     def _process_dwg_enhanced(self, file_content: bytes) -> Dict[str, Any]:
         """Enhanced DWG processing"""
-        # For DWG files, use fallback structure
-        return self._create_reference_floor_plan_structure()
+        # DWG processing requires specialized tools
+        return {
+            "error": "DWG processing not implemented - requires specialized DWG library",
+            "processing_method": "failed",
+            "walls": [],
+            "doors": [],
+            "windows": [],
+            "restricted_areas": [],
+            "entrances": [],
+            "bounds": {"min_x": 0, "max_x": 0, "min_y": 0, "max_y": 0},
+            "scale": 1.0,
+            "units": "meters"
+        }
     
     def _extract_geometric_elements(self, file_content: bytes) -> Dict[str, Any]:
         """Extract geometric elements from other file formats"""
-        return self._create_reference_floor_plan_structure()
+        return {
+            "error": "Geometric extraction not implemented for this file format",
+            "processing_method": "failed",
+            "walls": [],
+            "doors": [],
+            "windows": [],
+            "restricted_areas": [],
+            "entrances": [],
+            "bounds": {"min_x": 0, "max_x": 0, "min_y": 0, "max_y": 0},
+            "scale": 1.0,
+            "units": "meters"
+        }
     
     def _export_to_svg(self, results: Dict[str, Any]) -> str:
         """Export to SVG format"""
