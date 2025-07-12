@@ -19,12 +19,19 @@ except ImportError:
 def main():
     """Main entry point for Streamlit app"""
     try:
+        # Initialize Streamlit session state first
+        if 'app_initialized' not in st.session_state:
+            st.session_state.app_initialized = False
+        
         # Import the main application
         from main_production_app import ProductionCADAnalyzer
         
         # Create and run the application
         app = ProductionCADAnalyzer()
         app.run()
+        
+        # Mark as initialized
+        st.session_state.app_initialized = True
         
     except ImportError as e:
         st.error(f"Import error: {str(e)}")
