@@ -5,6 +5,14 @@ Production-ready with all sections: Analysis, Îlot Placement, Corridor Generati
 """
 
 import streamlit as st
+
+# Page configuration - MUST be first Streamlit command
+st.set_page_config(
+    page_title="CAD Analyzer Pro",
+    page_icon="🏨",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
@@ -81,13 +89,7 @@ except ImportError:
     Phase4Configuration = None
     pixel_perfect_processor = None
 
-# Page configuration
-st.set_page_config(
-    page_title="CAD Analyzer Pro",
-    page_icon="🏨",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+# Page configuration already set at top of file
 
 # Professional Theme-Aware CSS Styling
 st.markdown("""
@@ -492,21 +494,18 @@ class CADAnalyzerApp:
 
     def run(self):
         """Run the main application"""
-        # Initialize session state safely here where Streamlit is fully initialized
-        try:
-            if 'analysis_results' not in st.session_state:
-                st.session_state.analysis_results = None
-            if 'placed_ilots' not in st.session_state:
-                st.session_state.placed_ilots = []
-            if 'corridors' not in st.session_state:
-                st.session_state.corridors = []
-            if 'file_processed' not in st.session_state:
-                st.session_state.file_processed = False
-            if 'visualization_mode' not in st.session_state:
-                st.session_state.visualization_mode = "none"
-        except Exception as e:
-            # Fallback for SessionInfo issues
-            pass
+        # Session state should already be initialized by main()
+        # Just ensure critical values exist
+        if 'analysis_results' not in st.session_state:
+            st.session_state.analysis_results = None
+        if 'placed_ilots' not in st.session_state:
+            st.session_state.placed_ilots = []
+        if 'corridors' not in st.session_state:
+            st.session_state.corridors = []
+        if 'file_processed' not in st.session_state:
+            st.session_state.file_processed = False
+        if 'visualization_mode' not in st.session_state:
+            st.session_state.visualization_mode = "none"
 
         # Enhanced Sidebar with modern styling
         with st.sidebar:
@@ -1860,18 +1859,15 @@ def apply_custom_css():
 
 def main():
     """Main application entry point"""
-    st.set_page_config(
-        page_title="CAD Analyzer Pro",
-        page_icon="🏨",
-        layout="wide",
-        initial_sidebar_state="expanded"
-    )
-
     # Initialize session state FIRST before any other operations
     initialize_session_state()
 
     # Apply custom CSS
     apply_custom_css()
+
+    # Create and run the application
+    app = CADAnalyzerApp()
+    app.run()
 
 def initialize_session_state():
     """Initialize session state variables"""
