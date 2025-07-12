@@ -48,36 +48,48 @@ class ProperDXFProcessor:
             windows = self._extract_windows(doc)
             boundaries = self._extract_boundaries(doc)
             
-            # Calculate bounds from DXF header if available
+            # Calculate bounds with proper scaling
             try:
-                header = doc.header
-                if '$EXTMIN' in header and '$EXTMAX' in header:
-                    min_pt = header['$EXTMIN']
-                    max_pt = header['$EXTMAX']
-                    bounds = {
-                        'min_x': min_pt[0],
-                        'max_x': max_pt[0],
-                        'min_y': min_pt[1],
-                        'max_y': max_pt[1]
-                    }
-                else:
-                    # Calculate from entities
-                    all_points = []
-                    for wall in walls:
-                        all_points.extend(wall['points'])
+                # Always calculate from actual wall entities for accuracy
+                all_points = []
+                for wall in walls:
+                    all_points.extend(wall['points'])
+                
+                if all_points:
+                    x_coords = [p[0] for p in all_points]
+                    y_coords = [p[1] for p in all_points]
                     
-                    if all_points:
-                        x_coords = [p[0] for p in all_points]
-                        y_coords = [p[1] for p in all_points]
-                        bounds = {
-                            'min_x': min(x_coords),
-                            'max_x': max(x_coords),
-                            'min_y': min(y_coords),
-                            'max_y': max(y_coords)
-                        }
-                    else:
-                        bounds = {'min_x': 0, 'max_x': 100, 'min_y': 0, 'max_y': 100}
-            except:
+                    # Check for unrealistic dimensions and apply scaling
+                    raw_width = max(x_coords) - min(x_coords)
+                    raw_height = max(y_coords) - min(y_coords)
+                    
+                    # If dimensions are too large, likely in millimeters - convert to meters
+                    scale_factor = 1.0
+                    if raw_width > 10000 or raw_height > 10000:  # Likely in mm
+                        scale_factor = 0.001  # Convert mm to m
+                        print(f"Detected millimeter units, scaling by {scale_factor}")
+                    elif raw_width > 1000 or raw_height > 1000:  # Likely in cm 
+                        scale_factor = 0.01   # Convert cm to m
+                        print(f"Detected centimeter units, scaling by {scale_factor}")
+                    
+                    bounds = {
+                        'min_x': min(x_coords) * scale_factor,
+                        'max_x': max(x_coords) * scale_factor,
+                        'min_y': min(y_coords) * scale_factor,
+                        'max_y': max(y_coords) * scale_factor
+                    }
+                    
+                    # Apply scaling to wall coordinates too
+                    if scale_factor != 1.0:
+                        for wall in walls:
+                            if 'points' in wall:
+                                wall['points'] = [(x * scale_factor, y * scale_factor) for x, y in wall['points']]
+                    
+                    print(f"Final bounds: {bounds['max_x'] - bounds['min_x']:.1f}m x {bounds['max_y'] - bounds['min_y']:.1f}m")
+                else:
+                    bounds = {'min_x': 0, 'max_x': 100, 'min_y': 0, 'max_y': 100}
+            except Exception as e:
+                print(f"Error calculating bounds: {e}")
                 bounds = {'min_x': 0, 'max_x': 100, 'min_y': 0, 'max_y': 100}
             
             # Create restricted areas and entrances from doors

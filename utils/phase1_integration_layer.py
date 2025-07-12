@@ -44,7 +44,7 @@ class Phase1IntegrationLayer:
             Comprehensive analysis result with enhanced floor plan data
         """
         start_time = time.time()
-        max_processing_time = 30.0  # 30 second hard limit
+        max_processing_time = 60.0  # 60 second hard limit
         
         try:
             # Step 1: Enhanced CAD Parsing (max 10s)
@@ -52,24 +52,24 @@ class Phase1IntegrationLayer:
             
             floor_plan_data = self._parse_cad_file_with_temp(file_content, filename)
             
-            if time.time() - start_time > 10:
-                self.logger.warning("CAD parsing exceeded 10s limit")
+            if time.time() - start_time > 20:
+                self.logger.warning("CAD parsing exceeded 20s limit")
                 return self._create_authentic_error_result(filename, "Processing timeout during CAD parsing")
             
             if not floor_plan_data or not floor_plan_data.walls:
                 return self._create_authentic_error_result(filename, "No valid floor plan data extracted")
             
             # Step 2: Smart Floor Plan Detection (max 5s)
-            if time.time() - start_time > 15:
-                self.logger.warning("Processing exceeded 15s limit")
+            if time.time() - start_time > 35:
+                self.logger.warning("Processing exceeded 35s limit")
                 return self._create_authentic_error_result(filename, "Processing timeout during floor plan detection")
                 
             self.logger.info("Applying smart floor plan detection")
             optimized_floor_plan = self.floor_plan_detector.detect_main_floor_plan(floor_plan_data)
             
             # Step 3: Fast Geometric Element Recognition (max 10s)
-            if time.time() - start_time > 25:
-                self.logger.warning("Processing exceeded 25s limit")
+            if time.time() - start_time > 50:
+                self.logger.warning("Processing exceeded 50s limit")
                 return self._create_authentic_error_result(filename, "Processing timeout during geometric recognition")
                 
             self.logger.info("Performing fast geometric element recognition")
