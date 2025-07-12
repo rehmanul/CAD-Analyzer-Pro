@@ -10,7 +10,7 @@ deploymentTarget = "autoscale"
 run = ["streamlit", "run", "app.py", "--server.port", "5000"]
 
 [workflows]
-runButton = "Project"
+runButton = "Ultimate CAD Analyzer"
 
 [[workflows.workflow]]
 name = "Streamlit App"
@@ -74,6 +74,15 @@ author = "agent"
 task = "shell.exec"
 args = "streamlit run streamlit_app.py --server.port 5000 --server.address 0.0.0.0"
 waitForPort = 5000
+
+[[workflows.workflow]]
+name = "Ultimate CAD Analyzer"
+author = 44920903
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "streamlit run streamlit_app.py --server.port 5000 --server.address 0.0.0.0"
 
 [[ports]]
 localPort = 5000

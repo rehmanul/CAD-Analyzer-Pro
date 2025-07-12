@@ -8,8 +8,8 @@ import streamlit as st
 
 # Page configuration - MUST be first Streamlit command
 st.set_page_config(
-    page_title="CAD Analyzer Pro",
-    page_icon="🏨",
+    page_title="CAD Analyzer Pro - Ultimate Edition", 
+    page_icon="🏗️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -57,6 +57,13 @@ from reference_floor_plan_visualizer import ReferenceFloorPlanVisualizer
 from smart_ilot_placer import SmartIlotPlacer
 from advanced_3d_renderer import Advanced3DRenderer
 from webgl_3d_renderer import WebGL3DRenderer
+
+# Import Ultimate Pixel-Perfect Processor
+try:
+    from ultimate_pixel_perfect_processor import UltimatePixelPerfectProcessor
+    ultimate_processor = UltimatePixelPerfectProcessor()
+except ImportError:
+    ultimate_processor = None
 
 # Import Enhanced Phase Components
 try:
@@ -656,14 +663,100 @@ class CADAnalyzerApp:
                     # Enhanced Processing Options
                     st.markdown("### 🚀 Enhanced Processing Mode")
 
-                    # Add new pixel-perfect processing option
+                    # Add ultimate pixel-perfect processing option
+                    use_ultimate_processing = st.checkbox(
+                        "🔥 ULTIMATE Pixel-Perfect Processing",
+                        value=True,
+                        help="Most advanced processing with exact reference image matching - Zero fallback data"
+                    )
+                    
                     use_pixel_perfect = st.checkbox(
                         "🎯 Pixel-Perfect CAD Processing (All 4 Phases)",
                         value=False,
-                        help="Complete pixel-perfect processing pipeline matching your reference images exactly"
+                        help="Complete pixel-perfect processing pipeline matching your reference images exactly",
+                        disabled=use_ultimate_processing
                     )
 
-                    if use_pixel_perfect:
+                    if use_ultimate_processing:
+                        st.info("🔥 Using ULTIMATE Processing: Most Advanced Pixel-Perfect System")
+                        
+                        if ultimate_processor:
+                            try:
+                                result = ultimate_processor.process_cad_file_ultimate(file_content, uploaded_file.name)
+                                
+                                if result and result.get('success'):
+                                    st.success("✅ ULTIMATE Processing Complete!")
+                                    
+                                    # Display processing metrics
+                                    col1, col2, col3, col4 = st.columns(4)
+                                    with col1:
+                                        st.metric("Entities", result.get('entity_count', 0))
+                                    with col2:
+                                        st.metric("Walls", len(result.get('walls', [])))
+                                    with col3:
+                                        st.metric("Restricted Areas", len(result.get('restricted_areas', [])))
+                                    with col4:
+                                        st.metric("Quality", f"{result.get('quality_score', 0)*100:.1f}%")
+                                    
+                                    # Store results
+                                    st.session_state.analysis_results = result
+                                    st.session_state.file_processed = True
+                                    st.session_state.visualization_mode = "ultimate"
+                                    
+                                    # Display ultimate visualization
+                                    st.markdown("### 🎨 Ultimate Pixel-Perfect Visualization")
+                                    fig = ultimate_processor.create_pixel_perfect_visualization(result, 'empty')
+                                    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': True})
+                                    
+                                    # Ultimate îlot placement
+                                    if st.button("🏢 Place Îlots - Ultimate Precision", key="ultimate_ilots"):
+                                        with st.spinner("Placing îlots with ultimate precision..."):
+                                            config = st.session_state.get('ilot_config', {
+                                                'utilization_target': 0.7,
+                                                'min_spacing': 1.0
+                                            })
+                                            
+                                            ilots = ultimate_processor.place_ilots_ultimate(result, config)
+                                            if ilots:
+                                                st.session_state.placed_ilots = ilots
+                                                st.session_state.visualization_mode = "ultimate_with_ilots"
+                                                st.success(f"✅ Placed {len(ilots)} îlots with ultimate precision!")
+                                                
+                                                # Show îlot visualization
+                                                fig_ilots = ultimate_processor.create_visualization_with_ilots(result, ilots)
+                                                st.plotly_chart(fig_ilots, use_container_width=True)
+                                                
+                                                # Ultimate corridor generation
+                                                if st.button("🛤️ Generate Corridors - Ultimate", key="ultimate_corridors"):
+                                                    with st.spinner("Generating corridors with ultimate precision..."):
+                                                        corridors = ultimate_processor.generate_corridors_ultimate(result, ilots)
+                                                        if corridors:
+                                                            st.session_state.corridors = corridors
+                                                            st.session_state.visualization_mode = "ultimate_complete"
+                                                            st.success(f"✅ Generated {len(corridors)} corridors!")
+                                                            
+                                                            # Show complete visualization
+                                                            fig_complete = ultimate_processor.create_complete_visualization(result, ilots, corridors)
+                                                            st.plotly_chart(fig_complete, use_container_width=True)
+                                                            
+                                                            # Export options
+                                                            st.markdown("### 📦 Ultimate Export Package")
+                                                            if st.button("Generate Complete Package"):
+                                                                export_data = ultimate_processor.export_complete_package(result, ilots, corridors)
+                                                                st.json(export_data)
+                                    
+                                    return  # Exit early for ultimate processing
+                                else:
+                                    st.error(f"❌ Ultimate Processing Failed: {result.get('error', 'Unknown error')}")
+                                    return
+                            except Exception as e:
+                                st.error(f"❌ Ultimate Processing Exception: {str(e)}")
+                                return
+                        else:
+                            st.error("Ultimate processor not available")
+                            return
+                    
+                    elif use_pixel_perfect:
                         st.info("🎯 Using Pixel-Perfect Processing: Complete 4-Phase Pipeline")
 
                         # Configure pixel-perfect processing
