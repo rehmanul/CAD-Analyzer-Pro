@@ -1,0 +1,114 @@
+Zona Carretera Le n - Villanueva de Carrizo KM	Villanueva de Carrizo	24270	Spain
+Carretera Torrijos Puebla de Montalb n 9	Escalonilla	45517	Spain
+Avinguda Progr s 47	Vilassar de Mar	08340	Spain
+Av. Luis Mar a Campos 46	Buenos Aires	1426	Argentina
+P rnu mnt 141	Tallinn	11314	Estonia
+Kaarlij rve dairy	Kaarlijärve	61407	Estonia
+Anadoluhisar K rfez Cad. Set st Sk. No:2	Istanbul	34810	Turkey
+Pol gono Industrial Al Kanis N-230 Km 1 Nave A Ctra.	Lleida	25001	Spain
+Autov a a - 62 90	Salamanca	37008	Spain
+Avenida Jos Fern ndez L pez 4	Badajoz	06005	Spain
+Camino Orilla de la V a 103	Murcia	30012	Spain
+Rakt r u. 1	Berettyóújfalu	4100	Hungary
+Organize Sanayi B lgesi, Yasar Dogu Caddesi 48/1 Ya ar Do u Caddesi	Samsun	55090	Turkey
+Lugar Finca Santa Rosal a s/n	Vizmalo	09219	Spain
+Calle l'Estaci 8	Barcelona	08030	Spain
+J rnv gsgatan 11	Helsingborg	252 24	Sweden
+Mets lehmuksentie 7	Helsinki	00320	Finland
+Pol gono Industrial Can Puigtio S/N	Barcelona	08040	Spain
+Br hlstr. 13	Leipzig	04109	Germany
+Jos Le n Su rez 3451	Buenos Aires	1655	Argentina
+Estrada do Raba al, ESPINHEIRO N 207	Espinheiro	3800-501	Portugal
+Avenue de Norv ge 15	Brussels	1200	Belgium
+Avenida Ramiro Carregal Rey 29 La Coru a	A Coruña	15008	Spain
+Calle Riudellots S/N Ma anet de la Selva	Girona	17412	Spain
+Rue du G n ral Leclerc 42	Livarot	14140	France
+Hlavn 57	Prešov	080 01	Slovakia
+Paraje Mas a de Jarque 01	Teruel	44100	Spain
+NAVE FRUMACO Pol gono Trops S/N	Vélez-Málaga	29700	Spain
+Carretera de Gand a 0	Gandía	46701	Spain
+Hans-Berchtold-Stra e 52	Dornbirn	6850	Austria
+Pol gon Ferreria 59 AVDA. de La Ferrer a	Zaragoza	50016	Spain
+ul. Biezu ska 1 lok. 6	Warsaw	03-578	Poland
+Telekf ld 0143/24	Kecskemét	6000	Hungary
+P csi Sarok 1	Budapest	1119	Hungary
+Dr ve Gustave Fache 6	Mouscron	7700	Belgium
+Pol gono la Red 1	Sevilla	41500	Spain
+Pol gon Cam dels Frares 80	Lleida	25191	Spain
+Schaumrollenstra e 1	Neukirchen	4720	Austria
+K lkebecker Str. 29	Versmold	33775	Germany
+Rue du G n ral de Gaulle 7	Marlenheim	67520	France
+M hlendyck 11	Geldern	47608	Germany
+Andr ssy t 126	Budapest	1062	Hungary
+M nsterstr. 336	Düsseldorf	40470	Germany
+Alte Landstra e 10	Lauterach	6923	Austria
+Via Rodi 1/3	Milan	20154	Italy
+Lemmink isenkatu 48	Turku	20520	Finland
+Isaszegi t 93	Budapest	1161	Hungary
+B ke u. 5	Budapest	1039	Hungary
+B za utca 6	Budapest	1134	Hungary
+Calle Uruguay 3	Madrid	28013	Spain
+Euroweg 52	Venlo	5928 SZ	Netherlands
+Avenida d'Alguema 8	Valencia	46014	Spain
+A Avenida Monforte de Lemos 189	Lugo	27003	Spain
+Calle Filiberto Villalobos 109	Salamanca	37007	Spain
+Paseo Delicias 67	Salamanca	37007	Spain
+C/I Polígono Cantalgallo 1	Salamanca	37008	Spain
+Via dei Pescatori 53	Lecco	23900	Italy
+Warszawska 6/32	Warsaw	03-922	Poland
+a III-a 104	Bucharest	032741	Romania
+Paseo de la Castellana 278	Madrid	28046	Spain
+Avenida Criptana 73	Ciudad Real	13005	Spain
+2002 Rua Manoel Vieira Gar o 120	São Paulo	04110-000	Brazil
+Traves a San Ignacio s/n. Sevilla	Marchena	41620	Spain
+ul. Wolno ci 21	Lisków	62-850	Poland
+Av. El Santuario, Urb. Z rate San Juan de Lurigancho 1127	Lima	15427	Peru
+Trg Marije Trandatil 7	Novi Sad	21000	Serbia
+1.5 km al sureste del BN Santa Rita R o Cuarto 10	Córdoba	5800	Argentina
+Rinc n 545	Montevideo	11000	Uruguay
+40, RUE CHARLES TELLIER - ZI DU CH TEAU	Saint-Quentin	02100	France
+J gerstr. 8-10	Berlin	10117	Germany
+D rener Str. 335	Zülpich	53909	Germany
+Calle R o Duero	Guijuelo	37770	Spain
+1-10 Axis,3rd Floor,No.23,Liyuelemin Street / Jianghai District	Jiangmen	529000	China
+No.91 Baixia Road High Hope Mansion 12A/13/14A	Nanjing	210005	China
+DanGui Road 08, DanGui Road YanCheng	Yancheng	224000	China
+West Industrial Zone, Jishui, Jian	Jian	343600	China
+Sec. 2, Heti Rd., Daliao Dist. No.370	Kaohsiung	831	Taiwan
+Jivraj Chambers, Ruwala Tekra, Bhagal 5-258/259	Ahmedabad	380006	India
+Sitio Kibanban, Sinawilan	Davao	8000	Philippines
+Piikivenkuja 13	Helsinki	00770	Finland
+Elmedalsvej 8	Copenhagen	2300	Denmark
+Carrer Pí Blanc 9	Valencia	46014	Spain
+Calle Escultor Luis Bolinches Compa 23	Valencia	46014	Spain
+Londerzeelseweg 64	Meise	1860	Belgium
+Via della Tecnica 94	Parma	43122	Italy
+Londerzeelseweg 64	Meise	1860	Belgium
+Buerer Str. 368	Gelsenkirchen	45892	Germany
+Zum Reiherhorst 6	Hamburg	21079	Germany
+Jabal Amman , Second Circle 33	Amman	11183	Jordan
+Avenida Academia General Militar 52	Zaragoza	50015	Spain
+t Lindeke 20	Ledegem	8880	Belgium
+Rodovia BR-116 - Km 512 14075	Pelotas	96040-000	Brazil
+Finca el Molino s/n VALLE DE NIZA	Málaga	29792	Spain
+Calle Fábrica de la Luz 48 P.I. Tres Hermanas - Fase II	Novelda	03660	Spain
+Reconquista 656	Buenos Aires	C1003ABN	Argentina
+Polígono Industrial 46	Albacete	02007	Spain
+Mussumer Ringstr. 10	Bocholt	46395	Germany
+Calle la Región 2	Ciudad Real	13004	Spain
+Chowala 109	Faisalabad	38000	Pakistan
+Ezero 46	Vilnius	03150	Lithuania
+Ostas street 1	Riga	LV-1010	Latvia
+Kanto 18, 5-B	Kaunas	44320	Lithuania
+Mūrnieku street 2	Smiltene	LV-4729	Latvia
+Polígono Martín Grande s/n	Murcia	30010	Spain
+Lage Brink 5	Apeldoorn	7317 BD	Netherlands
+Avenida Tilos 10	Málaga	29006	Spain
+Ctra. Albacete-Cuenca Road KM 48.7	Mahora	02240	Spain
+Calle Sotaya 2	Murcia	30565	Spain
+Lindentalstrasse 2	Bern	3038	Switzerland
+Rotenbr ckenweg 24	Hamburg	21029	Germany
+MUELLE REP. COYA-BOUZAS S/N	Vigo	36208	Spain
+Jezioranska 16	Dobre Miasto	11-040	Poland
+Meijeritie 3	Jalasjärvi	61600	Finland
+Calle Julio Cort zar	Murcia	30007	Spain
