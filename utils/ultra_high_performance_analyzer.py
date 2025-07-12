@@ -213,6 +213,228 @@ class UltraHighPerformanceAnalyzer:
         
         return restricted_areas, entrances
     
+    def analyze_floor_plan(self, file_content: bytes, filename: str) -> Dict[str, Any]:
+        """Main analyze method that calls process_file_ultra_fast"""
+        return self.process_file_ultra_fast(file_content, filename)
+    
+    def _process_dxf_ultra_fast(self, file_content: bytes, filename: str) -> Dict[str, Any]:
+        """Process DXF files with ultra-fast performance"""
+        try:
+            # Write to temporary file for DXF processing
+            import tempfile
+            with tempfile.NamedTemporaryFile(suffix='.dxf', delete=False) as tmp_file:
+                tmp_file.write(file_content)
+                tmp_file_path = tmp_file.name
+            
+            try:
+                # Load DXF document
+                doc = ezdxf.readfile(tmp_file_path)
+                
+                # Extract entities in parallel
+                walls = self._extract_walls_from_dxf(doc)
+                doors = self._extract_doors_from_dxf(doc)
+                windows = self._extract_windows_from_dxf(doc)
+                
+                # Calculate bounds
+                bounds = self._calculate_bounds_from_walls(walls)
+                
+                # Detect zones
+                restricted_areas, entrances = self._detect_zones_from_walls(walls)
+                
+                return {
+                    'walls': walls,
+                    'doors': doors,
+                    'windows': windows,
+                    'restricted_areas': restricted_areas,
+                    'entrances': entrances,
+                    'bounds': bounds,
+                    'entity_count': len(walls) + len(doors) + len(windows),
+                    'scale': 1.0,
+                    'units': 'meters'
+                }
+                
+            finally:
+                # Clean up temporary file
+                import os
+                if os.path.exists(tmp_file_path):
+                    os.unlink(tmp_file_path)
+                    
+        except Exception as e:
+            return {
+                'error': f"DXF processing failed: {str(e)}",
+                'walls': [],
+                'doors': [],
+                'windows': [],
+                'restricted_areas': [],
+                'entrances': [],
+                'bounds': {"min_x": 0, "max_x": 0, "min_y": 0, "max_y": 0},
+                'entity_count': 0,
+                'scale': 1.0,
+                'units': 'meters'
+            }
+    
+    def _process_dwg_ultra_fast(self, file_content: bytes, filename: str) -> Dict[str, Any]:
+        """Process DWG files - currently returns error as DWG support is limited"""
+        return {
+            'error': 'DWG files are not supported yet. Please convert to DXF format.',
+            'walls': [],
+            'doors': [],
+            'windows': [],
+            'restricted_areas': [],
+            'entrances': [],
+            'bounds': {"min_x": 0, "max_x": 0, "min_y": 0, "max_y": 0},
+            'entity_count': 0,
+            'scale': 1.0,
+            'units': 'meters'
+        }
+    
+    def _process_pdf_ultra_fast(self, file_content: bytes, filename: str) -> Dict[str, Any]:
+        """Process PDF files - basic implementation"""
+        return {
+            'error': 'PDF processing not implemented yet. Please use DXF format.',
+            'walls': [],
+            'doors': [],
+            'windows': [],
+            'restricted_areas': [],
+            'entrances': [],
+            'bounds': {"min_x": 0, "max_x": 0, "min_y": 0, "max_y": 0},
+            'entity_count': 0,
+            'scale': 1.0,
+            'units': 'meters'
+        }
+    
+    def _process_image_ultra_fast(self, file_content: bytes, filename: str) -> Dict[str, Any]:
+        """Process image files - basic implementation"""
+        return {
+            'error': 'Image processing not implemented yet. Please use DXF format.',
+            'walls': [],
+            'doors': [],
+            'windows': [],
+            'restricted_areas': [],
+            'entrances': [],
+            'bounds': {"min_x": 0, "max_x": 0, "min_y": 0, "max_y": 0},
+            'entity_count': 0,
+            'scale': 1.0,
+            'units': 'meters'
+        }
+    
+    def _process_unknown_ultra_fast(self, file_content: bytes, filename: str) -> Dict[str, Any]:
+        """Process unknown file types"""
+        return {
+            'error': f'Unknown file type for {filename}. Please use DXF format.',
+            'walls': [],
+            'doors': [],
+            'windows': [],
+            'restricted_areas': [],
+            'entrances': [],
+            'bounds': {"min_x": 0, "max_x": 0, "min_y": 0, "max_y": 0},
+            'entity_count': 0,
+            'scale': 1.0,
+            'units': 'meters'
+        }
+    
+    def _extract_walls_from_dxf(self, doc) -> List[Dict[str, Any]]:
+        """Extract wall data from DXF document"""
+        walls = []
+        
+        # Get all LINE entities
+        for entity in doc.modelspace().query('LINE'):
+            start_point = [entity.dxf.start.x, entity.dxf.start.y]
+            end_point = [entity.dxf.end.x, entity.dxf.end.y]
+            
+            walls.append({
+                'start': start_point,
+                'end': end_point,
+                'thickness': 6
+            })
+        
+        # Get all POLYLINE entities
+        for entity in doc.modelspace().query('POLYLINE'):
+            points = []
+            for vertex in entity.vertices:
+                points.append([vertex.dxf.location.x, vertex.dxf.location.y])
+            
+            # Convert polyline to line segments
+            for i in range(len(points) - 1):
+                walls.append({
+                    'start': points[i],
+                    'end': points[i + 1],
+                    'thickness': 6
+                })
+        
+        # Get all LWPOLYLINE entities
+        for entity in doc.modelspace().query('LWPOLYLINE'):
+            points = entity.get_points('xy')
+            points = list(points)
+            
+            # Convert polyline to line segments
+            for i in range(len(points) - 1):
+                walls.append({
+                    'start': list(points[i]),
+                    'end': list(points[i + 1]),
+                    'thickness': 6
+                })
+        
+        return walls
+    
+    def _extract_doors_from_dxf(self, doc) -> List[Dict[str, Any]]:
+        """Extract door data from DXF document"""
+        doors = []
+        
+        # Look for CIRCLE entities that might be doors
+        for entity in doc.modelspace().query('CIRCLE'):
+            center = [entity.dxf.center.x, entity.dxf.center.y]
+            radius = entity.dxf.radius
+            
+            doors.append({
+                'center': center,
+                'radius': radius,
+                'type': 'door'
+            })
+        
+        return doors
+    
+    def _extract_windows_from_dxf(self, doc) -> List[Dict[str, Any]]:
+        """Extract window data from DXF document"""
+        windows = []
+        
+        # Look for ARC entities that might be windows
+        for entity in doc.modelspace().query('ARC'):
+            center = [entity.dxf.center.x, entity.dxf.center.y]
+            radius = entity.dxf.radius
+            
+            windows.append({
+                'center': center,
+                'radius': radius,
+                'type': 'window'
+            })
+        
+        return windows
+    
+    def _calculate_bounds_from_walls(self, walls) -> Dict[str, float]:
+        """Calculate bounds from wall data"""
+        if not walls:
+            return {"min_x": 0, "max_x": 100, "min_y": 0, "max_y": 100}
+        
+        all_points = []
+        for wall in walls:
+            all_points.extend([wall['start'], wall['end']])
+        
+        if not all_points:
+            return {"min_x": 0, "max_x": 100, "min_y": 0, "max_y": 100}
+        
+        min_x = min(p[0] for p in all_points)
+        max_x = max(p[0] for p in all_points)
+        min_y = min(p[1] for p in all_points)
+        max_y = max(p[1] for p in all_points)
+        
+        return {
+            "min_x": min_x,
+            "max_x": max_x,
+            "min_y": min_y,
+            "max_y": max_y
+        }
+    
     def _create_connected_outline(self, line_segments):
         """Create connected building outline from wall segments"""
         if not line_segments:
