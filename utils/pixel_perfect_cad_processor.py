@@ -172,31 +172,53 @@ class PixelPerfectCADProcessor:
     def _process_dxf_with_real_processor(self, file_content: bytes, filename: str) -> Dict[str, Any]:
         """Process DXF using the real processors that are working"""
         try:
-            # Import and use the real DXF processor
-            from real_dxf_processor import RealDXFProcessor
-            processor = RealDXFProcessor()
+            # Use the enhanced DXF processing first
+            result = self._process_dxf_enhanced(file_content)
             
-            # Process the file
-            analysis_result = processor.process_dxf_file(file_content, filename)
+            if result and not result.get('error'):
+                return result
             
-            if analysis_result and not analysis_result.get('error'):
-                return analysis_result
-            else:
+            # Fallback to ultra high performance analyzer if enhanced processing fails
+            try:
+                from ultra_high_performance_analyzer import UltraHighPerformanceAnalyzer
+                analyzer = UltraHighPerformanceAnalyzer()
+                
+                # Process the file with the analyzer
+                analysis_result = analyzer.analyze_floor_plan(file_content, filename)
+                
+                if analysis_result and not analysis_result.get('error'):
+                    # Convert to the expected format for pixel-perfect processing
+                    converted_result = self._convert_analysis_result_format(analysis_result)
+                    return converted_result
+                else:
+                    return {
+                        "error": f"Ultra high performance analyzer failed: {analysis_result.get('error', 'Unknown error')}",
+                        "processing_method": "failed",
+                        "walls": [],
+                        "doors": [],
+                        "windows": [],
+                        "restricted_areas": [],
+                        "entrances": [],
+                        "bounds": {"min_x": 0, "max_x": 0, "min_y": 0, "max_y": 0},
+                        "scale": 1.0,
+                        "units": "meters"
+                    }
+            except ImportError:
                 return {
-                    "error": f"Real DXF processor failed: {analysis_result.get('error', 'Unknown error')}",
-                    "processing_method": "failed",
-                    "walls": [],
-                    "doors": [],
-                    "windows": [],
-                    "restricted_areas": [],
-                    "entrances": [],
-                    "bounds": {"min_x": 0, "max_x": 0, "min_y": 0, "max_y": 0},
-                    "scale": 1.0,
-                    "units": "meters"
+                    "error": "Ultra high performance analyzer not available - using enhanced DXF processing",
+                    "processing_method": "enhanced_dxf",
+                    "walls": result.get('walls', []),
+                    "doors": result.get('doors', []),
+                    "windows": result.get('windows', []),
+                    "restricted_areas": result.get('restricted_areas', []),
+                    "entrances": result.get('entrances', []),
+                    "bounds": result.get('bounds', {"min_x": 0, "max_x": 0, "min_y": 0, "max_y": 0}),
+                    "scale": result.get('scale', 1.0),
+                    "units": result.get('units', 'meters')
                 }
         except Exception as e:
             return {
-                "error": f"Failed to load real DXF processor: {str(e)}",
+                "error": f"Failed to process DXF file: {str(e)}",
                 "processing_method": "failed",
                 "walls": [],
                 "doors": [],
@@ -910,6 +932,54 @@ class PixelPerfectCADProcessor:
     def _export_to_image(self, results: Dict[str, Any]) -> str:
         """Export to image format"""
         return f"Image export for {results['filename']}"
+    
+    def _convert_analysis_result_format(self, analysis_result: Dict[str, Any]) -> Dict[str, Any]:
+        """Convert analysis result to pixel-perfect format"""
+        try:
+            # Extract walls from the analysis result
+            walls = []
+            if 'walls' in analysis_result:
+                for wall in analysis_result['walls']:
+                    if isinstance(wall, dict) and 'start' in wall and 'end' in wall:
+                        walls.append({
+                            "start": wall['start'],
+                            "end": wall['end'],
+                            "thickness": wall.get('thickness', 6)
+                        })
+            
+            # Extract bounds
+            bounds = analysis_result.get('bounds', {"min_x": 0, "max_x": 100, "min_y": 0, "max_y": 100})
+            
+            # Extract other elements
+            doors = analysis_result.get('doors', [])
+            windows = analysis_result.get('windows', [])
+            restricted_areas = analysis_result.get('restricted_areas', [])
+            entrances = analysis_result.get('entrances', [])
+            
+            return {
+                "walls": walls,
+                "doors": doors,
+                "windows": windows,
+                "restricted_areas": restricted_areas,
+                "entrances": entrances,
+                "bounds": bounds,
+                "scale": analysis_result.get('scale', 1.0),
+                "units": analysis_result.get('units', 'meters'),
+                "processing_method": "ultra_high_performance_analyzer"
+            }
+        except Exception as e:
+            return {
+                "error": f"Failed to convert analysis result: {str(e)}",
+                "processing_method": "failed",
+                "walls": [],
+                "doors": [],
+                "windows": [],
+                "restricted_areas": [],
+                "entrances": [],
+                "bounds": {"min_x": 0, "max_x": 0, "min_y": 0, "max_y": 0},
+                "scale": 1.0,
+                "units": "meters"
+            }
     
     def _generate_summary_report(self, results: Dict[str, Any]) -> str:
         """Generate summary report"""

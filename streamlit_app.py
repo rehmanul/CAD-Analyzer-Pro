@@ -674,15 +674,27 @@ class CADAnalyzerApp:
                         
                         # Process with pixel-perfect processor
                         if pixel_perfect_processor:
-                            result = pixel_perfect_processor.process_cad_file(file_content, uploaded_file.name)
-                            
-                            if result:
-                                # Check for errors in the analysis data
-                                if result.get('analysis_data', {}).get('error'):
-                                    st.error(f"❌ Processing Failed: {result['analysis_data']['error']}")
-                                    st.info("💡 This processor only uses authentic CAD data - no fallback or mock data is generated.")
-                                    st.info("Please ensure your CAD file contains valid geometric data.")
+                            try:
+                                result = pixel_perfect_processor.process_cad_file(file_content, uploaded_file.name)
+                                
+                                if result:
+                                    # Check for errors in the analysis data
+                                    if result.get('analysis_data', {}).get('error'):
+                                        st.error(f"❌ Processing Failed: {result['analysis_data']['error']}")
+                                        st.info("💡 This processor only uses authentic CAD data - no fallback or mock data is generated.")
+                                        st.info("Please ensure your CAD file contains valid geometric data.")
+                                        
+                                        # Show detailed error information
+                                        with st.expander("🔍 Detailed Error Information"):
+                                            st.json(result.get('analysis_data', {}))
+                                        return
+                                else:
+                                    st.error("❌ Processing returned no results")
                                     return
+                            except Exception as e:
+                                st.error(f"❌ Processing Exception: {str(e)}")
+                                st.info("💡 This may be due to file format issues or processing limitations.")
+                                return
                                 
                                 st.success("✅ Pixel-Perfect Processing Complete!")
                                 
