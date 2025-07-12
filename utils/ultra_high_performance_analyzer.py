@@ -289,19 +289,84 @@ class UltraHighPerformanceAnalyzer:
         }
     
     def _process_pdf_ultra_fast(self, file_content: bytes, filename: str) -> Dict[str, Any]:
-        """Process PDF files - basic implementation"""
-        return {
-            'error': 'PDF processing not implemented yet. Please use DXF format.',
-            'walls': [],
-            'doors': [],
-            'windows': [],
-            'restricted_areas': [],
-            'entrances': [],
-            'bounds': {"min_x": 0, "max_x": 0, "min_y": 0, "max_y": 0},
-            'entity_count': 0,
-            'scale': 1.0,
-            'units': 'meters'
-        }
+        """Process PDF files with vector extraction"""
+        try:
+            import tempfile
+            import os
+            
+            # Write PDF to temporary file
+            with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as tmp_file:
+                tmp_file.write(file_content)
+                tmp_file_path = tmp_file.name
+            
+            try:
+                # Open PDF document
+                doc = fitz.open(tmp_file_path)
+                
+                # Extract vector graphics from first page
+                page = doc[0]
+                
+                # Get page dimensions
+                rect = page.rect
+                bounds = {
+                    "min_x": 0,
+                    "max_x": rect.width,
+                    "min_y": 0,
+                    "max_y": rect.height
+                }
+                
+                # Extract paths/lines from PDF
+                paths = page.get_drawings()
+                walls = []
+                
+                for path in paths:
+                    # Extract line segments from path
+                    for item in path.get("items", []):
+                        if item[0] == "l":  # Line segment
+                            start_point = item[1]
+                            end_point = item[2]
+                            
+                            walls.append({
+                                "start": [start_point.x, start_point.y],
+                                "end": [end_point.x, end_point.y],
+                                "thickness": 6
+                            })
+                
+                doc.close()
+                
+                # Generate layout elements based on extracted geometry
+                restricted_areas, entrances = self._detect_zones_from_walls(walls)
+                
+                return {
+                    'walls': walls,
+                    'doors': [],
+                    'windows': [],
+                    'restricted_areas': restricted_areas,
+                    'entrances': entrances,
+                    'bounds': bounds,
+                    'entity_count': len(walls),
+                    'scale': 1.0,
+                    'units': 'points'
+                }
+                
+            finally:
+                # Clean up temporary file
+                if os.path.exists(tmp_file_path):
+                    os.unlink(tmp_file_path)
+                    
+        except Exception as e:
+            return {
+                'error': f'PDF processing failed: {str(e)}',
+                'walls': [],
+                'doors': [],
+                'windows': [],
+                'restricted_areas': [],
+                'entrances': [],
+                'bounds': {"min_x": 0, "max_x": 0, "min_y": 0, "max_y": 0},
+                'entity_count': 0,
+                'scale': 1.0,
+                'units': 'meters'
+            }
     
     def _process_image_ultra_fast(self, file_content: bytes, filename: str) -> Dict[str, Any]:
         """Process image files - basic implementation"""
