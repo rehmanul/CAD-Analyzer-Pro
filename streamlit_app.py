@@ -72,11 +72,14 @@ except ImportError:
 try:
     from phase3_integration_layer import phase3_processor, Phase3Configuration
     from phase4_integration_layer import phase4_processor, Phase4Configuration  
+    from pixel_perfect_cad_processor import PixelPerfectCADProcessor, PixelPerfectConfig
+    pixel_perfect_processor = PixelPerfectCADProcessor()
 except ImportError:
     phase3_processor = None
     phase4_processor = None
     Phase3Configuration = None
     Phase4Configuration = None
+    pixel_perfect_processor = None
 
 # Page configuration
 st.set_page_config(
@@ -648,30 +651,157 @@ class CADAnalyzerApp:
                     # Enhanced Processing Options
                     st.markdown("### 🚀 Enhanced Processing Mode")
                     
+                    # Add new pixel-perfect processing option
+                    use_pixel_perfect = st.checkbox(
+                        "🎯 Pixel-Perfect CAD Processing (All 4 Phases)",
+                        value=False,
+                        help="Complete pixel-perfect processing pipeline matching your reference images exactly"
+                    )
+                    
+                    if use_pixel_perfect:
+                        st.info("🎯 Using Pixel-Perfect Processing: Complete 4-Phase Pipeline")
+                        
+                        # Configure pixel-perfect processing
+                        pixel_config = PixelPerfectConfig(
+                            enable_phase_1=True,
+                            enable_phase_2=True,
+                            enable_phase_3=True,
+                            enable_phase_4=True,
+                            high_precision_mode=True,
+                            exact_color_matching=True,
+                            professional_typography=True
+                        )
+                        
+                        # Process with pixel-perfect processor
+                        if pixel_perfect_processor:
+                            result = pixel_perfect_processor.process_cad_file(file_content, uploaded_file.name)
+                            
+                            if result:
+                                st.success("✅ Pixel-Perfect Processing Complete!")
+                                
+                                # Display processing phases
+                                st.markdown("### 📊 Processing Phases Completed:")
+                                for phase in result.get('processing_phases', []):
+                                    st.success(f"✅ {phase}")
+                                
+                                # Display quality metrics
+                                col1, col2, col3, col4 = st.columns(4)
+                                with col1:
+                                    st.metric("Total Îlots", len(result.get('ilots', [])))
+                                with col2:
+                                    st.metric("Total Corridors", len(result.get('corridors', [])))
+                                with col3:
+                                    total_area = sum(ilot.get('area', 0) for ilot in result.get('ilots', []))
+                                    st.metric("Total Area", f"{total_area:.1f}m²")
+                                with col4:
+                                    quality_score = result.get('analysis_data', {}).get('quality_score', 0)
+                                    st.metric("Quality Score", f"{quality_score * 100:.1f}%")
+                                
+                                # Store results
+                                st.session_state.analysis_results = result['analysis_data']
+                                st.session_state.placed_ilots = result['ilots']
+                                st.session_state.corridors = result['corridors']
+                                st.session_state.file_processed = True
+                                st.session_state.visualization_mode = "pixel_perfect"
+                                
+                                # Display pixel-perfect visualizations
+                                st.markdown("### 🎨 Pixel-Perfect Visualizations")
+                                
+                                # Tab for different visualization stages
+                                vis_tab1, vis_tab2, vis_tab3 = st.tabs([
+                                    "🏗️ Empty Floor Plan",
+                                    "🏢 With Îlots",
+                                    "🛤️ Complete with Corridors"
+                                ])
+                                
+                                with vis_tab1:
+                                    if 'empty_floor_plan' in result.get('visualizations', {}):
+                                        st.plotly_chart(
+                                            result['visualizations']['empty_floor_plan'],
+                                            use_container_width=True,
+                                            config={'displayModeBar': False}
+                                        )
+                                
+                                with vis_tab2:
+                                    if 'floor_plan_with_ilots' in result.get('visualizations', {}):
+                                        st.plotly_chart(
+                                            result['visualizations']['floor_plan_with_ilots'],
+                                            use_container_width=True,
+                                            config={'displayModeBar': False}
+                                        )
+                                
+                                with vis_tab3:
+                                    if 'complete_floor_plan' in result.get('visualizations', {}):
+                                        st.plotly_chart(
+                                            result['visualizations']['complete_floor_plan'],
+                                            use_container_width=True,
+                                            config={'displayModeBar': False}
+                                        )
+                                
+                                # Display export options
+                                if result.get('export_data'):
+                                    st.markdown("### 📤 Export Options")
+                                    
+                                    export_col1, export_col2, export_col3 = st.columns(3)
+                                    with export_col1:
+                                        if st.button("📄 Download JSON"):
+                                            json_data = result['export_data'].get('json_export', '{}')
+                                            st.download_button(
+                                                label="Download JSON",
+                                                data=json_data,
+                                                file_name=f"{uploaded_file.name}_analysis.json",
+                                                mime="application/json"
+                                            )
+                                    
+                                    with export_col2:
+                                        if st.button("📋 Download Summary"):
+                                            summary = result['export_data'].get('summary_report', '')
+                                            st.download_button(
+                                                label="Download Summary",
+                                                data=summary,
+                                                file_name=f"{uploaded_file.name}_summary.txt",
+                                                mime="text/plain"
+                                            )
+                                    
+                                    with export_col3:
+                                        if st.button("📊 View Summary"):
+                                            summary = result['export_data'].get('summary_report', '')
+                                            st.text_area("Summary Report", summary, height=200)
+                                
+                                return
+                        else:
+                            st.error("Pixel-Perfect Processor not available")
+                            return
+                    
+                    # Original phase checkboxes (when not using pixel-perfect)
                     col1, col2, col3, col4 = st.columns(4)
                     with col1:
                         use_phase1_enhanced = st.checkbox(
                             "Phase 1 Enhanced", 
                             value=False,
-                            help="Advanced CAD parsing with smart floor plan detection and geometric element recognition"
+                            help="Advanced CAD parsing with smart floor plan detection and geometric element recognition",
+                            disabled=use_pixel_perfect
                         )
                     with col2:
                         use_phase2_advanced = st.checkbox(
                             "Phase 2 Advanced", 
                             value=False,
-                            help="Advanced îlot placement with multiple algorithms and intelligent corridor generation"
+                            help="Advanced îlot placement with multiple algorithms and intelligent corridor generation",
+                            disabled=use_pixel_perfect
                         )
                     with col3:
                         use_phase3_visualization = st.checkbox(
                             "Phase 3 Visualization", 
                             value=False,
-                            help="Pixel-perfect visualization with exact reference matching and multi-stage rendering"
+                            help="Pixel-perfect visualization with exact reference matching and multi-stage rendering",
+                            disabled=use_pixel_perfect
                         )
                     with col4:
                         use_phase4_export = st.checkbox(
                             "Phase 4 Export", 
                             value=False,
-                            help="Comprehensive export with multiple formats and system integration"
+                            help="Comprehensive export with multiple formats and system integration",
+                            disabled=use_pixel_perfect
                         )
                     
                     if use_phase1_enhanced:
