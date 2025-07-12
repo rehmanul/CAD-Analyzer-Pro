@@ -26,6 +26,18 @@ class CADElement:
     color: Optional[str] = None
     thickness: float = 0.0
     properties: Dict[str, Any] = field(default_factory=dict)
+    
+    def __hash__(self):
+        """Make CADElement hashable for use in sets and dictionaries"""
+        return hash((self.element_type, self.layer, str(self.geometry.bounds) if self.geometry else ""))
+    
+    def __eq__(self, other):
+        """Define equality for CADElement objects"""
+        if not isinstance(other, CADElement):
+            return False
+        return (self.element_type == other.element_type and 
+                self.layer == other.layer and
+                self.geometry == other.geometry)
 
 @dataclass
 class FloorPlanData:

@@ -141,8 +141,8 @@ class GeometricElementRecognizer:
             # Find parallel walls
             parallel_distances = []
             
-            for other_wall in all_walls:
-                if other_wall == target_wall:
+            for i, other_wall in enumerate(all_walls):
+                if other_wall is target_wall:
                     continue
                 
                 try:
