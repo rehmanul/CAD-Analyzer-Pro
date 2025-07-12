@@ -366,6 +366,45 @@ st.markdown("""
         box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.3);
     }
 
+
+    def initialize_session_state(self):
+        """Initialize all session state variables to prevent SessionInfo errors"""
+        # Core application state
+        if 'analysis_results' not in st.session_state:
+            st.session_state.analysis_results = None
+        if 'placed_ilots' not in st.session_state:
+            st.session_state.placed_ilots = []
+        if 'corridors' not in st.session_state:
+            st.session_state.corridors = []
+        if 'file_processed' not in st.session_state:
+            st.session_state.file_processed = False
+        
+        # Visualization mode tracking
+        if 'visualization_mode' not in st.session_state:
+            st.session_state.visualization_mode = "none"  # none -> base -> with_ilots -> detailed
+        
+        # Configuration state
+        if 'ilot_config' not in st.session_state:
+            st.session_state.ilot_config = {
+                'size_0_1_percent': 10,
+                'size_1_3_percent': 25, 
+                'size_3_5_percent': 30,
+                'size_5_10_percent': 35,
+                'min_spacing': 1.0,
+                'wall_clearance': 0.5,
+                'corridor_width': 1.5,
+                'utilization_target': 0.7
+            }
+        
+        # Processing state
+        if 'current_file' not in st.session_state:
+            st.session_state.current_file = None
+        if 'processing_complete' not in st.session_state:
+            st.session_state.processing_complete = False
+        if 'last_error' not in st.session_state:
+            st.session_state.last_error = None
+
+
     .stButton > button:hover {
         background: linear-gradient(145deg, #4f46e5, #4338ca);
         transform: translateY(-1px);
@@ -457,6 +496,8 @@ st.markdown("""
 
 class CADAnalyzerApp:
     def __init__(self):
+        # Initialize session state first thing
+        self.initialize_session_state()
         self.floor_analyzer = UltraHighPerformanceAnalyzer()
         self.dxf_processor = OptimizedDXFProcessor()
         self.proper_dxf_processor = ProperDXFProcessor()  # For proper architectural extraction
@@ -484,18 +525,8 @@ class CADAnalyzerApp:
         self.reference_floor_plan_visualizer = ReferenceFloorPlanVisualizer()  # Clean reference style
         self.smart_ilot_placer = SmartIlotPlacer()  # Intelligent îlot placement
 
-        # Initialize session state with visualization modes
-        if 'analysis_results' not in st.session_state:
-            st.session_state.analysis_results = None
-        if 'placed_ilots' not in st.session_state:
-            st.session_state.placed_ilots = []
-        if 'corridors' not in st.session_state:
-            st.session_state.corridors = []
-        if 'file_processed' not in st.session_state:
-            st.session_state.file_processed = False
-        # Add visualization mode tracking
-        if 'visualization_mode' not in st.session_state:
-            st.session_state.visualization_mode = "none"  # none -> base -> with_ilots -> detailed
+        # Initialize all session state variables at startup
+        self.initialize_session_state()
 
     def run(self):
         """Run the main application"""
@@ -546,8 +577,8 @@ class CADAnalyzerApp:
                     st.session_state.placed_ilots
                 )
 
-            # Store settings in session state
-            st.session_state.ilot_config = {
+            # Update settings in session state
+            st.session_state.ilot_config.update({
                 'size_0_1_percent': size_0_1_pct,
                 'size_1_3_percent': size_1_3_pct, 
                 'size_3_5_percent': size_3_5_pct,
@@ -556,7 +587,7 @@ class CADAnalyzerApp:
                 'wall_clearance': wall_clearance,
                 'corridor_width': corridor_width,
                 'utilization_target': utilization_target / 100
-            }
+            })
 
         # Modern Hero Section
         st.markdown("""
@@ -624,26 +655,33 @@ class CADAnalyzerApp:
                         return
                     
                     # Additional DXF file validation
-                    if file_ext == 'dxf' and dxf_validator:
-                        validation_result = dxf_validator.validate_dxf_file(file_content, uploaded_file.name)
-                        
-                        if not validation_result['is_valid']:
-                            st.error("❌ Invalid DXF file detected!")
-                            
-                            with st.expander("🔍 Detailed Validation Report"):
-                                report = dxf_validator.format_validation_report(validation_result)
-                                st.text(report)
-                            
-                            st.info("💡 Try these solutions:")
-                            st.info("• Re-export the DXF from your CAD software")
-                            st.info("• Ensure the file was not corrupted during transfer")
-                            st.info("• Check that the file is actually a DXF file (not renamed)")
-                            return
-                        else:
-                            st.success("✅ DXF file validation passed")
-                            with st.expander("📊 File Information"):
-                                report = dxf_validator.format_validation_report(validation_result)
-                                st.text(report)
+                    if file_ext == 'dxf':
+                        try:
+                            if dxf_validator:
+                                validation_result = dxf_validator.validate_dxf_file(file_content, uploaded_file.name)
+                                
+                                if not validation_result['is_valid']:
+                                    st.error("❌ Invalid DXF file detected!")
+                                    
+                                    with st.expander("🔍 Detailed Validation Report"):
+                                        report = dxf_validator.format_validation_report(validation_result)
+                                        st.text(report)
+                                    
+                                    st.info("💡 Try these solutions:")
+                                    st.info("• Re-export the DXF from your CAD software")
+                                    st.info("• Ensure the file was not corrupted during transfer")
+                                    st.info("• Check that the file is actually a DXF file (not renamed)")
+                                    return
+                                else:
+                                    st.success("✅ DXF file validation passed")
+                                    with st.expander("📊 File Information"):
+                                        report = dxf_validator.format_validation_report(validation_result)
+                                        st.text(report)
+                            else:
+                                st.info("📋 Processing DXF file without validation (validator not available)")
+                        except Exception as validation_error:
+                            st.warning(f"⚠️ DXF validation failed: {str(validation_error)}")
+                            st.info("📋 Continuing with standard DXF processing...")
 
                     # Enhanced Processing Options
                     st.markdown("### 🚀 Enhanced Processing Mode")
