@@ -501,8 +501,8 @@ class PixelPerfectCADProcessor:
             )
             return fig
         
-        # Create professional architectural visualization matching reference
-        # Add walls with proper thickness and color
+        # Create professional architectural visualization matching reference exactly
+        # Add walls with proper thickness and color - exact match to reference
         for wall in walls:
             if isinstance(wall, dict) and "start" in wall and "end" in wall:
                 fig.add_trace(go.Scatter(
@@ -510,37 +510,37 @@ class PixelPerfectCADProcessor:
                     y=[wall["start"][1], wall["end"][1]],
                     mode='lines',
                     line=dict(
-                        color='#6B7280',  # Professional gray for walls (MUR)
-                        width=8
+                        color='#5A6B7D',  # Exact gray from reference image (MUR)
+                        width=12  # Thicker walls to match reference
                     ),
                     showlegend=False,
                     hoverinfo='skip'
                 ))
         
-        # Add restricted areas (blue rectangles) - NO ENTREE
+        # Add restricted areas (blue rectangles) - NO ENTREE - exact match to reference
         restricted_areas = analysis_data.get("restricted_areas", [])
         for area in restricted_areas:
             if isinstance(area, dict) and "bounds" in area:
                 bounds = area["bounds"]
-                # Create rectangle for restricted area
+                # Create solid blue rectangle exactly like reference
                 fig.add_trace(go.Scatter(
                     x=[bounds["min_x"], bounds["max_x"], bounds["max_x"], bounds["min_x"], bounds["min_x"]],
                     y=[bounds["min_y"], bounds["min_y"], bounds["max_y"], bounds["max_y"], bounds["min_y"]],
                     mode='lines',
                     fill='toself',
-                    fillcolor='rgba(59, 130, 246, 0.3)',  # Light blue fill
-                    line=dict(color='#3B82F6', width=2),  # Blue outline
+                    fillcolor='#4A90E2',  # Solid blue from reference (NO ENTREE)
+                    line=dict(color='#4A90E2', width=0),  # No border
                     showlegend=False,
                     hoverinfo='skip'
                 ))
         
-        # Add entrance markers (red arcs) - ENTRÉE/SORTIE
+        # Add entrance markers (red arcs) - ENTRÉE/SORTIE - exact match to reference
         entrances = analysis_data.get("entrances", [])
         for entrance in entrances:
             if isinstance(entrance, dict) and "x" in entrance and "y" in entrance:
-                # Create arc for entrance
-                radius = entrance.get("radius", 5)
-                theta = np.linspace(0, np.pi, 50)  # Half circle
+                # Create thick red arc exactly like reference
+                radius = entrance.get("radius", 8)
+                theta = np.linspace(0, np.pi, 100)  # Smooth half circle
                 x_arc = entrance["x"] + radius * np.cos(theta)
                 y_arc = entrance["y"] + radius * np.sin(theta)
                 
@@ -549,18 +549,18 @@ class PixelPerfectCADProcessor:
                     y=y_arc.tolist(),
                     mode='lines',
                     line=dict(
-                        color='#EF4444',  # Red for entrances
-                        width=4
+                        color='#D73027',  # Exact red from reference (ENTRÉE/SORTIE)
+                        width=8  # Thick like reference
                     ),
                     showlegend=False,
                     hoverinfo='skip'
                 ))
         
-        # Add professional legend matching reference image
+        # Add professional legend exactly matching reference image
         fig.add_trace(go.Scatter(
             x=[None], y=[None],
             mode='markers',
-            marker=dict(color='#3B82F6', size=15, symbol='square'),
+            marker=dict(color='#4A90E2', size=20, symbol='square'),
             name='NO ENTREE',
             showlegend=True
         ))
@@ -568,7 +568,7 @@ class PixelPerfectCADProcessor:
         fig.add_trace(go.Scatter(
             x=[None], y=[None],
             mode='markers',
-            marker=dict(color='#EF4444', size=15, symbol='square'),
+            marker=dict(color='#D73027', size=20, symbol='square'),
             name='ENTRÉE/SORTIE',
             showlegend=True
         ))
@@ -576,41 +576,41 @@ class PixelPerfectCADProcessor:
         fig.add_trace(go.Scatter(
             x=[None], y=[None],
             mode='markers',
-            marker=dict(color='#6B7280', size=15, symbol='square'),
+            marker=dict(color='#5A6B7D', size=20, symbol='square'),
             name='MUR',
             showlegend=True
         ))
         
-        # Configure professional layout matching reference
+        # Configure professional layout exactly matching reference
         bounds = analysis_data["bounds"]
         fig.update_layout(
-            title="Floor Plan Visualization",
+            title=None,  # No title like reference
             xaxis=dict(
                 showgrid=False,
                 zeroline=False,
                 showticklabels=False,
                 scaleanchor="y",
                 scaleratio=1,
-                range=[bounds["min_x"] - 10, bounds["max_x"] + 10]
+                range=[bounds["min_x"] - 20, bounds["max_x"] + 20]
             ),
             yaxis=dict(
                 showgrid=False,
                 zeroline=False,
                 showticklabels=False,
-                range=[bounds["min_y"] - 10, bounds["max_y"] + 10]
+                range=[bounds["min_y"] - 20, bounds["max_y"] + 20]
             ),
-            plot_bgcolor='#F5F5F5',  # Light gray background like reference
-            paper_bgcolor='white',
-            width=1200,
-            height=800,
-            margin=dict(l=50, r=50, t=50, b=50),
+            plot_bgcolor='#E8E8E8',  # Exact light gray background from reference
+            paper_bgcolor='#E8E8E8',
+            width=1400,  # Larger for better detail
+            height=900,
+            margin=dict(l=20, r=200, t=20, b=20),  # Space for legend
             legend=dict(
                 x=1.02,
-                y=1,
-                bgcolor='white',
-                bordercolor='#E5E7EB',
+                y=0.98,
+                bgcolor='rgba(255,255,255,0.9)',
+                bordercolor='#CCCCCC',
                 borderwidth=1,
-                font=dict(size=12)
+                font=dict(size=16, color='#333333')  # Larger font like reference
             )
         )
         
