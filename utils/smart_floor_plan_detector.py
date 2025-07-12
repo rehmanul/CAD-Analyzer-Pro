@@ -1,672 +1,604 @@
 """
-Smart Floor Plan Detector for Phase 1
-Intelligent detection of main floor plan from complex multi-view CAD files
+Smart Floor Plan Detector - Phase 1 Component
+Intelligent detection of main floor plan from multi-view CAD files
+Identifies the primary architectural drawing among layouts, elevations, and details
 """
 
-import numpy as np
-from typing import Dict, List, Tuple, Optional, Any
-from shapely.geometry import Polygon, LineString, Point, MultiPolygon
-from shapely.ops import unary_union
 import logging
+import numpy as np
+from typing import Dict, List, Tuple, Optional, Set
 from dataclasses import dataclass
-from enum import Enum
-from utils.enhanced_cad_parser import FloorPlanData, CADElement, ElementType
+from shapely.geometry import Polygon, Point, LineString, MultiPolygon
+from shapely.ops import unary_union
+import time
 
-class ViewType(Enum):
-    FLOOR_PLAN = "floor_plan"
-    ELEVATION = "elevation"
-    SECTION = "section"
-    DETAIL = "detail"
-    TITLE_BLOCK = "title_block"
-    UNKNOWN = "unknown"
+from utils.enhanced_cad_parser import FloorPlanData, CADElement
 
 @dataclass
-class DetectedView:
-    """Represents a detected view in the CAD file"""
-    view_type: ViewType
-    confidence: float
-    bounds: Tuple[float, float, float, float]  # min_x, min_y, max_x, max_y
+class FloorPlanCandidate:
+    """Candidate floor plan with quality metrics"""
     elements: List[CADElement]
-    scale: float = 1.0
-    area: float = 0.0
-    complexity_score: float = 0.0
+    confidence_score: float
+    geometric_metrics: Dict[str, float]
+    spatial_bounds: Tuple[float, float, float, float]
+    element_density: float
+    wall_network_quality: float
 
 class SmartFloorPlanDetector:
     """
-    Smart detection of main floor plan from multi-view CAD files
-    Uses geometric analysis and architectural patterns to identify the primary floor plan
+    Intelligent detector that identifies the main architectural floor plan
+    from complex CAD files containing multiple views and drawings
     """
     
     def __init__(self):
         self.logger = logging.getLogger(__name__)
         
-        # Floor plan detection parameters
-        self.min_floor_plan_area = 1000000  # Minimum area for valid floor plan (1m² in mm²)
-        self.wall_density_threshold = 0.1  # Minimum wall density for floor plan
-        self.room_indicator_patterns = ['room', 'salle', 'bureau', 'kitchen', 'bedroom']
-        self.elevation_indicators = ['elevation', 'facade', 'coupe', 'section']
+        # Detection thresholds
+        self.min_wall_count = 3
+        self.min_plan_area = 10000  # mm²
+        self.connectivity_threshold = 0.3
+        self.density_optimal_range = (0.1, 0.8)  # elements per unit area
         
-        # Geometric analysis thresholds
-        self.wall_length_threshold = 1000  # Minimum wall length (1m)
-        self.room_area_threshold = 2000000  # Minimum room area (2m²)
-        self.connection_tolerance = 100  # Wall connection tolerance (10cm)
-
+        # Spatial analysis parameters
+        self.grid_size = 1000  # mm - for spatial analysis
+        self.cluster_tolerance = 500  # mm
+        
     def detect_main_floor_plan(self, floor_plan_data: FloorPlanData) -> FloorPlanData:
         """
-        Detect and extract the main floor plan from complex CAD data
-        Returns the cleaned and optimized main floor plan
+        Detect and extract the main floor plan from CAD data
+        
+        Args:
+            floor_plan_data: Raw CAD data with all elements
+            
+        Returns:
+            Optimized FloorPlanData containing only main floor plan elements
         """
-        try:
-            # Analyze all views in the CAD file
-            detected_views = self._analyze_views(floor_plan_data)
-            
-            # Select the best floor plan view
-            main_floor_plan = self._select_best_floor_plan(detected_views)
-            
-            if main_floor_plan:
-                # Clean and optimize the selected floor plan
-                optimized_plan = self._optimize_floor_plan(main_floor_plan, floor_plan_data)
-                return optimized_plan
-            else:
-                # If no clear floor plan found, use heuristics to create one
-                return self._create_heuristic_floor_plan(floor_plan_data)
-                
-        except Exception as e:
-            self.logger.error(f"Error detecting main floor plan: {str(e)}")
-            return floor_plan_data  # Return original data as fallback
-
-    def _analyze_views(self, floor_plan_data: FloorPlanData) -> List[DetectedView]:
-        """Analyze and classify different views in the CAD file"""
-        detected_views = []
+        start_time = time.time()
         
-        # Group elements by spatial clusters
-        element_clusters = self._cluster_elements_spatially(floor_plan_data)
+        if not floor_plan_data.walls:
+            self.logger.warning("No walls found in CAD data")
+            return floor_plan_data
         
-        for cluster in element_clusters:
-            view = self._analyze_cluster(cluster)
-            if view.confidence > 0.3:  # Only keep views with reasonable confidence
-                detected_views.append(view)
-                
-        return detected_views
-
-    def _cluster_elements_spatially(self, floor_plan_data: FloorPlanData) -> List[List[CADElement]]:
-        """Group elements into spatial clusters representing different views"""
-        all_elements = []
+        # Step 1: Identify floor plan candidates through spatial clustering
+        candidates = self._identify_floor_plan_candidates(floor_plan_data)
         
-        # Combine all elements
-        for element_list in [floor_plan_data.walls, floor_plan_data.doors, 
-                           floor_plan_data.windows, floor_plan_data.rooms,
-                           floor_plan_data.text_annotations]:
-            all_elements.extend(element_list)
+        if not candidates:
+            self.logger.warning("No valid floor plan candidates identified")
+            return floor_plan_data
         
-        if not all_elements:
-            return []
+        # Step 2: Evaluate each candidate
+        evaluated_candidates = []
+        for candidate in candidates:
+            metrics = self._evaluate_floor_plan_candidate(candidate, floor_plan_data)
+            evaluated_candidates.append((candidate, metrics))
         
-        # Simple spatial clustering based on bounding boxes
-        clusters = []
-        processed_elements = set()
+        # Step 3: Select best candidate
+        best_candidate = self._select_best_candidate(evaluated_candidates)
         
-        for element in all_elements:
-            if id(element) in processed_elements:
-                continue
-                
-            # Start a new cluster
-            cluster = [element]
-            processed_elements.add(id(element))
-            element_bounds = element.geometry.bounds
-            
-            # Find nearby elements
-            for other_element in all_elements:
-                if id(other_element) in processed_elements:
-                    continue
-                    
-                other_bounds = other_element.geometry.bounds
-                
-                # Check if elements are spatially close
-                if self._are_bounds_overlapping_or_close(element_bounds, other_bounds, tolerance=5000):
-                    cluster.append(other_element)
-                    processed_elements.add(id(other_element))
-                    
-            if len(cluster) > 5:  # Only consider clusters with enough elements
-                clusters.append(cluster)
-                
-        return clusters
-
-    def _are_bounds_overlapping_or_close(self, bounds1: Tuple[float, float, float, float], 
-                                       bounds2: Tuple[float, float, float, float], 
-                                       tolerance: float) -> bool:
-        """Check if two bounding boxes overlap or are within tolerance"""
-        min_x1, min_y1, max_x1, max_y1 = bounds1
-        min_x2, min_y2, max_x2, max_y2 = bounds2
+        if not best_candidate:
+            self.logger.warning("Could not determine best floor plan candidate")
+            return floor_plan_data
         
-        # Check for overlap or proximity
-        x_overlap = max_x1 >= min_x2 - tolerance and max_x2 >= min_x1 - tolerance
-        y_overlap = max_y1 >= min_y2 - tolerance and max_y2 >= min_y1 - tolerance
+        # Step 4: Extract optimized floor plan
+        optimized_plan = self._extract_optimized_floor_plan(best_candidate, floor_plan_data)
         
-        return x_overlap and y_overlap
-
-    def _analyze_cluster(self, elements: List[CADElement]) -> DetectedView:
-        """Analyze a cluster of elements to determine view type and confidence"""
-        if not elements:
-            return DetectedView(ViewType.UNKNOWN, 0.0, (0, 0, 0, 0), [])
-        
-        # Calculate cluster bounds
-        all_bounds = [elem.geometry.bounds for elem in elements if elem.geometry]
-        if not all_bounds:
-            return DetectedView(ViewType.UNKNOWN, 0.0, (0, 0, 0, 0), [])
-        
-        min_x = min(bounds[0] for bounds in all_bounds)
-        min_y = min(bounds[1] for bounds in all_bounds)
-        max_x = max(bounds[2] for bounds in all_bounds)
-        max_y = max(bounds[3] for bounds in all_bounds)
-        
-        bounds = (min_x, min_y, max_x, max_y)
-        area = (max_x - min_x) * (max_y - min_y)
-        
-        # Analyze element types
-        wall_count = sum(1 for elem in elements if elem.element_type == ElementType.WALL)
-        door_count = sum(1 for elem in elements if elem.element_type == ElementType.DOOR)
-        window_count = sum(1 for elem in elements if elem.element_type == ElementType.WINDOW)
-        room_count = sum(1 for elem in elements if elem.element_type == ElementType.ROOM_BOUNDARY)
-        text_count = sum(1 for elem in elements if elem.element_type == ElementType.TEXT)
-        
-        # Calculate metrics for view type detection
-        total_elements = len(elements)
-        wall_density = wall_count / total_elements if total_elements > 0 else 0
-        room_density = room_count / total_elements if total_elements > 0 else 0
-        
-        # Analyze text content for view type hints
-        text_content = self._extract_text_content(elements)
-        
-        # Determine view type and confidence
-        view_type, confidence = self._classify_view_type(
-            wall_density, room_density, area, text_content, 
-            wall_count, door_count, window_count
-        )
-        
-        # Calculate complexity score
-        complexity_score = self._calculate_complexity_score(elements)
-        
-        return DetectedView(
-            view_type=view_type,
-            confidence=confidence,
-            bounds=bounds,
-            elements=elements,
-            area=area,
-            complexity_score=complexity_score
-        )
-
-    def _extract_text_content(self, elements: List[CADElement]) -> str:
-        """Extract all text content from elements"""
-        text_content = ""
-        for element in elements:
-            if element.element_type == ElementType.TEXT:
-                text = element.properties.get('text', '')
-                text_content += text.lower() + " "
-        return text_content
-
-    def _classify_view_type(self, wall_density: float, room_density: float, area: float,
-                          text_content: str, wall_count: int, door_count: int, 
-                          window_count: int) -> Tuple[ViewType, float]:
-        """Classify view type based on analysis metrics"""
-        
-        confidence = 0.0
-        view_type = ViewType.UNKNOWN
-        
-        # Floor plan indicators
-        floor_plan_score = 0.0
-        
-        # High wall density suggests floor plan
-        if wall_density > 0.3:
-            floor_plan_score += 0.3
-        
-        # Presence of rooms
-        if room_density > 0.1:
-            floor_plan_score += 0.2
-        
-        # Doors and windows suggest floor plan
-        if door_count > 0 or window_count > 0:
-            floor_plan_score += 0.2
-        
-        # Large area suggests main floor plan
-        if area > self.min_floor_plan_area:
-            floor_plan_score += 0.2
-        
-        # Text content analysis
-        if any(pattern in text_content for pattern in self.room_indicator_patterns):
-            floor_plan_score += 0.1
-        
-        # Elevation indicators reduce floor plan score
-        if any(indicator in text_content for indicator in self.elevation_indicators):
-            floor_plan_score -= 0.3
-        
-        # Determine view type
-        if floor_plan_score > 0.5:
-            view_type = ViewType.FLOOR_PLAN
-            confidence = min(floor_plan_score, 1.0)
-        elif any(indicator in text_content for indicator in self.elevation_indicators):
-            view_type = ViewType.ELEVATION
-            confidence = 0.7
-        elif wall_density > 0.6 and area < self.min_floor_plan_area:
-            view_type = ViewType.DETAIL
-            confidence = 0.6
-        else:
-            view_type = ViewType.UNKNOWN
-            confidence = 0.3
-        
-        return view_type, confidence
-
-    def _calculate_complexity_score(self, elements: List[CADElement]) -> float:
-        """Calculate complexity score for a view"""
-        if not elements:
-            return 0.0
-        
-        # Factors contributing to complexity
-        element_count = len(elements)
-        unique_layers = len(set(elem.layer for elem in elements))
-        
-        # Geometric complexity
-        total_length = 0.0
-        total_area = 0.0
-        
-        for element in elements:
-            if hasattr(element.geometry, 'length'):
-                total_length += element.geometry.length
-            if hasattr(element.geometry, 'area'):
-                total_area += element.geometry.area
-        
-        # Normalize complexity score
-        complexity = (element_count * 0.4 + unique_layers * 0.3 + 
-                     min(total_length / 10000, 10) * 0.2 + 
-                     min(total_area / 1000000, 10) * 0.1)
-        
-        return min(complexity, 10.0)  # Cap at 10
-
-    def _select_best_floor_plan(self, detected_views: List[DetectedView]) -> Optional[DetectedView]:
-        """Select the best floor plan view from detected views"""
-        floor_plan_views = [view for view in detected_views 
-                           if view.view_type == ViewType.FLOOR_PLAN]
-        
-        if not floor_plan_views:
-            return None
-        
-        # Score each floor plan view
-        best_view = None
-        best_score = 0.0
-        
-        for view in floor_plan_views:
-            # Scoring factors
-            score = (view.confidence * 0.4 +  # Confidence in being a floor plan
-                    (view.area / 10000000) * 0.3 +  # Larger plans are often main plans
-                    view.complexity_score * 0.2 +  # More complex plans are often main plans
-                    len(view.elements) / 100 * 0.1)  # More elements suggest main plan
-            
-            if score > best_score:
-                best_score = score
-                best_view = view
-        
-        return best_view
-
-    def _optimize_floor_plan(self, main_view: DetectedView, 
-                           original_data: FloorPlanData) -> FloorPlanData:
-        """Optimize the selected floor plan view"""
-        
-        # Extract elements from the main view
-        view_elements = main_view.elements
-        
-        # Separate elements by type
-        walls = [elem for elem in view_elements if elem.element_type == ElementType.WALL]
-        doors = [elem for elem in view_elements if elem.element_type == ElementType.DOOR]
-        windows = [elem for elem in view_elements if elem.element_type == ElementType.WINDOW]
-        rooms = [elem for elem in view_elements if elem.element_type == ElementType.ROOM_BOUNDARY]
-        text_annotations = [elem for elem in view_elements if elem.element_type == ElementType.TEXT]
-        
-        # Optimize walls - connect segments and clean geometry
-        optimized_walls = self._optimize_walls(walls)
-        
-        # Generate room boundaries if not present
-        if not rooms:
-            rooms = self._generate_room_boundaries(optimized_walls)
-        
-        # Detect special areas from text and geometry
-        restricted_areas, entrances = self._detect_special_areas_from_view(
-            text_annotations, rooms, main_view.bounds
-        )
-        
-        # Create optimized floor plan
-        optimized_plan = FloorPlanData(
-            walls=optimized_walls,
-            doors=doors,
-            windows=windows,
-            rooms=rooms,
-            restricted_areas=restricted_areas,
-            entrances=entrances,
-            dimensions=original_data.dimensions,
-            text_annotations=text_annotations,
-            scale_factor=original_data.scale_factor,
-            units=original_data.units,
-            bounds={
-                'min_x': main_view.bounds[0],
-                'min_y': main_view.bounds[1],
-                'max_x': main_view.bounds[2],
-                'max_y': main_view.bounds[3],
-                'width': main_view.bounds[2] - main_view.bounds[0],
-                'height': main_view.bounds[3] - main_view.bounds[1]
-            },
-            metadata={
-                'detected_view_type': main_view.view_type.value,
-                'confidence': main_view.confidence,
-                'complexity_score': main_view.complexity_score,
-                'optimization_applied': True
-            }
-        )
+        processing_time = time.time() - start_time
+        self.logger.info(f"Floor plan detection completed in {processing_time:.2f}s")
         
         return optimized_plan
-
-    def _optimize_walls(self, walls: List[CADElement]) -> List[CADElement]:
-        """Optimize wall geometry by connecting segments and cleaning"""
+    
+    def _identify_floor_plan_candidates(self, floor_plan_data: FloorPlanData) -> List[FloorPlanCandidate]:
+        """Identify potential floor plan regions through spatial analysis"""
+        candidates = []
+        
+        # Method 1: Wall-based clustering
+        wall_clusters = self._cluster_walls_spatially(floor_plan_data.walls)
+        
+        for cluster in wall_clusters:
+            if len(cluster) >= self.min_wall_count:
+                candidate = self._create_candidate_from_walls(cluster, floor_plan_data)
+                if candidate:
+                    candidates.append(candidate)
+        
+        # Method 2: Layer-based separation
+        layer_candidates = self._identify_candidates_by_layer(floor_plan_data)
+        candidates.extend(layer_candidates)
+        
+        # Method 3: Geometric density analysis
+        density_candidates = self._identify_candidates_by_density(floor_plan_data)
+        candidates.extend(density_candidates)
+        
+        return self._deduplicate_candidates(candidates)
+    
+    def _cluster_walls_spatially(self, walls: List[CADElement]) -> List[List[CADElement]]:
+        """Cluster walls based on spatial proximity"""
         if not walls:
             return []
         
-        # Group walls by connectivity
-        wall_groups = self._group_connected_walls(walls)
-        
-        optimized_walls = []
-        
-        for group in wall_groups:
-            # Merge connected wall segments
-            merged_wall = self._merge_wall_segments(group)
-            if merged_wall:
-                optimized_walls.append(merged_wall)
-        
-        return optimized_walls
-
-    def _group_connected_walls(self, walls: List[CADElement]) -> List[List[CADElement]]:
-        """Group walls that are connected or aligned"""
-        if not walls:
-            return []
-        
-        groups = []
-        processed = set()
-        
+        # Extract wall centroids
+        wall_points = []
         for wall in walls:
-            if id(wall) in processed:
-                continue
-            
-            # Start a new group
-            group = [wall]
-            processed.add(id(wall))
-            
-            # Find connected walls
-            self._find_connected_walls(wall, walls, group, processed)
-            
-            groups.append(group)
-        
-        return groups
-
-    def _find_connected_walls(self, wall: CADElement, all_walls: List[CADElement],
-                            group: List[CADElement], processed: set):
-        """Recursively find walls connected to the given wall"""
-        if not isinstance(wall.geometry, LineString):
-            return
-        
-        wall_coords = list(wall.geometry.coords)
-        if len(wall_coords) < 2:
-            return
-        
-        wall_start = Point(wall_coords[0])
-        wall_end = Point(wall_coords[-1])
-        
-        for other_wall in all_walls:
-            if id(other_wall) in processed or not isinstance(other_wall.geometry, LineString):
-                continue
-            
-            other_coords = list(other_wall.geometry.coords)
-            if len(other_coords) < 2:
-                continue
-            
-            other_start = Point(other_coords[0])
-            other_end = Point(other_coords[-1])
-            
-            # Check if walls are connected (endpoints are close)
-            connections = [
-                wall_start.distance(other_start),
-                wall_start.distance(other_end),
-                wall_end.distance(other_start),
-                wall_end.distance(other_end)
-            ]
-            
-            if min(connections) < self.connection_tolerance:
-                group.append(other_wall)
-                processed.add(id(other_wall))
-                # Recursively find more connected walls
-                self._find_connected_walls(other_wall, all_walls, group, processed)
-
-    def _merge_wall_segments(self, wall_group: List[CADElement]) -> Optional[CADElement]:
-        """Merge connected wall segments into a single wall"""
-        if not wall_group:
-            return None
-        
-        if len(wall_group) == 1:
-            return wall_group[0]
-        
-        # For simplicity, just return the longest wall in the group
-        # In a full implementation, you would properly merge the geometries
-        longest_wall = max(wall_group, 
-                          key=lambda w: w.geometry.length if isinstance(w.geometry, LineString) else 0)
-        
-        # Update properties to reflect the merged wall
-        total_length = sum(w.geometry.length for w in wall_group 
-                          if isinstance(w.geometry, LineString))
-        
-        longest_wall.properties.update({
-            'length': total_length,
-            'segment_count': len(wall_group),
-            'merged': True
-        })
-        
-        return longest_wall
-
-    def _generate_room_boundaries(self, walls: List[CADElement]) -> List[CADElement]:
-        """Generate room boundaries from wall structure"""
-        rooms = []
-        
-        if not walls:
-            return rooms
-        
-        # Simple approach: create rooms based on wall enclosures
-        wall_lines = [wall.geometry for wall in walls 
-                     if isinstance(wall.geometry, LineString)]
-        
-        if wall_lines:
             try:
-                # Create a union of all walls
-                wall_union = unary_union(wall_lines)
+                centroid = wall.geometry.centroid
+                wall_points.append((centroid.x, centroid.y, wall))
+            except:
+                continue
+        
+        if not wall_points:
+            return []
+        
+        # Simple clustering based on distance
+        clusters = []
+        used_walls = set()
+        
+        for point in wall_points:
+            if point[2] in used_walls:
+                continue
+            
+            # Start new cluster
+            cluster = [point[2]]
+            used_walls.add(point[2])
+            
+            # Find nearby walls
+            for other_point in wall_points:
+                if other_point[2] in used_walls:
+                    continue
                 
-                # Get the bounds and create a simple room
-                bounds = wall_union.bounds
-                room_polygon = Polygon([
-                    (bounds[0] + 100, bounds[1] + 100),  # Add small margin
-                    (bounds[2] - 100, bounds[1] + 100),
-                    (bounds[2] - 100, bounds[3] - 100),
-                    (bounds[0] + 100, bounds[3] - 100)
+                distance = np.sqrt((point[0] - other_point[0])**2 + (point[1] - other_point[1])**2)
+                if distance <= self.cluster_tolerance:
+                    cluster.append(other_point[2])
+                    used_walls.add(other_point[2])
+            
+            if len(cluster) >= self.min_wall_count:
+                clusters.append(cluster)
+        
+        return clusters
+    
+    def _create_candidate_from_walls(self, walls: List[CADElement], 
+                                   floor_plan_data: FloorPlanData) -> Optional[FloorPlanCandidate]:
+        """Create floor plan candidate from wall cluster"""
+        try:
+            # Calculate spatial bounds
+            all_coords = []
+            for wall in walls:
+                try:
+                    coords = list(wall.geometry.coords)
+                    all_coords.extend(coords)
+                except:
+                    continue
+            
+            if not all_coords:
+                return None
+            
+            x_coords = [coord[0] for coord in all_coords]
+            y_coords = [coord[1] for coord in all_coords]
+            
+            bounds = (min(x_coords), min(y_coords), max(x_coords), max(y_coords))
+            area = (bounds[2] - bounds[0]) * (bounds[3] - bounds[1])
+            
+            if area < self.min_plan_area:
+                return None
+            
+            # Find associated elements within bounds
+            associated_elements = self._find_elements_in_bounds(bounds, floor_plan_data)
+            
+            # Calculate metrics
+            wall_network_quality = self._calculate_wall_network_quality(walls)
+            element_density = len(associated_elements) / area if area > 0 else 0
+            
+            # Calculate confidence score
+            confidence = self._calculate_candidate_confidence(
+                walls, associated_elements, area, wall_network_quality, element_density
+            )
+            
+            return FloorPlanCandidate(
+                elements=associated_elements,
+                confidence_score=confidence,
+                geometric_metrics={
+                    'area': area,
+                    'wall_count': len(walls),
+                    'total_elements': len(associated_elements)
+                },
+                spatial_bounds=bounds,
+                element_density=element_density,
+                wall_network_quality=wall_network_quality
+            )
+            
+        except Exception as e:
+            self.logger.warning(f"Error creating candidate from walls: {str(e)}")
+            return None
+    
+    def _find_elements_in_bounds(self, bounds: Tuple[float, float, float, float], 
+                               floor_plan_data: FloorPlanData) -> List[CADElement]:
+        """Find all elements within spatial bounds"""
+        elements = []
+        
+        # Check all element types
+        all_elements = (
+            floor_plan_data.walls + floor_plan_data.doors + floor_plan_data.windows +
+            floor_plan_data.openings + floor_plan_data.text_annotations
+        )
+        
+        for element in all_elements:
+            try:
+                # Check if element geometry intersects with bounds
+                bounds_polygon = Polygon([
+                    (bounds[0], bounds[1]), (bounds[2], bounds[1]),
+                    (bounds[2], bounds[3]), (bounds[0], bounds[3])
                 ])
                 
-                room_element = CADElement(
-                    element_type=ElementType.ROOM_BOUNDARY,
-                    geometry=room_polygon,
-                    properties={
-                        'area': room_polygon.area,
-                        'perimeter': room_polygon.length,
-                        'room_id': 'main_room',
-                        'generated': True
-                    }
-                )
-                rooms.append(room_element)
-                
-            except Exception as e:
-                self.logger.warning(f"Error generating room boundaries: {str(e)}")
+                if element.geometry.intersects(bounds_polygon):
+                    elements.append(element)
+                    
+            except:
+                continue
         
-        return rooms
-
-    def _detect_special_areas_from_view(self, text_annotations: List[CADElement],
-                                      rooms: List[CADElement], 
-                                      view_bounds: Tuple[float, float, float, float]) -> Tuple[List[CADElement], List[CADElement]]:
-        """Detect restricted areas and entrances from view data"""
-        restricted_areas = []
-        entrances = []
+        return elements
+    
+    def _identify_candidates_by_layer(self, floor_plan_data: FloorPlanData) -> List[FloorPlanCandidate]:
+        """Identify candidates based on layer organization"""
+        candidates = []
         
-        # Analyze text annotations
-        for text_elem in text_annotations:
-            text_content = text_elem.properties.get('text', '').lower()
+        # Group elements by layer
+        layer_elements = {}
+        all_elements = (
+            floor_plan_data.walls + floor_plan_data.doors + floor_plan_data.windows +
+            floor_plan_data.openings + floor_plan_data.text_annotations
+        )
+        
+        for element in all_elements:
+            layer = element.layer or 'DEFAULT'
+            if layer not in layer_elements:
+                layer_elements[layer] = []
+            layer_elements[layer].append(element)
+        
+        # Evaluate each layer as potential floor plan
+        for layer, elements in layer_elements.items():
+            walls_in_layer = [e for e in elements if e.element_type == 'wall']
             
-            if any(keyword in text_content for keyword in ['no entree', 'restricted', 'interdit']):
-                # Create restricted area
-                center = text_elem.geometry
-                restricted_area = center.buffer(1000)  # 1m radius
+            if len(walls_in_layer) >= self.min_wall_count:
+                candidate = self._create_candidate_from_elements(elements)
+                if candidate:
+                    candidates.append(candidate)
+        
+        return candidates
+    
+    def _identify_candidates_by_density(self, floor_plan_data: FloorPlanData) -> List[FloorPlanCandidate]:
+        """Identify candidates based on element density analysis"""
+        candidates = []
+        
+        if not floor_plan_data.walls:
+            return candidates
+        
+        # Create spatial grid for density analysis
+        all_coords = []
+        for wall in floor_plan_data.walls:
+            try:
+                coords = list(wall.geometry.coords)
+                all_coords.extend(coords)
+            except:
+                continue
+        
+        if not all_coords:
+            return candidates
+        
+        x_coords = [coord[0] for coord in all_coords]
+        y_coords = [coord[1] for coord in all_coords]
+        
+        min_x, max_x = min(x_coords), max(x_coords)
+        min_y, max_y = min(y_coords), max(y_coords)
+        
+        # Create grid cells
+        grid_cells = []
+        x_step = self.grid_size
+        y_step = self.grid_size
+        
+        x = min_x
+        while x < max_x:
+            y = min_y
+            while y < max_y:
+                cell_bounds = (x, y, x + x_step, y + y_step)
+                elements_in_cell = self._find_elements_in_bounds(cell_bounds, floor_plan_data)
                 
-                restricted_element = CADElement(
-                    element_type=ElementType.ROOM_BOUNDARY,
-                    geometry=restricted_area,
-                    properties={
-                        'area_type': 'restricted',
-                        'description': text_content,
-                        'detected_from': 'text_annotation'
-                    }
-                )
-                restricted_areas.append(restricted_element)
+                if len(elements_in_cell) > 0:
+                    walls_in_cell = [e for e in elements_in_cell if e.element_type == 'wall']
+                    if len(walls_in_cell) >= self.min_wall_count:
+                        grid_cells.append((cell_bounds, elements_in_cell))
                 
-            elif any(keyword in text_content for keyword in ['entree', 'sortie', 'entrance', 'exit']):
-                # Create entrance area
-                center = text_elem.geometry
-                entrance_area = center.buffer(800)  # 0.8m radius
+                y += y_step
+            x += x_step
+        
+        # Merge adjacent high-density cells
+        merged_regions = self._merge_adjacent_cells(grid_cells)
+        
+        for region_bounds, region_elements in merged_regions:
+            candidate = self._create_candidate_from_elements(region_elements)
+            if candidate:
+                candidates.append(candidate)
+        
+        return candidates
+    
+    def _create_candidate_from_elements(self, elements: List[CADElement]) -> Optional[FloorPlanCandidate]:
+        """Create candidate from list of elements"""
+        walls = [e for e in elements if e.element_type == 'wall']
+        
+        if len(walls) < self.min_wall_count:
+            return None
+        
+        return self._create_candidate_from_walls(walls, 
+                                               type('FloorPlan', (), {
+                                                   'walls': walls,
+                                                   'doors': [e for e in elements if e.element_type == 'door'],
+                                                   'windows': [e for e in elements if e.element_type == 'window'],
+                                                   'openings': [e for e in elements if e.element_type in ['opening', 'door', 'window']],
+                                                   'text_annotations': [e for e in elements if e.element_type == 'text']
+                                               })())
+    
+    def _merge_adjacent_cells(self, grid_cells: List[Tuple]) -> List[Tuple]:
+        """Merge adjacent grid cells with high element density"""
+        # Simplified implementation - could be enhanced with more sophisticated clustering
+        return grid_cells
+    
+    def _calculate_wall_network_quality(self, walls: List[CADElement]) -> float:
+        """Calculate quality of wall network connectivity"""
+        if len(walls) < 2:
+            return 0.0
+        
+        connection_count = 0
+        total_possible = len(walls) * (len(walls) - 1) // 2
+        
+        for i, wall1 in enumerate(walls):
+            for wall2 in walls[i+1:]:
+                if self._walls_are_connected(wall1, wall2):
+                    connection_count += 1
+        
+        return connection_count / max(total_possible, 1)
+    
+    def _walls_are_connected(self, wall1: CADElement, wall2: CADElement) -> bool:
+        """Check if two walls are geometrically connected"""
+        try:
+            # Check if walls share endpoints or intersect
+            distance = wall1.geometry.distance(wall2.geometry)
+            return distance <= 100  # 100mm tolerance
+        except:
+            return False
+    
+    def _calculate_candidate_confidence(self, walls: List[CADElement], elements: List[CADElement],
+                                      area: float, wall_quality: float, density: float) -> float:
+        """Calculate overall confidence score for candidate"""
+        factors = []
+        
+        # Wall count factor
+        wall_count = len(walls)
+        if wall_count >= 10:
+            factors.append(1.0)
+        elif wall_count >= 5:
+            factors.append(0.8)
+        elif wall_count >= 3:
+            factors.append(0.6)
+        else:
+            factors.append(0.3)
+        
+        # Area factor
+        if area >= 100000:  # Large room/building
+            factors.append(0.9)
+        elif area >= 50000:  # Medium room
+            factors.append(0.8)
+        elif area >= self.min_plan_area:  # Minimum area
+            factors.append(0.6)
+        else:
+            factors.append(0.3)
+        
+        # Wall network quality
+        factors.append(wall_quality)
+        
+        # Element density (should be in optimal range)
+        if self.density_optimal_range[0] <= density <= self.density_optimal_range[1]:
+            factors.append(0.8)
+        else:
+            factors.append(0.4)
+        
+        # Element diversity factor
+        element_types = set(e.element_type for e in elements)
+        diversity_score = len(element_types) / 5.0  # Normalize by expected types
+        factors.append(min(diversity_score, 1.0))
+        
+        return sum(factors) / len(factors) if factors else 0.0
+    
+    def _evaluate_floor_plan_candidate(self, candidate: FloorPlanCandidate, 
+                                     floor_plan_data: FloorPlanData) -> Dict[str, float]:
+        """Evaluate candidate with additional metrics"""
+        metrics = {}
+        
+        # Geometric coherence
+        metrics['geometric_coherence'] = self._calculate_geometric_coherence(candidate)
+        
+        # Architectural completeness
+        metrics['architectural_completeness'] = self._calculate_architectural_completeness(candidate)
+        
+        # Scale appropriateness
+        metrics['scale_appropriateness'] = self._calculate_scale_appropriateness(candidate)
+        
+        # Layout regularity
+        metrics['layout_regularity'] = self._calculate_layout_regularity(candidate)
+        
+        return metrics
+    
+    def _calculate_geometric_coherence(self, candidate: FloorPlanCandidate) -> float:
+        """Calculate how well elements form coherent geometric structure"""
+        walls = [e for e in candidate.elements if e.element_type == 'wall']
+        
+        if len(walls) < 3:
+            return 0.0
+        
+        # Check for closed regions
+        try:
+            # Create union of all wall geometries
+            wall_union = unary_union([wall.geometry for wall in walls])
+            
+            # Simple coherence measure based on geometry complexity
+            if hasattr(wall_union, 'bounds'):
+                bounds = wall_union.bounds
+                area = (bounds[2] - bounds[0]) * (bounds[3] - bounds[1])
+                perimeter = wall_union.length
                 
-                entrance_element = CADElement(
-                    element_type=ElementType.ROOM_BOUNDARY,
-                    geometry=entrance_area,
-                    properties={
-                        'area_type': 'entrance',
-                        'description': text_content,
-                        'detected_from': 'text_annotation'
-                    }
-                )
-                entrances.append(entrance_element)
+                # Shape regularity (closer to square/rectangle is better)
+                if area > 0 and perimeter > 0:
+                    compactness = 4 * np.pi * area / (perimeter ** 2)
+                    return min(compactness * 2, 1.0)  # Normalize
+            
+            return 0.5
+            
+        except:
+            return 0.3
+    
+    def _calculate_architectural_completeness(self, candidate: FloorPlanCandidate) -> float:
+        """Calculate architectural completeness (walls, openings, annotations)"""
+        element_types = set(e.element_type for e in candidate.elements)
         
-        # If no special areas found from text, create default ones based on geometry
-        if not restricted_areas and not entrances:
-            restricted_areas, entrances = self._create_default_special_areas(view_bounds)
+        expected_types = {'wall', 'door', 'window', 'text'}
+        present_types = element_types.intersection(expected_types)
         
-        return restricted_areas, entrances
-
-    def _create_default_special_areas(self, bounds: Tuple[float, float, float, float]) -> Tuple[List[CADElement], List[CADElement]]:
-        """Create default restricted areas and entrances for demonstration"""
-        min_x, min_y, max_x, max_y = bounds
-        width = max_x - min_x
-        height = max_y - min_y
+        return len(present_types) / len(expected_types)
+    
+    def _calculate_scale_appropriateness(self, candidate: FloorPlanCandidate) -> float:
+        """Calculate if scale is appropriate for architectural floor plan"""
+        area = candidate.geometric_metrics.get('area', 0)
         
-        restricted_areas = []
-        entrances = []
+        # Typical room/building areas (in mm²)
+        if 10000 <= area <= 10000000:  # 0.01m² to 10,000m²
+            return 1.0
+        elif 5000 <= area <= 50000000:  # Extended range
+            return 0.8
+        else:
+            return 0.3
+    
+    def _calculate_layout_regularity(self, candidate: FloorPlanCandidate) -> float:
+        """Calculate layout regularity (orthogonal walls, regular spacing)"""
+        walls = [e for e in candidate.elements if e.element_type == 'wall']
         
-        # Create 2 restricted areas (blue zones)
-        restricted_1 = Polygon([
-            (min_x + width * 0.1, min_y + height * 0.7),
-            (min_x + width * 0.25, min_y + height * 0.7),
-            (min_x + width * 0.25, min_y + height * 0.85),
-            (min_x + width * 0.1, min_y + height * 0.85)
-        ])
+        if len(walls) < 2:
+            return 0.0
         
-        restricted_2 = Polygon([
-            (min_x + width * 0.1, min_y + height * 0.1),
-            (min_x + width * 0.25, min_y + height * 0.1),
-            (min_x + width * 0.25, min_y + height * 0.25),
-            (min_x + width * 0.1, min_y + height * 0.25)
-        ])
+        # Check wall angle distribution
+        angles = []
+        for wall in walls:
+            try:
+                coords = list(wall.geometry.coords)
+                if len(coords) >= 2:
+                    dx = coords[-1][0] - coords[0][0]
+                    dy = coords[-1][1] - coords[0][1]
+                    angle = np.arctan2(dy, dx) * 180 / np.pi
+                    # Normalize to 0-90 degrees
+                    angle = abs(angle) % 90
+                    angles.append(angle)
+            except:
+                continue
         
-        for i, restricted_geom in enumerate([restricted_1, restricted_2], 1):
-            restricted_element = CADElement(
-                element_type=ElementType.ROOM_BOUNDARY,
-                geometry=restricted_geom,
-                properties={
-                    'area_type': 'restricted',
-                    'description': f'NO ENTREE {i}',
-                    'detected_from': 'geometry_analysis'
-                }
+        if not angles:
+            return 0.5
+        
+        # Check for orthogonal dominance (angles near 0 or 90 degrees)
+        orthogonal_count = sum(1 for angle in angles if angle < 10 or angle > 80)
+        orthogonal_ratio = orthogonal_count / len(angles)
+        
+        return orthogonal_ratio
+    
+    def _select_best_candidate(self, evaluated_candidates: List[Tuple]) -> Optional[FloorPlanCandidate]:
+        """Select the best floor plan candidate based on comprehensive scoring"""
+        if not evaluated_candidates:
+            return None
+        
+        best_candidate = None
+        best_score = -1
+        
+        for candidate, metrics in evaluated_candidates:
+            # Combine all scores
+            total_score = (
+                candidate.confidence_score * 0.4 +
+                metrics.get('geometric_coherence', 0) * 0.2 +
+                metrics.get('architectural_completeness', 0) * 0.2 +
+                metrics.get('scale_appropriateness', 0) * 0.1 +
+                metrics.get('layout_regularity', 0) * 0.1
             )
-            restricted_areas.append(restricted_element)
-        
-        # Create 3 entrance areas (red zones)
-        entrance_positions = [
-            (min_x + width * 0.05, min_y + height * 0.4),  # Left side
-            (max_x - width * 0.05, min_y + height * 0.6),  # Right side
-            (min_x + width * 0.5, max_y - height * 0.05)   # Top side
-        ]
-        
-        for i, (x, y) in enumerate(entrance_positions, 1):
-            entrance_area = Point(x, y).buffer(600)  # 60cm radius
             
-            entrance_element = CADElement(
-                element_type=ElementType.ROOM_BOUNDARY,
-                geometry=entrance_area,
-                properties={
-                    'area_type': 'entrance',
-                    'description': f'ENTRÉE/SORTIE {i}',
-                    'detected_from': 'geometry_analysis'
-                }
-            )
-            entrances.append(entrance_element)
+            if total_score > best_score:
+                best_score = total_score
+                best_candidate = candidate
         
-        return restricted_areas, entrances
-
-    def _create_heuristic_floor_plan(self, floor_plan_data: FloorPlanData) -> FloorPlanData:
-        """Create a floor plan using heuristics when no clear floor plan is detected"""
+        return best_candidate
+    
+    def _extract_optimized_floor_plan(self, candidate: FloorPlanCandidate, 
+                                    original_data: FloorPlanData) -> FloorPlanData:
+        """Extract and optimize the selected floor plan"""
+        # Create new FloorPlanData with selected elements
+        optimized = FloorPlanData()
         
-        # Use the original data but apply some cleaning
-        all_walls = floor_plan_data.walls
+        # Separate elements by type
+        for element in candidate.elements:
+            if element.element_type == 'wall':
+                optimized.walls.append(element)
+            elif element.element_type == 'door':
+                optimized.doors.append(element)
+            elif element.element_type == 'window':
+                optimized.windows.append(element)
+            elif element.element_type in ['opening']:
+                optimized.openings.append(element)
+            elif element.element_type == 'text':
+                optimized.text_annotations.append(element)
         
-        if all_walls:
-            # Filter walls by length - keep only substantial walls
-            substantial_walls = [wall for wall in all_walls 
-                               if isinstance(wall.geometry, LineString) and 
-                               wall.geometry.length > self.wall_length_threshold]
+        # Copy metadata from original
+        optimized.scale_factor = original_data.scale_factor
+        optimized.units = original_data.units
+        optimized.drawing_bounds = candidate.spatial_bounds
+        
+        # Update quality metrics
+        optimized.element_count = len(candidate.elements)
+        optimized.wall_connectivity = candidate.wall_network_quality
+        optimized.processing_confidence = candidate.confidence_score
+        
+        return optimized
+    
+    def _deduplicate_candidates(self, candidates: List[FloorPlanCandidate]) -> List[FloorPlanCandidate]:
+        """Remove duplicate or highly overlapping candidates"""
+        if len(candidates) <= 1:
+            return candidates
+        
+        unique_candidates = []
+        
+        for candidate in candidates:
+            is_duplicate = False
             
-            # If we have substantial walls, use them
-            if substantial_walls:
-                floor_plan_data.walls = substantial_walls
-                
-                # Generate rooms from these walls
-                if not floor_plan_data.rooms:
-                    floor_plan_data.rooms = self._generate_room_boundaries(substantial_walls)
-                
-                # Add default special areas if none exist
-                if not floor_plan_data.restricted_areas and not floor_plan_data.entrances:
-                    bounds = floor_plan_data.bounds
-                    if bounds:
-                        view_bounds = (bounds['min_x'], bounds['min_y'], 
-                                     bounds['max_x'], bounds['max_y'])
-                        restricted, entrances = self._create_default_special_areas(view_bounds)
-                        floor_plan_data.restricted_areas = restricted
-                        floor_plan_data.entrances = entrances
+            for existing in unique_candidates:
+                # Check spatial overlap
+                overlap = self._calculate_spatial_overlap(candidate, existing)
+                if overlap > 0.8:  # 80% overlap threshold
+                    is_duplicate = True
+                    break
+            
+            if not is_duplicate:
+                unique_candidates.append(candidate)
         
-        # Mark as heuristic
-        if not floor_plan_data.metadata:
-            floor_plan_data.metadata = {}
-        floor_plan_data.metadata['heuristic_detection'] = True
-        
-        return floor_plan_data
-
-    def get_detection_summary(self, floor_plan_data: FloorPlanData) -> Dict[str, Any]:
-        """Generate a summary of the floor plan detection process"""
-        metadata = floor_plan_data.metadata or {}
-        
-        return {
-            'detection_method': metadata.get('heuristic_detection', False) and 'heuristic' or 'smart_detection',
-            'view_type': metadata.get('detected_view_type', 'unknown'),
-            'confidence': metadata.get('confidence', 0.0),
-            'complexity_score': metadata.get('complexity_score', 0.0),
-            'optimization_applied': metadata.get('optimization_applied', False),
-            'total_walls': len(floor_plan_data.walls),
-            'total_rooms': len(floor_plan_data.rooms),
-            'restricted_areas': len(floor_plan_data.restricted_areas),
-            'entrances': len(floor_plan_data.entrances),
-            'floor_plan_area': floor_plan_data.bounds.get('width', 0) * floor_plan_data.bounds.get('height', 0) if floor_plan_data.bounds else 0
-        }
+        return unique_candidates
+    
+    def _calculate_spatial_overlap(self, candidate1: FloorPlanCandidate, 
+                                 candidate2: FloorPlanCandidate) -> float:
+        """Calculate spatial overlap between two candidates"""
+        try:
+            bounds1 = candidate1.spatial_bounds
+            bounds2 = candidate2.spatial_bounds
+            
+            # Calculate intersection area
+            x_overlap = max(0, min(bounds1[2], bounds2[2]) - max(bounds1[0], bounds2[0]))
+            y_overlap = max(0, min(bounds1[3], bounds2[3]) - max(bounds1[1], bounds2[1]))
+            intersection_area = x_overlap * y_overlap
+            
+            # Calculate union area
+            area1 = (bounds1[2] - bounds1[0]) * (bounds1[3] - bounds1[1])
+            area2 = (bounds2[2] - bounds2[0]) * (bounds2[3] - bounds2[1])
+            union_area = area1 + area2 - intersection_area
+            
+            return intersection_area / union_area if union_area > 0 else 0.0
+            
+        except:
+            return 0.0

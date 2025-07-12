@@ -50,15 +50,27 @@ from smart_ilot_placer import SmartIlotPlacer
 from advanced_3d_renderer import Advanced3DRenderer
 from webgl_3d_renderer import WebGL3DRenderer
 
-# Import Phase 1 Enhanced Components
-from phase1_integration_layer import phase1_processor
+# Import Enhanced Phase Components
+try:
+    from phase1_integration_layer import Phase1IntegrationLayer
+    phase1_processor = Phase1IntegrationLayer()
+except ImportError:
+    phase1_processor = None
 
-# Import Phase 2 Advanced Components
-from phase2_integration_layer import phase2_processor, Phase2Configuration
+try:
+    from phase2_integration_layer import phase2_processor, Phase2Configuration
+except ImportError:
+    phase2_processor = None
+    Phase2Configuration = None
 
-# Import Phase 3 & 4 Advanced Components  
-from phase3_integration_layer import phase3_processor, Phase3Configuration
-from phase4_integration_layer import phase4_processor, Phase4Configuration
+try:
+    from phase3_integration_layer import phase3_processor, Phase3Configuration
+    from phase4_integration_layer import phase4_processor, Phase4Configuration  
+except ImportError:
+    phase3_processor = None
+    phase4_processor = None
+    Phase3Configuration = None
+    Phase4Configuration = None
 
 # Page configuration
 st.set_page_config(

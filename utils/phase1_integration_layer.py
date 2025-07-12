@@ -99,24 +99,30 @@ class Phase1IntegrationLayer:
             self.logger.error(f"Error parsing CAD file with temp approach: {str(e)}")
             return None
 
-    def _apply_geometric_recognition(self, floor_plan_data: FloorPlanData) -> Dict[str, List[CADElement]]:
+    def _apply_geometric_recognition(self, floor_plan_data: FloorPlanData) -> Dict[str, Any]:
         """Apply geometric element recognition to enhance floor plan data"""
         try:
-            # Combine all elements for recognition
-            all_elements = []
-            all_elements.extend(floor_plan_data.walls)
-            all_elements.extend(floor_plan_data.doors)
-            all_elements.extend(floor_plan_data.windows)
-            all_elements.extend(floor_plan_data.text_annotations)
+            # Apply geometric analysis
+            analysis = self.element_recognizer.analyze_geometric_elements(floor_plan_data)
             
-            # Apply geometric recognition
-            enhanced_elements = self.element_recognizer.recognize_elements(all_elements)
+            enhanced_elements = {
+                'walls': analysis.enhanced_walls,
+                'doors': floor_plan_data.doors,
+                'windows': floor_plan_data.windows,
+                'rooms': floor_plan_data.rooms,
+                'recognition_stats': {
+                    'quality_score': analysis.quality_score,
+                    'wall_thickness_map': analysis.wall_thickness_map,
+                    'connectivity_analysis': len(analysis.connectivity_graph),
+                    'opening_associations': len(analysis.opening_associations)
+                }
+            }
             
             return enhanced_elements
             
         except Exception as e:
             self.logger.error(f"Error in geometric recognition: {str(e)}")
-            return {'walls': [], 'doors': [], 'windows': [], 'rooms': [], 'recognition_stats': {}}
+            return {'walls': floor_plan_data.walls, 'doors': floor_plan_data.doors, 'windows': floor_plan_data.windows, 'rooms': floor_plan_data.rooms, 'recognition_stats': {}}
 
     def _merge_enhanced_elements(self, original_floor_plan: FloorPlanData, 
                                enhanced_elements: Dict[str, List[CADElement]]) -> FloorPlanData:
@@ -128,28 +134,24 @@ class Phase1IntegrationLayer:
             merged_windows = enhanced_elements.get('windows', original_floor_plan.windows)
             merged_rooms = enhanced_elements.get('rooms', original_floor_plan.rooms)
             
-            # Update metadata with recognition statistics
-            metadata = original_floor_plan.metadata or {}
-            metadata.update({
-                'phase1_enhanced': True,
-                'recognition_stats': enhanced_elements.get('recognition_stats', {}),
-                'enhancement_timestamp': time.time()
-            })
-            
             # Create enhanced floor plan
             enhanced_floor_plan = FloorPlanData(
                 walls=merged_walls,
                 doors=merged_doors,
                 windows=merged_windows,
                 rooms=merged_rooms,
-                restricted_areas=original_floor_plan.restricted_areas,
-                entrances=original_floor_plan.entrances,
-                dimensions=original_floor_plan.dimensions,
+                openings=original_floor_plan.openings,
                 text_annotations=original_floor_plan.text_annotations,
+                dimensions=original_floor_plan.dimensions,
+                furniture=original_floor_plan.furniture,
+                structural_elements=original_floor_plan.structural_elements,
                 scale_factor=original_floor_plan.scale_factor,
                 units=original_floor_plan.units,
-                bounds=original_floor_plan.bounds,
-                metadata=metadata
+                drawing_bounds=original_floor_plan.drawing_bounds,
+                layer_info=original_floor_plan.layer_info,
+                wall_connectivity=original_floor_plan.wall_connectivity,
+                element_count=len(merged_walls) + len(merged_doors) + len(merged_windows),
+                processing_confidence=enhanced_elements.get('recognition_stats', {}).get('quality_score', 0.7)
             )
             
             return enhanced_floor_plan
@@ -166,14 +168,8 @@ class Phase1IntegrationLayer:
         # Calculate file statistics
         file_size_mb = len(file_content) / (1024 * 1024)
         
-        # Get floor plan summary
-        parser_summary = self.cad_parser.get_floor_plan_summary(floor_plan_data)
-        
-        # Get detection summary
-        detection_summary = self.floor_plan_detector.get_detection_summary(floor_plan_data)
-        
-        # Extract recognition stats
-        recognition_stats = floor_plan_data.metadata.get('recognition_stats', {})
+        # Extract recognition stats  
+        recognition_stats = {}
         
         # Calculate performance metrics
         total_elements = (len(floor_plan_data.walls) + len(floor_plan_data.doors) + 
@@ -196,7 +192,7 @@ class Phase1IntegrationLayer:
             },
             
             # Floor plan data
-            'floor_plan_bounds': floor_plan_data.bounds,
+            'floor_plan_bounds': floor_plan_data.drawing_bounds or (0, 0, 1000, 1000),
             'scale_factor': floor_plan_data.scale_factor,
             'units': floor_plan_data.units,
             
@@ -206,14 +202,11 @@ class Phase1IntegrationLayer:
                 'doors': len(floor_plan_data.doors),
                 'windows': len(floor_plan_data.windows),
                 'rooms': len(floor_plan_data.rooms),
-                'restricted_areas': len(floor_plan_data.restricted_areas),
-                'entrances': len(floor_plan_data.entrances),
+                'openings': len(floor_plan_data.openings),
                 'text_annotations': len(floor_plan_data.text_annotations)
             },
             
             # Enhanced analysis results
-            'parser_summary': parser_summary,
-            'detection_summary': detection_summary,
             'recognition_stats': recognition_stats,
             
             # Actual floor plan elements for visualization
@@ -221,8 +214,8 @@ class Phase1IntegrationLayer:
             'doors': self._convert_elements_for_visualization(floor_plan_data.doors),
             'windows': self._convert_elements_for_visualization(floor_plan_data.windows),
             'rooms': self._convert_elements_for_visualization(floor_plan_data.rooms),
-            'restricted_areas': self._convert_elements_for_visualization(floor_plan_data.restricted_areas),
-            'entrances': self._convert_elements_for_visualization(floor_plan_data.entrances),
+            'openings': self._convert_elements_for_visualization(floor_plan_data.openings),
+            'text_annotations': self._convert_elements_for_visualization(floor_plan_data.text_annotations),
             
             # Quality metrics
             'quality_metrics': self._calculate_quality_metrics(floor_plan_data),
@@ -231,8 +224,7 @@ class Phase1IntegrationLayer:
             'processing_metadata': {
                 'phase1_complete': True,
                 'enhancement_applied': True,
-                'detection_confidence': detection_summary.get('confidence', 0.0),
-                'complexity_score': detection_summary.get('complexity_score', 0.0),
+                'processing_confidence': floor_plan_data.processing_confidence,
                 'processing_method': 'enhanced_pipeline'
             }
         }
@@ -251,11 +243,11 @@ class Phase1IntegrationLayer:
                 if coords:
                     element_data = {
                         'coordinates': coords,
-                        'element_type': element.element_type.value,
+                        'element_type': element.element_type,
                         'properties': element.properties,
                         'layer': element.layer,
                         'color': element.color,
-                        'line_weight': element.line_weight
+                        'thickness': element.thickness
                     }
                     converted_elements.append(element_data)
                     
@@ -294,8 +286,9 @@ class Phase1IntegrationLayer:
                             len(floor_plan_data.windows) + len(floor_plan_data.rooms))
             
             # Element density (elements per area)
-            if floor_plan_data.bounds:
-                total_area = floor_plan_data.bounds.get('width', 1) * floor_plan_data.bounds.get('height', 1)
+            if floor_plan_data.drawing_bounds:
+                bounds = floor_plan_data.drawing_bounds
+                total_area = (bounds[2] - bounds[0]) * (bounds[3] - bounds[1])
                 element_density = total_elements / max(total_area / 1000000, 1)  # Elements per m²
             else:
                 element_density = 0
@@ -357,8 +350,8 @@ class Phase1IntegrationLayer:
             'doors': [],
             'windows': [],
             'rooms': [],
-            'restricted_areas': [],
-            'entrances': [],
+            'openings': [],
+            'text_annotations': [],
             'floor_plan_bounds': {'min_x': 0, 'min_y': 0, 'max_x': 1000, 'max_y': 1000, 'width': 1000, 'height': 1000},
             'scale_factor': 1.0,
             'units': 'mm',
@@ -383,8 +376,8 @@ class Phase1IntegrationLayer:
             'doors': [],
             'windows': [],
             'rooms': [],
-            'restricted_areas': [],
-            'entrances': [],
+            'openings': [],
+            'text_annotations': [],
             'floor_plan_bounds': {'min_x': 0, 'min_y': 0, 'max_x': 1000, 'max_y': 1000, 'width': 1000, 'height': 1000},
             'scale_factor': 1.0,
             'units': 'mm',
