@@ -727,7 +727,6 @@ class CADAnalyzerApp:
                                 st.session_state.placed_ilots = result['ilots']
                                 st.session_state.corridors = result['corridors']
                                 st.session_state.file_processed = True
-```python
                                 st.session_state.visualization_mode = "pixel_perfect"
 
                                 # Display pixel-perfect visualizations
