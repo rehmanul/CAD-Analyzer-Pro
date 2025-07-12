@@ -19,6 +19,7 @@ class FastDXFProcessor:
         self.wall_layers = ['WALLS', 'WALL', 'MUR', 'MURS', '0', 'DEFPOINTS']
         self.door_layers = ['DOORS', 'DOOR', 'PORTE', 'PORTES']
         self.window_layers = ['WINDOWS', 'WINDOW', 'FENETRE', 'FENETRES']
+        self.scale_factor = 1.0  # Will be set during bounds calculation
         
     def process_dxf_file(self, file_content: bytes, filename: str) -> Dict[str, Any]:
         """Process DXF file with timeout protection"""
@@ -66,8 +67,8 @@ class FastDXFProcessor:
         try:
             doc, auditor = recover.readfile(tmp_file_path)
             
-            # Get bounds from header first (faster)
-            bounds = self._get_bounds_from_header(doc)
+            # Get bounds with proper scaling
+            bounds = self._get_bounds_with_scaling(doc)
             
             # Extract walls with sampling for large files
             walls = self._extract_walls_optimized(doc, max_walls=100)
@@ -98,29 +99,70 @@ class FastDXFProcessor:
             except:
                 pass
     
-    def _get_bounds_from_header(self, doc) -> Dict[str, float]:
-        """Get bounds from DXF header (fastest method)"""
+    def _get_bounds_with_scaling(self, doc) -> Dict[str, float]:
+        """Get bounds with automatic unit scaling"""
         try:
-            header = doc.header
-            if '$EXTMIN' in header and '$EXTMAX' in header:
-                min_pt = header['$EXTMIN']
-                max_pt = header['$EXTMAX']
-                return {
-                    'min_x': min_pt[0],
-                    'max_x': max_pt[0],
-                    'min_y': min_pt[1],
-                    'max_y': max_pt[1]
+            # Calculate from sample entities for accurate scaling
+            all_points = []
+            sample_count = 0
+            
+            for entity in doc.modelspace():
+                if sample_count > 100:  # Sample first 100 entities for speed
+                    break
+                    
+                try:
+                    if entity.dxftype() == 'LINE':
+                        all_points.extend([
+                            (entity.dxf.start.x, entity.dxf.start.y),
+                            (entity.dxf.end.x, entity.dxf.end.y)
+                        ])
+                        sample_count += 1
+                    elif entity.dxftype() == 'LWPOLYLINE':
+                        for point in entity.get_points()[:5]:  # Max 5 points per polyline
+                            all_points.append((point[0], point[1]))
+                        sample_count += 1
+                except:
+                    continue
+            
+            if all_points:
+                x_coords = [p[0] for p in all_points]
+                y_coords = [p[1] for p in all_points]
+                
+                # Auto-scale based on dimensions
+                raw_width = max(x_coords) - min(x_coords)
+                raw_height = max(y_coords) - min(y_coords)
+                
+                scale_factor = 1.0
+                if raw_width > 10000 or raw_height > 10000:  # Millimeters
+                    scale_factor = 0.001
+                    print(f"Auto-scaling: Converting mm to m (scale: {scale_factor})")
+                elif raw_width > 1000 or raw_height > 1000:  # Centimeters
+                    scale_factor = 0.01
+                    print(f"Auto-scaling: Converting cm to m (scale: {scale_factor})")
+                
+                bounds = {
+                    'min_x': min(x_coords) * scale_factor,
+                    'max_x': max(x_coords) * scale_factor,
+                    'min_y': min(y_coords) * scale_factor,
+                    'max_y': max(y_coords) * scale_factor
                 }
-        except:
-            pass
+                
+                # Store scale factor for wall extraction
+                self.scale_factor = scale_factor
+                
+                print(f"Final dimensions: {bounds['max_x'] - bounds['min_x']:.1f}m x {bounds['max_y'] - bounds['min_y']:.1f}m")
+                return bounds
+        except Exception as e:
+            print(f"Error in bounds calculation: {e}")
         
-        return {'min_x': 0, 'max_x': 200, 'min_y': 0, 'max_y': 150}
+        return {'min_x': 0, 'max_x': 50, 'min_y': 0, 'max_y': 30}
     
     def _extract_walls_optimized(self, doc, max_walls: int = 50) -> List[Dict]:
-        """Extract walls with sampling for large files"""
+        """Extract walls with sampling and automatic scaling"""
         walls = []
         entity_count = 0
         sample_rate = 1
+        scale_factor = getattr(self, 'scale_factor', 1.0)
         
         # Use aggressive sampling for large files
         try:
@@ -149,8 +191,8 @@ class FastDXFProcessor:
                         wall = {
                             'type': 'LINE',
                             'points': [
-                                (entity.dxf.start.x, entity.dxf.start.y),
-                                (entity.dxf.end.x, entity.dxf.end.y)
+                                (entity.dxf.start.x * scale_factor, entity.dxf.start.y * scale_factor),
+                                (entity.dxf.end.x * scale_factor, entity.dxf.end.y * scale_factor)
                             ],
                             'layer': entity.dxf.layer
                         }
@@ -158,7 +200,7 @@ class FastDXFProcessor:
                 
                 elif entity.dxftype() == 'LWPOLYLINE':
                     if self._is_wall_layer(entity.dxf.layer):
-                        points = [(point[0], point[1]) for point in entity.get_points()]
+                        points = [(point[0] * scale_factor, point[1] * scale_factor) for point in entity.get_points()]
                         if len(points) >= 2:
                             wall = {
                                 'type': 'POLYLINE',
@@ -171,7 +213,7 @@ class FastDXFProcessor:
                 # Skip problematic entities
                 continue
         
-        print(f"Sampled {len(walls)} walls from {entity_count} entities")
+        print(f"Sampled {len(walls)} walls from {entity_count} entities (scale: {scale_factor})")
         return walls
     
     def _create_restricted_areas(self, bounds: Dict[str, float]) -> List[Dict]:

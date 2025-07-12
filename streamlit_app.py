@@ -618,7 +618,7 @@ class CADAnalyzerApp:
                     with col1:
                         use_phase1_enhanced = st.checkbox(
                             "Phase 1 Enhanced", 
-                            value=True,
+                            value=False,
                             help="Advanced CAD parsing with smart floor plan detection and geometric element recognition"
                         )
                     with col2:
