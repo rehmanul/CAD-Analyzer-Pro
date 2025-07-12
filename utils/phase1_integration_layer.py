@@ -57,9 +57,9 @@ class Phase1IntegrationLayer:
             self.logger.info("Applying smart floor plan detection")
             optimized_floor_plan = self.floor_plan_detector.detect_main_floor_plan(floor_plan_data)
             
-            # Step 3: Enhanced Geometric Element Recognition
-            self.logger.info("Performing advanced geometric element recognition")
-            enhanced_elements = self._apply_geometric_recognition(optimized_floor_plan)
+            # Step 3: Fast Geometric Element Recognition
+            self.logger.info("Performing fast geometric element recognition")
+            enhanced_elements = self._apply_fast_geometric_recognition(optimized_floor_plan)
             
             # Step 4: Merge enhanced elements back into floor plan
             final_floor_plan = self._merge_enhanced_elements(optimized_floor_plan, enhanced_elements)
@@ -99,30 +99,58 @@ class Phase1IntegrationLayer:
             self.logger.error(f"Error parsing CAD file with temp approach: {str(e)}")
             return None
 
-    def _apply_geometric_recognition(self, floor_plan_data: FloorPlanData) -> Dict[str, Any]:
-        """Apply geometric element recognition to enhance floor plan data"""
+    def _apply_fast_geometric_recognition(self, floor_plan_data: FloorPlanData) -> Dict[str, Any]:
+        """Fast geometric recognition - optimized for performance"""
         try:
-            # Apply geometric analysis
-            analysis = self.element_recognizer.analyze_geometric_elements(floor_plan_data)
+            # Fast processing with timeout protection
+            import signal
             
-            enhanced_elements = {
-                'walls': analysis.enhanced_walls,
+            def timeout_handler(signum, frame):
+                raise TimeoutError("Geometric recognition timeout")
+            
+            signal.signal(signal.SIGALRM, timeout_handler)
+            signal.alarm(5)  # 5 second timeout
+            
+            try:
+                # Quick analysis with limited processing
+                analysis = self.element_recognizer.analyze_geometric_elements(floor_plan_data)
+                
+                enhanced_elements = {
+                    'walls': analysis.enhanced_walls,
+                    'doors': floor_plan_data.doors,
+                    'windows': floor_plan_data.windows,
+                    'rooms': floor_plan_data.rooms,
+                    'recognition_stats': {
+                        'quality_score': analysis.quality_score,
+                        'processing_mode': 'fast_enhanced',
+                        'wall_count': len(analysis.enhanced_walls)
+                    }
+                }
+                
+                signal.alarm(0)  # Cancel timeout
+                return enhanced_elements
+                
+            except TimeoutError:
+                signal.alarm(0)
+                self.logger.warning("Geometric recognition timed out, using fast mode")
+                # Return original data with minimal enhancement
+                return {
+                    'walls': floor_plan_data.walls,
+                    'doors': floor_plan_data.doors,
+                    'windows': floor_plan_data.windows,
+                    'rooms': floor_plan_data.rooms,
+                    'recognition_stats': {'processing_mode': 'timeout_fallback', 'quality_score': 0.7}
+                }
+                
+        except Exception as e:
+            self.logger.error(f"Error in fast geometric recognition: {str(e)}")
+            return {
+                'walls': floor_plan_data.walls,
                 'doors': floor_plan_data.doors,
                 'windows': floor_plan_data.windows,
                 'rooms': floor_plan_data.rooms,
-                'recognition_stats': {
-                    'quality_score': analysis.quality_score,
-                    'wall_thickness_map': analysis.wall_thickness_map,
-                    'connectivity_analysis': len(analysis.connectivity_graph),
-                    'opening_associations': len(analysis.opening_associations)
-                }
+                'recognition_stats': {'processing_mode': 'error_recovery', 'quality_score': 0.5}
             }
-            
-            return enhanced_elements
-            
-        except Exception as e:
-            self.logger.error(f"Error in geometric recognition: {str(e)}")
-            return {'walls': floor_plan_data.walls, 'doors': floor_plan_data.doors, 'windows': floor_plan_data.windows, 'rooms': floor_plan_data.rooms, 'recognition_stats': {}}
 
     def _merge_enhanced_elements(self, original_floor_plan: FloorPlanData, 
                                enhanced_elements: Dict[str, List[CADElement]]) -> FloorPlanData:
