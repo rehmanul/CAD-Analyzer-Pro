@@ -155,8 +155,10 @@ class OptimizedCorridorGenerator:
         # Create network graph
         self.network_graph = nx.Graph()
         
-        # Add îlots as nodes
-        for ilot in ilots:
+        # Add îlots as nodes - ensure they have IDs
+        for i, ilot in enumerate(ilots):
+            if 'id' not in ilot:
+                ilot['id'] = f"ilot_{i+1}"
             self.network_graph.add_node(ilot['id'], pos=(ilot['x'], ilot['y']))
             
         # Add main corridors as edges

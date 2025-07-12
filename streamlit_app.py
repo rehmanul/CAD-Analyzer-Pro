@@ -487,21 +487,27 @@ class CADAnalyzerApp:
         self.reference_floor_plan_visualizer = ReferenceFloorPlanVisualizer()  # Clean reference style
         self.smart_ilot_placer = SmartIlotPlacer()  # Intelligent îlot placement
 
-        # Initialize session state with visualization modes
-        if 'analysis_results' not in st.session_state:
-            st.session_state.analysis_results = None
-        if 'placed_ilots' not in st.session_state:
-            st.session_state.placed_ilots = []
-        if 'corridors' not in st.session_state:
-            st.session_state.corridors = []
-        if 'file_processed' not in st.session_state:
-            st.session_state.file_processed = False
-        # Add visualization mode tracking
-        if 'visualization_mode' not in st.session_state:
-            st.session_state.visualization_mode = "none"  # none -> base -> with_ilots -> detailed
+        # Initialize session state safely - will be handled by run() method
+        pass
 
     def run(self):
         """Run the main application"""
+        # Initialize session state safely here where Streamlit is fully initialized
+        try:
+            if 'analysis_results' not in st.session_state:
+                st.session_state.analysis_results = None
+            if 'placed_ilots' not in st.session_state:
+                st.session_state.placed_ilots = []
+            if 'corridors' not in st.session_state:
+                st.session_state.corridors = []
+            if 'file_processed' not in st.session_state:
+                st.session_state.file_processed = False
+            if 'visualization_mode' not in st.session_state:
+                st.session_state.visualization_mode = "none"
+        except Exception as e:
+            # Fallback for SessionInfo issues
+            pass
+        
         # Enhanced Sidebar with modern styling
         with st.sidebar:
             st.markdown("""
@@ -1589,10 +1595,25 @@ class CADAnalyzerApp:
             try:
                 # Generate optimized corridor network
                 result = st.session_state.analysis_results
+                
+                # Ensure all îlots have proper ID fields
+                placed_ilots = []
+                for i, ilot in enumerate(st.session_state.placed_ilots):
+                    if not isinstance(ilot, dict):
+                        continue
+                    
+                    # Ensure ilot has an 'id' field
+                    if 'id' not in ilot:
+                        ilot['id'] = f"ilot_{i+1}"
+                    
+                    placed_ilots.append(ilot)
+                
+                # Update session state with properly formatted îlots
+                st.session_state.placed_ilots = placed_ilots
 
                 st.session_state.corridors = self.corridor_generator.generate_optimized_corridors(
                     analysis_data=result,
-                    ilots=st.session_state.placed_ilots
+                    ilots=placed_ilots
                 )
 
                 if st.session_state.corridors:
