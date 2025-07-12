@@ -7,3 +7,17 @@ PyMuPDF>=1.23.0
 shapely>=2.0.0
 Pillow>=10.0.0
 opencv-python-headless>=4.8.0
+ezdxf
+networkx
+numpy
+opencv-python-headless
+pandas
+Pillow
+plotly
+psycopg2-binary
+PyMuPDF
+python-dotenv
+scipy
+shapely
+sqlalchemy
+streamlit
