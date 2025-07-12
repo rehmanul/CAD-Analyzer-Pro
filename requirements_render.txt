@@ -1,26 +1,9 @@
-# Render-optimized requirements for CAD Analyzer Pro
-# Memory-efficient versions for 512MB limit
-streamlit==1.36.0
-plotly==5.24.1
-pandas==2.2.3
-numpy==2.0.0
-shapely==2.1.0
-# Use Python 3.13 compatible scipy version
-scipy==1.14.1
-scikit-learn==1.5.0
-ezdxf==1.4.0
-PyMuPDF==1.24.14
-opencv-python-headless==4.10.0.84
-pillow==10.4.0
-psycopg2-binary==2.9.10
-sqlalchemy==2.0.35
-python-dotenv==1.0.1
-reportlab==4.2.2
-matplotlib==3.8.4
-networkx==3.3
-psutil==5.9.8
-redis==5.0.8
-websockets==12.0
-requests==2.31.0
-gunicorn==21.2.0
-typing-extensions==4.12.2
+streamlit>=1.25.0
+plotly>=5.15.0
+pandas>=2.0.0
+numpy>=1.24.0
+ezdxf>=1.0.0
+PyMuPDF>=1.23.0
+shapely>=2.0.0
+Pillow>=10.0.0
+opencv-python-headless>=4.8.0
