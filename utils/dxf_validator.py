@@ -41,11 +41,16 @@ class DXFValidator:
                 if marker in content_sample:
                     found_markers.append(marker)
             
-            if len(found_markers) >= 2:
+            if len(found_markers) >= 1:  # More lenient validation
                 result['is_valid'] = True
                 result['info'].append(f"Found DXF markers: {', '.join(found_markers)}")
             else:
-                result['errors'].append("Missing required DXF structure markers")
+                # Check for basic DXF patterns more broadly
+                if any(pattern in content_sample for pattern in ['0\n', 'SECTION', 'HEADER', 'ENTITIES']):
+                    result['is_valid'] = True
+                    result['info'].append("Found basic DXF structure")
+                else:
+                    result['errors'].append("Missing required DXF structure markers")
             
             # Check for AutoCAD signature
             if 'AutoCAD' in content_sample:

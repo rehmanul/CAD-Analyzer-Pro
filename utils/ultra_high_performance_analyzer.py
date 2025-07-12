@@ -335,7 +335,7 @@ class UltraHighPerformanceAnalyzer:
                 doc.close()
                 
                 # Generate layout elements based on extracted geometry
-                restricted_areas, entrances = self._detect_zones_from_walls(walls)
+                restricted_areas, entrances = self._detect_zones_from_walls(walls) if walls else ([], [])
                 
                 return {
                     'walls': walls,
@@ -448,14 +448,18 @@ class UltraHighPerformanceAnalyzer:
         
         # Look for CIRCLE entities that might be doors
         for entity in doc.modelspace().query('CIRCLE'):
-            center = [entity.dxf.center.x, entity.dxf.center.y]
-            radius = entity.dxf.radius
-            
-            doors.append({
-                'center': center,
-                'radius': radius,
-                'type': 'door'
-            })
+            try:
+                center = [float(entity.dxf.center.x), float(entity.dxf.center.y)]
+                radius = float(entity.dxf.radius)
+                
+                doors.append({
+                    'x': center[0],  # Use x,y instead of center to avoid field conflicts
+                    'y': center[1],
+                    'radius': radius,
+                    'type': 'door'
+                })
+            except (AttributeError, ValueError):
+                continue
         
         return doors
     
@@ -465,14 +469,18 @@ class UltraHighPerformanceAnalyzer:
         
         # Look for ARC entities that might be windows
         for entity in doc.modelspace().query('ARC'):
-            center = [entity.dxf.center.x, entity.dxf.center.y]
-            radius = entity.dxf.radius
-            
-            windows.append({
-                'center': center,
-                'radius': radius,
-                'type': 'window'
-            })
+            try:
+                center = [float(entity.dxf.center.x), float(entity.dxf.center.y)]
+                radius = float(entity.dxf.radius)
+                
+                windows.append({
+                    'x': center[0],  # Use x,y instead of center to avoid field conflicts
+                    'y': center[1],
+                    'radius': radius,
+                    'type': 'window'
+                })
+            except (AttributeError, ValueError):
+                continue
         
         return windows
     
