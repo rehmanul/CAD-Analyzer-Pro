@@ -49,6 +49,7 @@ from reference_floor_plan_visualizer import ReferenceFloorPlanVisualizer
 from smart_ilot_placer import SmartIlotPlacer
 from advanced_3d_renderer import Advanced3DRenderer
 from webgl_3d_renderer import WebGL3DRenderer
+
 # Import Enhanced Phase Components
 try:
     from phase1_integration_layer import Phase1IntegrationLayer
@@ -104,7 +105,7 @@ st.markdown("""
         --bg-secondary: #f9fafb;
         --border-color: #e5e7eb;
     }
-
+    
     /* Dark Theme Variables */
     .stApp[data-theme="dark"] {
         --text-primary: #ffffff;
@@ -123,7 +124,7 @@ st.markdown("""
         color: #ffffff !important;
         fill: #ffffff !important;
     }
-
+    
     /* Special exceptions for elements that should remain dark text */
     .stApp[data-theme="dark"] .stAlert,
     .stApp[data-theme="dark"] .stAlert *,
@@ -139,7 +140,7 @@ st.markdown("""
     .stApp[data-theme="dark"] .stInfo * {
         color: #000000 !important;
     }
-
+    
     /* Input fields need special handling */
     .stApp[data-theme="dark"] input[type="text"],
     .stApp[data-theme="dark"] input[type="number"],
@@ -151,7 +152,7 @@ st.markdown("""
         background-color: #374151 !important;
         border-color: #6b7280 !important;
     }
-
+    
     /* Plot elements should remain default */
     .stApp[data-theme="dark"] .js-plotly-plot,
     .stApp[data-theme="dark"] .js-plotly-plot *,
@@ -178,7 +179,7 @@ st.markdown("""
     .hero-section * {
         color: white !important;
     }
-
+    
     /* Professional section headers */
     .section-header {
         background: linear-gradient(135deg, #4f46e5, #7c3aed);
@@ -188,13 +189,13 @@ st.markdown("""
         margin-bottom: 1.5rem;
         box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
     }
-
+    
     .section-header h2 {
         color: white !important;
         margin: 0;
         font-weight: 600;
     }
-
+    
     /* Success message styling */
     .success-message {
         background: linear-gradient(135deg, #10b981, #059669);
@@ -205,7 +206,7 @@ st.markdown("""
         font-weight: 500;
         border-left: 4px solid #34d399;
     }
-
+    
     /* Enhanced button styling */
     .stButton button {
         background: linear-gradient(135deg, #4f46e5, #7c3aed) !important;
@@ -217,12 +218,12 @@ st.markdown("""
         transition: all 0.3s ease !important;
         box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3) !important;
     }
-
+    
     .stButton button:hover {
         transform: translateY(-2px) !important;
         box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4) !important;
     }
-
+    
     /* Metrics styling */
     .metric-container {
         background: rgba(255, 255, 255, 0.1);
@@ -231,7 +232,7 @@ st.markdown("""
         backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.2);
     }
-
+    
     /* 3D visualization controls */
     .viz-controls {
         background: rgba(255, 255, 255, 0.95);
@@ -240,7 +241,7 @@ st.markdown("""
         border: 1px solid #e2e8f0;
         margin-bottom: 1rem;
     }
-
+    
     /* WebGL container styling */
     .webgl-container {
         border: 2px solid #4f46e5;
@@ -423,7 +424,7 @@ st.markdown("""
     [data-testid="metric-container"] > div {
         color: var(--text-primary) !important;
     }
-
+    
     /* Ensure sidebar text visibility */
     .stSidebar .stMarkdown,
     .stSidebar .stText,
@@ -433,7 +434,7 @@ st.markdown("""
     .stSidebar label {
         color: var(--text-primary) !important;
     }
-
+    
     /* Input field labels */
     .stNumberInput label,
     .stSlider label,
@@ -456,8 +457,6 @@ st.markdown("""
 
 class CADAnalyzerApp:
     def __init__(self):
-        # Initialize session state first thing
-        self.initialize_session_state()
         self.floor_analyzer = UltraHighPerformanceAnalyzer()
         self.dxf_processor = OptimizedDXFProcessor()
         self.proper_dxf_processor = ProperDXFProcessor()  # For proper architectural extraction
@@ -484,13 +483,8 @@ class CADAnalyzerApp:
         self.data_validator = DataValidator()
         self.reference_floor_plan_visualizer = ReferenceFloorPlanVisualizer()  # Clean reference style
         self.smart_ilot_placer = SmartIlotPlacer()  # Intelligent îlot placement
-        self.advanced_3d_renderer = Advanced3DRenderer()
-        self.webgl_3d_renderer = WebGL3DRenderer()
 
-
-    def initialize_session_state(self):
-        """Initialize all session state variables to prevent SessionInfo errors"""
-        # Core application state
+        # Initialize session state with visualization modes
         if 'analysis_results' not in st.session_state:
             st.session_state.analysis_results = None
         if 'placed_ilots' not in st.session_state:
@@ -499,31 +493,9 @@ class CADAnalyzerApp:
             st.session_state.corridors = []
         if 'file_processed' not in st.session_state:
             st.session_state.file_processed = False
-
-        # Visualization mode tracking
+        # Add visualization mode tracking
         if 'visualization_mode' not in st.session_state:
             st.session_state.visualization_mode = "none"  # none -> base -> with_ilots -> detailed
-
-        # Configuration state
-        if 'ilot_config' not in st.session_state:
-            st.session_state.ilot_config = {
-                'size_0_1_percent': 10,
-                'size_1_3_percent': 25, 
-                'size_3_5_percent': 30,
-                'size_5_10_percent': 35,
-                'min_spacing': 1.0,
-                'wall_clearance': 0.5,
-                'corridor_width': 1.5,
-                'utilization_target': 0.7
-            }
-
-        # Processing state
-        if 'current_file' not in st.session_state:
-            st.session_state.current_file = None
-        if 'processing_complete' not in st.session_state:
-            st.session_state.processing_complete = False
-        if 'last_error' not in st.session_state:
-            st.session_state.last_error = None
 
     def run(self):
         """Run the main application"""
@@ -574,8 +546,8 @@ class CADAnalyzerApp:
                     st.session_state.placed_ilots
                 )
 
-            # Update settings in session state
-            st.session_state.ilot_config.update({
+            # Store settings in session state
+            st.session_state.ilot_config = {
                 'size_0_1_percent': size_0_1_pct,
                 'size_1_3_percent': size_1_3_pct, 
                 'size_3_5_percent': size_3_5_pct,
@@ -584,7 +556,7 @@ class CADAnalyzerApp:
                 'wall_clearance': wall_clearance,
                 'corridor_width': corridor_width,
                 'utilization_target': utilization_target / 100
-            })
+            }
 
         # Modern Hero Section
         st.markdown("""
@@ -645,44 +617,37 @@ class CADAnalyzerApp:
                     # Reset uploaded file pointer
                     uploaded_file.seek(0)
                     file_content = uploaded_file.read()
-
+                    
                     # Validate file content
                     if not file_content:
                         st.error("File appears to be empty or corrupted")
                         return
-
+                    
                     # Additional DXF file validation
-                    if file_ext == 'dxf':
-                        try:
-                            if dxf_validator:
-                                validation_result = dxf_validator.validate_dxf_file(file_content, uploaded_file.name)
-
-                                if not validation_result['is_valid']:
-                                    st.error("❌ Invalid DXF file detected!")
-
-                                    with st.expander("🔍 Detailed Validation Report"):
-                                        report = dxf_validator.format_validation_report(validation_result)
-                                        st.text(report)
-
-                                    st.info("💡 Try these solutions:")
-                                    st.info("• Re-export the DXF from your CAD software")
-                                    st.info("• Ensure the file was not corrupted during transfer")
-                                    st.info("• Check that the file is actually a DXF file (not renamed)")
-                                    return
-                                else:
-                                    st.success("✅ DXF file validation passed")
-                                    with st.expander("📊 File Information"):
-                                        report = dxf_validator.format_validation_report(validation_result)
-                                        st.text(report)
-                            else:
-                                st.info("📋 Processing DXF file without validation (validator not available)")
-                        except Exception as validation_error:
-                            st.warning(f"⚠️ DXF validation failed: {str(validation_error)}")
-                            st.info("📋 Continuing with standard DXF processing...")
+                    if file_ext == 'dxf' and dxf_validator:
+                        validation_result = dxf_validator.validate_dxf_file(file_content, uploaded_file.name)
+                        
+                        if not validation_result['is_valid']:
+                            st.error("❌ Invalid DXF file detected!")
+                            
+                            with st.expander("🔍 Detailed Validation Report"):
+                                report = dxf_validator.format_validation_report(validation_result)
+                                st.text(report)
+                            
+                            st.info("💡 Try these solutions:")
+                            st.info("• Re-export the DXF from your CAD software")
+                            st.info("• Ensure the file was not corrupted during transfer")
+                            st.info("• Check that the file is actually a DXF file (not renamed)")
+                            return
+                        else:
+                            st.success("✅ DXF file validation passed")
+                            with st.expander("📊 File Information"):
+                                report = dxf_validator.format_validation_report(validation_result)
+                                st.text(report)
 
                     # Enhanced Processing Options
                     st.markdown("### 🚀 Enhanced Processing Mode")
-
+                    
                     col1, col2, col3, col4 = st.columns(4)
                     with col1:
                         use_phase1_enhanced = st.checkbox(
@@ -708,16 +673,16 @@ class CADAnalyzerApp:
                             value=False,
                             help="Comprehensive export with multiple formats and system integration"
                         )
-
+                    
                     if use_phase1_enhanced:
                         st.info("🔬 Using Phase 1 Enhanced Processing: Advanced CAD Parser + Smart Floor Plan Detector + Geometric Element Recognizer")
-
+                        
                         # Use Phase 1 enhanced processing
                         result = phase1_processor.process_cad_file_enhanced(file_content, uploaded_file.name)
-
+                        
                         if result and result.get('processing_metadata', {}).get('phase1_complete'):
                             st.success("✅ Phase 1 Enhanced Processing Complete!")
-
+                            
                             # Display enhanced processing metrics
                             col1, col2, col3 = st.columns(3)
                             with col1:
@@ -728,17 +693,17 @@ class CADAnalyzerApp:
                                          result.get('element_counts', {}).get('windows', 0))
                             with col3:
                                 st.metric("Quality Score", f"{result.get('quality_metrics', {}).get('overall_quality_score', 0):.1f}%")
-
+                            
                             # Display enhancement details
                             enhancement_level = result.get('performance_metrics', {}).get('enhancement_level', 'Unknown')
                             detection_confidence = result.get('processing_metadata', {}).get('detection_confidence', 0)
                             st.info(f"Enhancement: {enhancement_level} | Detection Confidence: {detection_confidence:.1f}")
-
+                            
                             # Phase 2 Advanced Processing (if enabled)
                             if use_phase2_advanced:
                                 st.markdown("---")
                                 st.info("🚀 Starting Phase 2 Advanced Processing: Advanced Îlot Placement + Intelligent Corridor Generation")
-
+                                
                                 # Configure Phase 2 with sidebar settings
                                 phase2_config = Phase2Configuration(
                                     ilot_size_distribution=st.session_state.get('ilot_size_distribution', {
@@ -760,13 +725,13 @@ class CADAnalyzerApp:
                                     max_optimization_iterations=3,
                                     quality_threshold=0.8
                                 )
-
+                                
                                 # Run Phase 2 processing
                                 phase2_result = phase2_processor.process_ilot_placement_and_corridors(result, phase2_config)
-
+                                
                                 if phase2_result.get('success') and phase2_result.get('phase2_complete'):
                                     st.success("✅ Phase 2 Advanced Processing Complete!")
-
+                                    
                                     # Display Phase 2 metrics
                                     col1, col2, col3, col4 = st.columns(4)
                                     with col1:
@@ -777,22 +742,22 @@ class CADAnalyzerApp:
                                         st.metric("Space Utilization", f"{phase2_result.get('combined_metrics', {}).get('overall_utilization', 0)*100:.1f}%")
                                     with col4:
                                         st.metric("Quality Score", f"{phase2_result.get('overall_quality_score', 0)*100:.1f}%")
-
+                                    
                                     # Display processing details
                                     processing_info = phase2_result.get('processing_info', {})
                                     config_summary = phase2_result.get('configuration_summary', {})
                                     st.info(f"Strategy: {config_summary.get('ilot_placement_strategy', 'Unknown')} | "
                                            f"Algorithm: {config_summary.get('corridor_pathfinding_algorithm', 'Unknown')} | "
                                            f"Processing Time: {processing_info.get('total_processing_time', 0):.2f}s")
-
+                                    
                                     # Update result with Phase 2 data
                                     result.update(phase2_result)
-
+                                    
                                     # Phase 3 Pixel-Perfect Visualization (if enabled)
                                     if use_phase3_visualization:
                                         st.markdown("---")
                                         st.info("🎨 Starting Phase 3 Pixel-Perfect Visualization: Multi-Stage Rendering + Reference Matching")
-
+                                        
                                         phase3_config = Phase3Configuration(
                                             visualization_stage="corridors_added",
                                             visualization_style="reference_match",
@@ -801,12 +766,12 @@ class CADAnalyzerApp:
                                             enable_multi_stage=True,
                                             export_ready=True
                                         )
-
+                                        
                                         phase3_result = phase3_processor.create_advanced_visualizations(result, phase3_config)
-
+                                        
                                         if phase3_result.get('success') and phase3_result.get('phase3_complete'):
                                             st.success("✅ Phase 3 Pixel-Perfect Visualization Complete!")
-
+                                            
                                             # Display Phase 3 metrics
                                             col1, col2, col3 = st.columns(3)
                                             with col1:
@@ -815,16 +780,16 @@ class CADAnalyzerApp:
                                                 st.metric("Canvas Resolution", phase3_result.get('metadata', {}).get('canvas_resolution', '1800x1800'))
                                             with col3:
                                                 st.metric("Style Applied", phase3_result.get('configuration_used', {}).get('style', 'reference_match'))
-
+                                            
                                             # Update result with Phase 3 data
                                             result['phase3_visualizations'] = phase3_result.get('visualizations', {})
                                             result['phase3_metadata'] = phase3_result.get('metadata', {})
-
+                                            
                                             # Phase 4 Export & Integration (if enabled)
                                             if use_phase4_export:
                                                 st.markdown("---")
                                                 st.info("📦 Starting Phase 4 Export & Integration: Multi-Format Export + System Integration")
-
+                                                
                                                 phase4_config = Phase4Configuration(
                                                     export_formats=['json', 'csv', 'html', 'png', 'zip_package'],
                                                     summary_level="comprehensive",
@@ -833,20 +798,20 @@ class CADAnalyzerApp:
                                                     file_prefix="cad_analysis",
                                                     create_zip_package=True
                                                 )
-
+                                                
                                                 phase4_result = phase4_processor.process_export_and_integration(
                                                     result, 
                                                     phase3_result.get('visualizations', {}), 
                                                     phase4_config
                                                 )
-
+                                                
                                                 if phase4_result.get('success') and phase4_result.get('phase4_complete'):
                                                     st.success("✅ Phase 4 Export & Integration Complete!")
-
+                                                    
                                                     # Display Phase 4 metrics
                                                     export_package = phase4_result.get('export_package', {})
                                                     processing_info = export_package.get('processing_info', {})
-
+                                                    
                                                     col1, col2, col3 = st.columns(3)
                                                     with col1:
                                                         st.metric("Formats Generated", processing_info.get('formats_generated', 0))
@@ -854,14 +819,14 @@ class CADAnalyzerApp:
                                                         st.metric("Export Time", f"{processing_info.get('export_time', 0):.2f}s")
                                                     with col3:
                                                         st.metric("Download Ready", "Yes" if phase4_result.get('download_ready') else "No")
-
+                                                    
                                                     # Create download buttons
                                                     downloads = phase4_processor.create_streamlit_downloads(export_package)
-
+                                                    
                                                     if downloads:
                                                         st.markdown("### 📥 Download Export Files")
                                                         download_cols = st.columns(len(downloads))
-
+                                                        
                                                         for i, (format_name, download_data) in enumerate(downloads.items()):
                                                             with download_cols[i % len(download_cols)]:
                                                                 if download_data['encoding'] == 'base64':
@@ -871,7 +836,7 @@ class CADAnalyzerApp:
                                                                 else:
                                                                     # For text files
                                                                     file_data = download_data['data']
-
+                                                                
                                                                 st.download_button(
                                                                     label=f"📄 {format_name.upper()}",
                                                                     data=file_data,
@@ -879,7 +844,7 @@ class CADAnalyzerApp:
                                                                     mime=download_data['mime'],
                                                                     help=f"Download {format_name} format ({download_data['size_mb']:.1f}MB)"
                                                                 )
-
+                                                    
                                                     # Update result with Phase 4 data
                                                     result['phase4_export_package'] = export_package
                                                     result['phase4_downloads'] = downloads
@@ -902,7 +867,7 @@ class CADAnalyzerApp:
                                     ("Real Processor", self.real_dxf_processor),
                                     ("Optimized Processor", self.dxf_processor)
                                 ]
-
+                                
                                 result = None
                                 for processor_name, processor in processors:
                                     try:
@@ -910,11 +875,11 @@ class CADAnalyzerApp:
                                             result = processor.process_dxf_file(file_content, uploaded_file.name)
                                         else:
                                             result = processor.process_file_ultra_fast(file_content, uploaded_file.name)
-
+                                        
                                         if result and result.get('success'):
                                             st.success(f"Successfully processed with {processor_name}")
                                             break
-
+                                            
                                     except Exception as e:
                                         st.warning(f"{processor_name} failed: {str(e)}")
                                         continue
@@ -924,11 +889,11 @@ class CADAnalyzerApp:
                     else:
                         # Standard processing with fallback processors
                         st.info("Using standard processing with multiple fallback processors...")
-
+                        
                         # Process based on file type with improved error handling
                         if uploaded_file.name.lower().endswith('.dxf'):
                             st.info("Processing DXF file - extracting floor plan...")
-
+                            
                             # Try multiple processors for better success rate
                             processors = [
                                 ("Real DXF Processor", self.real_dxf_processor),
@@ -936,28 +901,28 @@ class CADAnalyzerApp:
                                 ("Fast DXF Processor", self.fast_dxf_processor),
                                 ("Optimized DXF Processor", self.dxf_processor)
                             ]
-
+                            
                             result = None
                             last_error = None
-
+                            
                             for processor_name, processor in processors:
                                 try:
                                     st.info(f"Trying {processor_name}...")
-
+                                    
                                     if hasattr(processor, 'process_dxf_file'):
                                         result = processor.process_dxf_file(file_content, uploaded_file.name)
                                     else:
                                         result = processor.process_file_ultra_fast(file_content, uploaded_file.name)
-
+                                    
                                     if result and result.get('success'):
                                         st.success(f"✅ Successfully processed with {processor_name}")
                                         break
-
+                                        
                                 except Exception as e:
                                     last_error = str(e)
                                     st.warning(f"❌ {processor_name} failed: {str(e)}")
                                     continue
-
+                            
                             if not result or not result.get('success'):
                                 st.error("❌ All DXF processors failed.")
                                 if last_error:
@@ -1053,13 +1018,13 @@ class CADAnalyzerApp:
     def create_architectural_floor_plan_visualization(self, result):
         """Create advanced floor plan visualization with 3D rendering capabilities"""
         mode = st.session_state.get('visualization_mode', 'base')
-
+        
         # Get current tab context for unique keys
         import inspect
         frame = inspect.currentframe()
         caller_name = frame.f_back.f_code.co_name
         unique_prefix = f"{caller_name}_{mode}"
-
+        
         # Add 3D visualization option
         col1, col2 = st.columns([3, 1])
         with col2:
@@ -1080,7 +1045,7 @@ class CADAnalyzerApp:
                 # Use advanced 3D renderer
                 ilots = st.session_state.get('placed_ilots', [])
                 corridors = st.session_state.get('corridors', [])
-
+                
                 # Create 3D visualization
                 advanced_3d = Advanced3DRenderer()
                 fig = advanced_3d.create_advanced_3d_visualization(
@@ -1088,7 +1053,7 @@ class CADAnalyzerApp:
                     show_wireframe=show_wireframe,
                     enable_shadows=enable_shadows
                 )
-
+                
                 # Add 3D-specific styling
                 fig.update_layout(
                     title={
@@ -1099,7 +1064,7 @@ class CADAnalyzerApp:
                     },
                     height=1800
                 )
-
+                
                 return fig
             else:
                 # Use standard 2D visualization
@@ -1184,7 +1149,7 @@ class CADAnalyzerApp:
             # Check for DXF header
             content_str = file_content.decode('utf-8', errors='ignore')[:1000]
             dxf_indicators = ['0\nSECTION', 'HEADER', 'ENTITIES', 'AutoCAD']
-
+            
             return any(indicator in content_str for indicator in dxf_indicators)
         except:
             return False
@@ -1439,8 +1404,7 @@ class CADAnalyzerApp:
 
         # Show current corridor settings
         st.markdown("### 📋 Current Corridor Configuration")
-        col1, col2, col3 = st```python
-.columns(3)
+        col1, col2, col3 = st.columns(3)
         with col1:
             st.metric("Corridor Width", f"{config['corridor_width']:.1f} m")
         with col2:
@@ -1532,18 +1496,18 @@ class CADAnalyzerApp:
 
         # Advanced Visualization Options
         st.markdown("### 🎨 Advanced Visualization Options")
-
+        
         # Visualization mode selection
         viz_mode = st.selectbox(
             "Select Visualization Mode",
             ["2D Professional", "3D Interactive (Plotly)", "3D WebGL Real-Time", "All Views"],
             index=0
         )
-
+        
         if viz_mode == "2D Professional":
             fig = self.create_complete_visualization(use_professional=True, show_3d=False)
             st.plotly_chart(fig, use_container_width=True, height=1800)
-
+            
         elif viz_mode == "3D Interactive (Plotly)":
             advanced_3d = Advanced3DRenderer()
             fig = advanced_3d.create_advanced_3d_visualization(
@@ -1554,11 +1518,11 @@ class CADAnalyzerApp:
                 enable_shadows=st.checkbox("Enable Shadows", value=True, key="results_export_shadows")
             )
             st.plotly_chart(fig, use_container_width=True, height=1800)
-
+            
         elif viz_mode == "3D WebGL Real-Time":
             st.markdown("#### 🎛️ Real-Time 3D WebGL Visualization")
             st.info("Interactive 3D visualization with real-time manipulation capabilities")
-
+            
             webgl_renderer = WebGL3DRenderer()
             webgl_renderer.render_3d_scene(
                 st.session_state.analysis_results,
@@ -1566,12 +1530,12 @@ class CADAnalyzerApp:
                 st.session_state.corridors,
                 container_id="webgl-3d-scene"
             )
-
+            
         elif viz_mode == "All Views":
             st.markdown("#### 📋 2D Professional View")
             fig_2d = self.create_complete_visualization(use_professional=True, show_3d=False)
             st.plotly_chart(fig_2d, use_container_width=True, height=1200)
-
+            
             st.markdown("#### 🎛️ 3D Interactive View")
             advanced_3d = Advanced3DRenderer()
             fig_3d = advanced_3d.create_advanced_3d_visualization(
@@ -1582,7 +1546,7 @@ class CADAnalyzerApp:
                 enable_shadows=True
             )
             st.plotly_chart(fig_3d, use_container_width=True, height=1200)
-
+            
             st.markdown("#### 🎮 WebGL Real-Time View")
             webgl_renderer = WebGL3DRenderer()
             webgl_renderer.render_3d_scene(
@@ -1716,8 +1680,7 @@ SIZE DISTRIBUTION:
             mime="text/plain"
         )
 
-# Streamlit configuration to suppress usage stats
-st.set_option('gather.usage_stats', False)
+
 
 # Initialize and run the app
 if __name__ == "__main__":
