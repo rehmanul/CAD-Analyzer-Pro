@@ -77,6 +77,15 @@ class AdvancedStreamlitApp:
             box-shadow: 0 4px 20px rgba(0,0,0,0.1);
             border-left: 4px solid #667eea;
             margin: 0.5rem 0;
+            text-align: left;
+        }
+        
+        .stMetric {
+            text-align: left !important;
+        }
+        
+        .stMetric > div {
+            text-align: left !important;
         }
         
         .success-banner {
@@ -246,15 +255,13 @@ class AdvancedStreamlitApp:
                 </div>
                 """, unsafe_allow_html=True)
                 
-                # Display processing metrics
-                col1, col2, col3, col4 = st.columns(4)
+                # Display processing metrics with better spacing
+                col1, col2 = st.columns(2)
                 with col1:
                     st.metric("Entities Processed", result.get('entity_count', 0))
-                with col2:
                     st.metric("Walls Detected", len(result.get('walls', [])))
-                with col3:
+                with col2:
                     st.metric("Restricted Areas", len(result.get('restricted_areas', [])))
-                with col4:
                     st.metric("Quality Score", f"{result.get('quality_score', 0)*100:.1f}%")
             else:
                 st.error(f"❌ Processing failed: {result.get('error', 'Unknown error')}")
@@ -284,11 +291,11 @@ class AdvancedStreamlitApp:
             
             col1, col2, col3 = st.columns(3)
             with col1:
-                st.markdown(f'<div class="metric-card"><h3>Width</h3><h2>{width:.1f} m</h2></div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="metric-card"><h4>Width</h4><h3>{width:.1f} m</h3></div>', unsafe_allow_html=True)
             with col2:
-                st.markdown(f'<div class="metric-card"><h3>Height</h3><h2>{height:.1f} m</h2></div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="metric-card"><h4>Height</h4><h3>{height:.1f} m</h3></div>', unsafe_allow_html=True)
             with col3:
-                st.markdown(f'<div class="metric-card"><h3>Total Area</h3><h2>{area:.1f} m²</h2></div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="metric-card"><h4>Total Area</h4><h3>{area:.1f} m²</h3></div>', unsafe_allow_html=True)
     
     def render_ilot_tab(self):
         """Render îlot placement tab"""
@@ -336,12 +343,11 @@ class AdvancedStreamlitApp:
                     total_area = sum(ilot['area'] for ilot in ilots)
                     avg_area = total_area / len(ilots)
                     
-                    col1, col2, col3 = st.columns(3)
+                    col1, col2 = st.columns(2)
                     with col1:
                         st.metric("Total Îlots", len(ilots))
-                    with col2:
                         st.metric("Total Area", f"{total_area:.1f} m²")
-                    with col3:
+                    with col2:
                         st.metric("Average Size", f"{avg_area:.1f} m²")
                 else:
                     st.error("❌ Failed to place îlots")
@@ -416,12 +422,11 @@ class AdvancedStreamlitApp:
                     main_corridors = len([c for c in corridors if c['type'] == 'main'])
                     secondary_corridors = len([c for c in corridors if c['type'] == 'secondary'])
                     
-                    col1, col2, col3 = st.columns(3)
+                    col1, col2 = st.columns(2)
                     with col1:
                         st.metric("Total Corridors", len(corridors))
-                    with col2:
                         st.metric("Total Length", f"{total_length:.1f} m")
-                    with col3:
+                    with col2:
                         st.metric("Main/Secondary", f"{main_corridors}/{secondary_corridors}")
                 else:
                     st.error("❌ Failed to generate corridors")
