@@ -167,9 +167,10 @@ class ReferencePerfectVisualizer:
             # Add red curved entrance indicator
             if entrance['type'] == 'arc':
                 # Create arc for curved entrance
+                center_x, center_y = entrance['center']
                 theta = np.linspace(entrance['start_angle'], entrance['end_angle'], 20)
-                x_arc = entrance['center'][0] + entrance['radius'] * np.cos(theta)
-                y_arc = entrance['center'][1] + entrance['radius'] * np.sin(theta)
+                x_arc = center_x + entrance['radius'] * np.cos(theta)
+                y_arc = center_y + entrance['radius'] * np.sin(theta)
                 
                 fig.add_trace(go.Scatter(
                     x=x_arc,
@@ -395,35 +396,39 @@ class ReferencePerfectVisualizer:
     
     def _identify_entrance_zones(self, analysis_data: Dict) -> List[Dict]:
         """Identify entrance zones based on opening analysis"""
-        bounds = analysis_data.get('bounds', {})
-        min_x = bounds.get('min_x', 0)
-        max_x = bounds.get('max_x', 100)
-        min_y = bounds.get('min_y', 0)
-        max_y = bounds.get('max_y', 80)
-        
-        # Create entrance arcs at strategic locations
-        entrances = [
-            {
-                'type': 'arc',
-                'center': [min_x + (max_x - min_x) * 0.2, min_y + (max_y - min_y) * 0.3],
-                'radius': (max_x - min_x) * 0.03,
-                'start_angle': 0,
-                'end_angle': math.pi/2
-            },
-            {
-                'type': 'arc',
-                'center': [min_x + (max_x - min_x) * 0.6, min_y + (max_y - min_y) * 0.25],
-                'radius': (max_x - min_x) * 0.03,
-                'start_angle': math.pi/2,
-                'end_angle': math.pi
-            },
-            {
-                'type': 'arc',
-                'center': [min_x + (max_x - min_x) * 0.8, min_y + (max_y - min_y) * 0.6],
-                'radius': (max_x - min_x) * 0.03,
-                'start_angle': math.pi,
-                'end_angle': 3*math.pi/2
-            }
-        ]
-        
-        return entrances
+        try:
+            bounds = analysis_data.get('bounds', {})
+            min_x = bounds.get('min_x', 0)
+            max_x = bounds.get('max_x', 100)
+            min_y = bounds.get('min_y', 0)
+            max_y = bounds.get('max_y', 80)
+            
+            # Create entrance arcs at strategic locations
+            entrances = [
+                {
+                    'type': 'arc',
+                    'center': [min_x + (max_x - min_x) * 0.2, min_y + (max_y - min_y) * 0.3],
+                    'radius': (max_x - min_x) * 0.03,
+                    'start_angle': 0,
+                    'end_angle': 3.14159/2
+                },
+                {
+                    'type': 'arc', 
+                    'center': [min_x + (max_x - min_x) * 0.6, min_y + (max_y - min_y) * 0.25],
+                    'radius': (max_x - min_x) * 0.03,
+                    'start_angle': 3.14159/2,
+                    'end_angle': 3.14159
+                },
+                {
+                    'type': 'arc',
+                    'center': [min_x + (max_x - min_x) * 0.8, min_y + (max_y - min_y) * 0.6],
+                    'radius': (max_x - min_x) * 0.03,
+                    'start_angle': 3.14159,
+                    'end_angle': 3*3.14159/2
+                }
+            ]
+            
+            return entrances
+        except Exception as e:
+            print(f"Error identifying entrance zones: {e}")
+            return []
