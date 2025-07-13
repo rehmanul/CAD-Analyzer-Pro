@@ -197,7 +197,8 @@ class UltraHighPerformanceIlotPlacer:
     
     def _mark_area_in_grid(self, grid: np.ndarray, area: Dict, bounds: Dict, value: int):
         """Mark area in spatial grid"""
-        if area['type'] == 'circle':
+        area_type = area.get('type', 'circle')  # Default to circle if no type specified
+        if area_type == 'circle' or 'radius' in area:
             center = area['center']
             radius = area['radius']
             
@@ -215,7 +216,7 @@ class UltraHighPerformanceIlotPlacer:
                         if 0 <= x < grid.shape[1] and 0 <= y < grid.shape[0]:
                             grid[y, x] = value
         
-        elif area['type'] == 'polygon':
+        elif area_type == 'polygon':
             coords = area['coordinates']
             if len(coords) >= 3:
                 # Find bounding box
@@ -239,22 +240,31 @@ class UltraHighPerformanceIlotPlacer:
         """Mark wall buffer zones in grid"""
         buffer_size = 2  # 1m buffer on each side
         
-        if wall['type'] == 'line':
-            coords = wall['coordinates']
-            if len(coords) >= 2:
-                x1, y1 = coords[0]
-                x2, y2 = coords[1]
-                
-                # Convert to grid coordinates
-                grid_x1 = int((x1 - bounds['min_x']) * 2)
-                grid_y1 = int((y1 - bounds['min_y']) * 2)
-                grid_x2 = int((x2 - bounds['min_x']) * 2)
-                grid_y2 = int((y2 - bounds['min_y']) * 2)
-                
-                # Mark line with buffer
-                self._mark_line_in_grid(grid, grid_x1, grid_y1, grid_x2, grid_y2, buffer_size, value)
+        wall_type = wall.get('type', 'line')  # Default to line if no type specified
         
-        elif wall['type'] == 'polyline':
+        if wall_type == 'line' or ('start' in wall and 'end' in wall):
+            # Handle walls with start/end format
+            if 'start' in wall and 'end' in wall:
+                x1, y1 = wall['start']
+                x2, y2 = wall['end']
+            else:
+                coords = wall.get('coordinates', [])
+                if len(coords) >= 2:
+                    x1, y1 = coords[0]
+                    x2, y2 = coords[1]
+                else:
+                    return  # Skip if no valid coordinates
+            
+            # Convert to grid coordinates
+            grid_x1 = int((x1 - bounds['min_x']) * 2)
+            grid_y1 = int((y1 - bounds['min_y']) * 2)
+            grid_x2 = int((x2 - bounds['min_x']) * 2)
+            grid_y2 = int((y2 - bounds['min_y']) * 2)
+            
+            # Mark line with buffer
+            self._mark_line_in_grid(grid, grid_x1, grid_y1, grid_x2, grid_y2, buffer_size, value)
+        
+        elif wall_type == 'polyline':
             coords = wall['coordinates']
             for i in range(len(coords) - 1):
                 x1, y1 = coords[i]
