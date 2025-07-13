@@ -83,11 +83,12 @@ class UltraHighPerformanceIlotPlacer:
         # Subtract restricted areas
         restricted_area = 0
         for area in restricted_areas:
-            if area['type'] == 'circle':
+            area_type = area.get('type', 'circle')  # Default to circle if no type specified
+            if area_type == 'circle' or 'radius' in area:
                 radius = area['radius']
                 restricted_area += math.pi * radius * radius
-            elif area['type'] == 'polygon':
-                coords = area['coordinates']
+            elif area_type == 'polygon':
+                coords = area.get('coordinates', [])
                 if len(coords) >= 3:
                     # Use shoelace formula for polygon area
                     area_calc = 0
@@ -100,8 +101,12 @@ class UltraHighPerformanceIlotPlacer:
         # Subtract entrance areas
         entrance_area = 0
         for entrance in entrances:
-            if entrance['type'] == 'polygon':
-                coords = entrance['coordinates']
+            entrance_type = entrance.get('type', 'circle')  # Default to circle if no type specified
+            if entrance_type == 'circle' or 'radius' in entrance:
+                radius = entrance.get('radius', 1.0)
+                entrance_area += math.pi * radius * radius
+            elif entrance_type == 'polygon':
+                coords = entrance.get('coordinates', [])
                 if len(coords) >= 3:
                     area_calc = 0
                     for i in range(len(coords)):
