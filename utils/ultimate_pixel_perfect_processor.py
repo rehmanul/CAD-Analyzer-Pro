@@ -217,8 +217,9 @@ class UltimatePixelPerfectProcessor:
                     end_angle = entrance.get('end_angle', np.pi)
                     
                     angles = np.linspace(start_angle, end_angle, 50)
-                    x_coords = [center[0] + radius * np.cos(angle) for angle in angles]
-                    y_coords = [center[1] + radius * np.sin(angle) for angle in angles]
+                    center_x, center_y = center
+                    x_coords = [center_x + radius * np.cos(angle) for angle in angles]
+                    y_coords = [center_y + radius * np.sin(angle) for angle in angles]
                     
                     fig.add_trace(go.Scatter(
                         x=x_coords,

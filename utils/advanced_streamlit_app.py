@@ -753,7 +753,8 @@ Pixel-Perfect Processing with Zero Compromises
 
         for entrance in entrances:
             angles = np.linspace(0, np.pi, 15)
-            x_curve = entrance['center'][0] + entrance['radius'] * np.cos(angles)
-            y_curve = entrance['center'][1] + entrance['radius'] * np.sin(angles)
+            center_x, center_y = entrance['center']
+            x_curve = center_x + entrance['radius'] * np.cos(angles)
+            y_curve = center_y + entrance['radius'] * np.sin(angles)
 
             fig.add_trace

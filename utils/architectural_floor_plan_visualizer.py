@@ -194,8 +194,9 @@ class ArchitecturalFloorPlanVisualizer:
         for i, entrance in enumerate(entrances):
             # Create curved entrance line
             angles = np.linspace(0, np.pi, 20)  # Semi-circle
-            x_curve = entrance['center'][0] + entrance['radius'] * np.cos(angles)
-            y_curve = entrance['center'][1] + entrance['radius'] * np.sin(angles)
+            center_x, center_y = entrance['center']
+            x_curve = center_x + entrance['radius'] * np.cos(angles)
+            y_curve = center_y + entrance['radius'] * np.sin(angles)
 
             fig.add_trace(go.Scatter(
                 x=x_curve,
