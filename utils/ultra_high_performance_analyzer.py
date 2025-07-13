@@ -32,7 +32,7 @@ class UltraHighPerformanceAnalyzer:
         except Exception as e:
             return self._create_empty_analysis_result(filename, f"Processing error: {str(e)}")
 
-def _create_empty_analysis_result(self, filename: str, reason: str) -> Dict[str, Any]:
+    def _create_empty_analysis_result(self, filename: str, reason: str) -> Dict[str, Any]:
         """Create empty analysis result when no valid CAD data is found"""
         return {
             'filename': filename,
