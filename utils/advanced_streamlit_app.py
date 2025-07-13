@@ -370,8 +370,8 @@ class AdvancedStreamlitApp:
         </div>
         """, unsafe_allow_html=True)
 
-        # Create and display visualization
-        fig = self.processor.create_visualization_with_ilots(st.session_state.analysis_data, st.session_state.placed_ilots)
+        # Create and display reference-perfect visualization with îlots
+        fig = self.processor.create_reference_perfect_visualization(st.session_state.analysis_data, 'ilots')
         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': True})
 
         # Size distribution analysis
@@ -435,7 +435,7 @@ class AdvancedStreamlitApp:
                     st.error("❌ Failed to generate corridors")
 
         # Display results
-        if st.session_state.corridors:
+        if st.session_state.generated_corridors:
             self.display_corridor_results()
 
     def display_corridor_results(self):
@@ -449,19 +449,15 @@ class AdvancedStreamlitApp:
         </div>
         """, unsafe_allow_html=True)
 
-        # Create and display complete visualization
-        fig = self.processor.create_complete_visualization(
-            st.session_state.analysis_data, 
-            st.session_state.placed_ilots, 
-            st.session_state.corridors
-        )
+        # Create and display reference-perfect complete visualization
+        fig = self.processor.create_reference_perfect_visualization(st.session_state.analysis_data, 'complete')
         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': True})
 
         # Corridor analysis
         corridor_types = {}
         total_length_by_type = {}
 
-        for corridor in st.session_state.corridors:
+        for corridor in st.session_state.generated_corridors:
             corridor_type = corridor['type']
             corridor_types[corridor_type] = corridor_types.get(corridor_type, 0) + 1
             total_length_by_type[corridor_type] = total_length_by_type.get(corridor_type, 0) + corridor['length']
@@ -492,11 +488,7 @@ class AdvancedStreamlitApp:
 
         # Final complete visualization
         st.markdown("### 🎨 Final Pixel-Perfect Visualization")
-        fig = self.processor.create_complete_visualization(
-            st.session_state.analysis_data,
-            st.session_state.placed_ilots,
-            st.session_state.corridors
-        )
+        fig = self.processor.create_reference_perfect_visualization(st.session_state.analysis_data, 'complete')
         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': True})
 
         # Complete project summary

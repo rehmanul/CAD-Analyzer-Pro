@@ -295,6 +295,30 @@ class PixelPerfectCADProcessor:
         
         return converted
     
+    def place_ilots_ultimate(self, analysis_data: Dict[str, Any], config: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Place îlots with ultimate precision matching Image 2"""
+        # Use Phase 2 advanced algorithms for îlot placement
+        phase2_results = self._phase_2_advanced_algorithms(analysis_data)
+        return phase2_results.get('ilots', [])
+    
+    def generate_corridors_ultimate(self, analysis_data: Dict[str, Any], ilots: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Generate corridors with ultimate precision matching Image 3"""
+        # Use Phase 2 advanced algorithms for corridor generation
+        phase2_results = self._phase_2_advanced_algorithms(analysis_data)
+        return phase2_results.get('corridors', [])
+    
+    def create_visualization_with_ilots(self, analysis_data: Dict, ilots: List[Dict]) -> go.Figure:
+        """Create visualization with îlots matching reference Image 2"""
+        return self.reference_visualizer.create_reference_ilots_plan(analysis_data, ilots)
+    
+    def create_complete_visualization(self, analysis_data: Dict, ilots: List[Dict], corridors: List[Dict]) -> go.Figure:
+        """Create complete visualization with corridors matching reference Image 3"""
+        fig = self.reference_visualizer.create_reference_complete_plan(analysis_data, ilots, corridors)
+        # Add measurements using enhanced measurement system
+        self.measurement_system.add_precise_measurements(fig, ilots, analysis_data)
+        self.measurement_system.add_corridor_measurements(fig, corridors)
+        return fig
+    
     def create_reference_perfect_visualization(self, analysis_data: Dict, stage: str = "empty") -> go.Figure:
         """Create reference-perfect visualization for specific stage"""
         if stage == "empty":
