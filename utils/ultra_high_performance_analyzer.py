@@ -825,14 +825,14 @@ class UltraHighPerformanceAnalyzer:
                 # Check restricted areas
                 for restricted in restricted_areas:
                     if self._point_in_geometry(zone_point, restricted):
-                        zone.get('type', 'open') = 'restricted'
+                        zone['type'] = 'restricted'
                         break
                 
                 # Check entrances
                 if zone.get('type', 'open') == 'open':
                     for entrance in entrances:
                         if self._point_in_geometry(zone_point, entrance):
-                            zone.get('type', 'open') = 'entrance'
+                            zone['type'] = 'entrance'
                             break
                 
                 zones.append(zone)
