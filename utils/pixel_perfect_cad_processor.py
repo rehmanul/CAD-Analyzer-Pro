@@ -187,7 +187,7 @@ class PixelPerfectCADProcessor:
         """Process DXF using the real processors that are working"""
         try:
             # Always use ultra high performance analyzer for all file types
-            from ultra_high_performance_analyzer import UltraHighPerformanceAnalyzer
+            from utils.ultra_high_performance_analyzer import UltraHighPerformanceAnalyzer
             analyzer = UltraHighPerformanceAnalyzer()
             
             # Process the file with the analyzer
