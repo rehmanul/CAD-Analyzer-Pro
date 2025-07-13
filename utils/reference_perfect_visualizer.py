@@ -105,9 +105,10 @@ class ReferencePerfectVisualizer:
         """Add walls with exact reference styling - dark gray lines"""
         wall_traces_added = 0
         
-        # If no walls detected, create a sample floor plan
+        # Only process actual walls - no fallback data
         if not walls:
-            walls = self._create_sample_floor_plan()
+            print("No walls detected - visualization will be empty")
+            return
         
         # Process all walls for complete structure
         for i, wall in enumerate(walls):
@@ -137,28 +138,7 @@ class ReferencePerfectVisualizer:
         
         print(f"Added {wall_traces_added} wall traces to visualization")
 
-    def _create_sample_floor_plan(self) -> List[Dict]:
-        """Create sample floor plan matching reference image"""
-        return [
-            # Outer perimeter walls
-            {'coordinates': [[0, 0], [40, 0]]},
-            {'coordinates': [[40, 0], [40, 30]]},
-            {'coordinates': [[40, 30], [0, 30]]},
-            {'coordinates': [[0, 30], [0, 0]]},
-            
-            # Internal room divisions
-            {'coordinates': [[15, 0], [15, 15]]},
-            {'coordinates': [[25, 0], [25, 20]]},
-            {'coordinates': [[0, 15], [15, 15]]},
-            {'coordinates': [[15, 15], [40, 15]]},
-            {'coordinates': [[15, 20], [25, 20]]},
-            {'coordinates': [[30, 15], [30, 30]]},
-            
-            # Additional room walls
-            {'coordinates': [[5, 15], [5, 25]]},
-            {'coordinates': [[5, 25], [15, 25]]},
-            {'coordinates': [[20, 20], [20, 30]]},
-        ]
+    
     
     def _add_reference_restricted_areas(self, fig: go.Figure, analysis_data: Dict):
         """Add blue restricted areas exactly like reference Image 1"""
