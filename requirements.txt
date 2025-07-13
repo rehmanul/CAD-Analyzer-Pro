@@ -21,3 +21,4 @@ scipy
 shapely
 sqlalchemy
 streamlit
+matplotlib

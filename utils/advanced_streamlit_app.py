@@ -5,13 +5,15 @@ from datetime import datetime
 import base64
 import io
 from typing import Dict, List, Any
-from ultimate_pixel_perfect_processor import UltimatePixelPerfectProcessor
+# Reference-perfect processor will be imported in __init__
 
 class AdvancedStreamlitApp:
     """Advanced Streamlit application with pixel-perfect CAD processing"""
 
     def __init__(self):
-        self.processor = UltimatePixelPerfectProcessor()
+        # Initialize the reference-perfect processor  
+        from utils.pixel_perfect_cad_processor import PixelPerfectCADProcessor
+        self.processor = PixelPerfectCADProcessor()
         self.setup_page_config()
         self.apply_advanced_styling()
 
@@ -241,11 +243,11 @@ class AdvancedStreamlitApp:
             uploaded_file.seek(0)
             file_content = uploaded_file.read()
 
-            # Process with ultimate processor
-            result = self.processor.process_cad_file_ultimate(file_content, uploaded_file.name)
+            # Process with reference-perfect processor
+            result = self.processor.process_cad_file(file_content, uploaded_file.name)
 
-            if result.get('success'):
-                st.session_state.analysis_data = result
+            if result and not result.get('analysis_data', {}).get('error'):
+                st.session_state.analysis_data = result.get('analysis_data', result)
                 st.session_state.processing_stage = 'analyzed'
 
                 st.markdown("""
@@ -255,16 +257,18 @@ class AdvancedStreamlitApp:
                 """, unsafe_allow_html=True)
 
                 # Display processing metrics with better spacing
+                analysis_data = result.get('analysis_data', result)
                 col1, col2 = st.columns(2)
                 with col1:
-                    st.metric("Entities Processed", result.get('entity_count', 0))
-                    st.metric("Walls Detected", len(result.get('walls', [])))
+                    st.metric("Processing Phases", len(result.get('processing_phases', [])))
+                    st.metric("Walls Detected", len(analysis_data.get('walls', [])))
                 with col2:
-                    st.metric("Restricted Areas", len(result.get('restricted_areas', [])))
-                    st.metric("Quality Score", f"{result.get('quality_score', 0)*100:.1f}%")
+                    st.metric("Restricted Areas", len(analysis_data.get('restricted_areas', [])))
+                    st.metric("Entrances", len(analysis_data.get('entrances', [])))
             else:
-                st.error(f"❌ Processing failed: {result.get('error', 'Unknown error')}")
-                st.info("💡 Ensure your file contains valid geometric data")
+                error_msg = result.get('analysis_data', {}).get('error', result.get('error', 'Unknown error'))
+                st.error(f"❌ Processing failed: {error_msg}")
+                st.info("💡 Ensure your file contains valid CAD geometric data")
 
     def display_analysis_results(self):
         """Display analysis results with pixel-perfect visualization"""
@@ -277,8 +281,8 @@ class AdvancedStreamlitApp:
         </div>
         """, unsafe_allow_html=True)
 
-        # Create and display visualization
-        fig = self.processor.create_pixel_perfect_visualization(st.session_state.analysis_data, 'empty')
+        # Create and display reference-perfect visualization
+        fig = self.processor.create_reference_perfect_visualization(st.session_state.analysis_data, 'empty')
         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': True})
 
         # Analysis metrics
