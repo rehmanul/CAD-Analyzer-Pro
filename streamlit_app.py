@@ -1,4 +1,3 @@
-
 """
 CAD Analyzer Pro - Main Streamlit Application
 Fixed entry point for Render deployment
@@ -25,22 +24,22 @@ def main():
         # Add utils to path
         if 'utils' not in sys.path:
             sys.path.append('utils')
-        
+
         # Import and run the advanced app
         from utils.advanced_streamlit_app import AdvancedStreamlitApp
-        
+
         # Create and run the application
         app = AdvancedStreamlitApp()
         app.run()
-        
+
     except ImportError as e:
         st.error(f"Import error: {str(e)}")
         st.error("Loading fallback interface...")
-        
+
         # Fallback simple interface
         st.title("🏗️ CAD Analyzer Pro")
         st.write("**Status**: Loading application components...")
-        
+
         # Show debug info
         with st.expander("Debug Information"):
             st.write(f"Python path: {sys.path}")
@@ -48,9 +47,9 @@ def main():
             st.write(f"Available files: {os.listdir('.')}")
             if os.path.exists('utils'):
                 st.write(f"Utils files: {os.listdir('utils')}")
-        
+
         st.info("Please check the logs for more details.")
-        
+
     except Exception as e:
         st.error(f"Application error: {str(e)}")
         st.title("🏗️ CAD Analyzer Pro - Safe Mode")
