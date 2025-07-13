@@ -158,8 +158,10 @@ class ExactReferenceVisualizer:
                 
                 # Create curved entrance marking
                 theta = np.linspace(0, np.pi, 50)  # Half circle for entrance
-                x_curve = center[0] + radius * np.cos(theta)
-                y_curve = center[1] + radius * np.sin(theta)
+                center_x, center_y = center
+                x_curve = center_x + radius * np.cos(theta)
+                center_x, center_y = center
+                y_curve = center_y + radius * np.sin(theta)
                 
                 fig.add_trace(go.Scatter(
                     x=x_curve,

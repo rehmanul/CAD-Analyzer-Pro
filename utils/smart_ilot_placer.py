@@ -315,8 +315,10 @@ class SmartIlotPlacer:
         center_y = y + spec['height'] / 2
 
         distance_from_center = np.sqrt(
-            (center_x - room_center[0]) ** 2 + 
-            (center_y - room_center[1]) ** 2
+            center_x, center_y = center
+            (center_x - room_center_x) ** 2 + 
+            center_x, center_y = center
+            (center_y - room_center_y) ** 2
         )
 
         # Normalize by room size

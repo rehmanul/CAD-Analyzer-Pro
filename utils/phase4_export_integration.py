@@ -340,7 +340,8 @@ class ExportIntegrationSystem:
                 
                 for ilot in data.get('placed_ilots', []):
                     center = ilot.get('center', [0, 0])
-                    csv_content += f"{ilot.get('id', '')},{ilot.get('size_category', '')},{ilot.get('area', 0)},{center[0]},{center[1]},{ilot.get('placement_score', 0)}\n"
+                    center_x, center_y = center
+                    csv_content += f"{ilot.get('id', '')},{ilot.get('size_category', '')},{ilot.get('area', 0)},{center_x},{center_y},{ilot.get('placement_score', 0)}\n"
                 
                 csv_content += "\n"
             

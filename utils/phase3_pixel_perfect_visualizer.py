@@ -296,8 +296,10 @@ class PixelPerfectVisualizer:
             radius = 500  # 0.5m radius in mm
             
             theta = np.linspace(0, 2*np.pi, 20)
-            x_circle = center[0] + radius * np.cos(theta)
-            y_circle = center[1] + radius * np.sin(theta)
+            center_x, center_y = center
+            x_circle = center_x + radius * np.cos(theta)
+            center_x, center_y = center
+            y_circle = center_y + radius * np.sin(theta)
             
             fig.add_trace(go.Scatter(
                 x=x_circle,

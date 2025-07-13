@@ -134,7 +134,8 @@ class ClientExpectedVisualizer:
                     radius = area['radius']
                     # Convert circle to polygon
                     angles = np.linspace(0, 2*np.pi, 50)
-                    coords = [[center[0] + radius * np.cos(angle), center[1] + radius * np.sin(angle)] for angle in angles]
+                    center_x, center_y = center
+                    coords = [[center_x + radius * np.cos(angle), center_y + radius * np.sin(angle)] for angle in angles]
                 else:
                     coords = area.get('coordinates', [])
             else:
@@ -208,8 +209,10 @@ class ClientExpectedVisualizer:
                 
                 # Create circle coordinates
                 angles = np.linspace(0, 2*np.pi, 50)
-                x_coords = [center[0] + radius * np.cos(angle) for angle in angles]
-                y_coords = [center[1] + radius * np.sin(angle) for angle in angles]
+                center_x, center_y = center
+                x_coords = [center_x + radius * np.cos(angle) for angle in angles]
+                center_x, center_y = center
+                y_coords = [center_y + radius * np.sin(angle) for angle in angles]
                 
                 fig.add_trace(go.Scatter(
                     x=x_coords,
@@ -224,8 +227,10 @@ class ClientExpectedVisualizer:
                 
                 # Add "NO ENTREE" label
                 fig.add_annotation(
-                    x=center[0],
-                    y=center[1],
+                    center_x, center_y = center
+                    x=center_x,
+                    center_x, center_y = center
+                    y=center_y,
                     text="NO ENTREE",
                     showarrow=False,
                     font=dict(color="white", size=10, family="Arial"),

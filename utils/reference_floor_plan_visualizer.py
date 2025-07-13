@@ -128,8 +128,10 @@ class ReferenceFloorPlanVisualizer:
             
             fig.add_shape(
                 type="circle",
-                x0=center[0] - radius, y0=center[1] - radius,
-                x1=center[0] + radius, y1=center[1] + radius,
+                center_x, center_y = center
+                x0=center_x - radius, y0=center_y - radius,
+                center_x, center_y = center
+                x1=center_x + radius, y1=center_y + radius,
                 fillcolor=self.entrance_color,
                 opacity=0.8,
                 line=dict(color=self.entrance_color, width=2)

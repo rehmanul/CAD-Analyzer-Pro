@@ -453,8 +453,10 @@ class UltraHighPerformanceAnalyzer:
                 radius = float(entity.dxf.radius)
                 
                 doors.append({
-                    'x': center[0],  # Use x,y instead of center to avoid field conflicts
-                    'y': center[1],
+                    center_x, center_y = center
+                    'x': center_x,  # Use x,y instead of center to avoid field conflicts
+                    center_x, center_y = center
+                    'y': center_y,
                     'radius': radius,
                     'type': 'door'
                 })
@@ -474,8 +476,10 @@ class UltraHighPerformanceAnalyzer:
                 radius = float(entity.dxf.radius)
                 
                 windows.append({
-                    'x': center[0],  # Use x,y instead of center to avoid field conflicts
-                    'y': center[1],
+                    center_x, center_y = center
+                    'x': center_x,  # Use x,y instead of center to avoid field conflicts
+                    center_x, center_y = center
+                    'y': center_y,
                     'radius': radius,
                     'type': 'window'
                 })

@@ -304,7 +304,8 @@ class OptimizedCorridorGenerator:
                 ilot.get('y', 0) + ilot.get('height', 2) / 2
             ]
             
-            distance = np.sqrt((point[0] - ilot_center[0])**2 + (point[1] - ilot_center[1])**2)
+            center_x, center_y = center
+            distance = np.sqrt((point[0] - ilot_center_x)**2 + (point[1] - ilot_center_y)**2)
             
             if distance < min_distance:
                 min_distance = distance

@@ -152,8 +152,10 @@ class EmptyPlanVisualizer:
             
             # Create curved entrance arc
             theta = np.linspace(0, np.pi, 20)
-            x_arc = center[0] + radius * np.cos(theta)
-            y_arc = center[1] + radius * np.sin(theta)
+            center_x, center_y = center
+            x_arc = center_x + radius * np.cos(theta)
+            center_x, center_y = center
+            y_arc = center_y + radius * np.sin(theta)
             
             fig.add_trace(go.Scatter(
                 x=x_arc,

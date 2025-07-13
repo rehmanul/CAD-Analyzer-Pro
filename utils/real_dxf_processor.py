@@ -312,10 +312,14 @@ class RealDXFProcessor:
                 'center': center,
                 'radius': radius,
                 'bounds': {
-                    'min_x': center[0] - radius,
-                    'max_x': center[0] + radius,
-                    'min_y': center[1] - radius,
-                    'max_y': center[1] + radius
+                    center_x, center_y = center
+                    'min_x': center_x - radius,
+                    center_x, center_y = center
+                    'max_x': center_x + radius,
+                    center_x, center_y = center
+                    'min_y': center_y - radius,
+                    center_x, center_y = center
+                    'max_y': center_y + radius
                 },
                 'type': 'FROM_DOOR',
                 'door_type': door.get('type', 'DOOR')

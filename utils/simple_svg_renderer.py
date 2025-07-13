@@ -244,10 +244,14 @@ class SimpleSVGRenderer:
                 end_rad = math.radians(end_angle)
                 
                 # Calculate arc points
-                x1 = center[0] + radius * math.cos(start_rad)
-                y1 = center[1] + radius * math.sin(start_rad)
-                x2 = center[0] + radius * math.cos(end_rad)
-                y2 = center[1] + radius * math.sin(end_rad)
+                center_x, center_y = center
+                x1 = center_x + radius * math.cos(start_rad)
+                center_x, center_y = center
+                y1 = center_y + radius * math.sin(start_rad)
+                center_x, center_y = center
+                x2 = center_x + radius * math.cos(end_rad)
+                center_x, center_y = center
+                y2 = center_y + radius * math.sin(end_rad)
                 
                 # Create path
                 large_arc = 1 if abs(end_angle - start_angle) > 180 else 0
@@ -256,7 +260,8 @@ class SimpleSVGRenderer:
             elif entity['type'] == 'circle':
                 center = entity['center']
                 radius = entity['radius']
-                return f'<circle cx="{center[0]}" cy="{center[1]}" r="{radius}" stroke="{color}" stroke-width="0.5" fill="none" />'
+                center_x, center_y = center
+                return f'<circle cx="{center_x}" cy="{center_y}" r="{radius}" stroke="{color}" stroke-width="0.5" fill="none" />'
                 
         except Exception as e:
             print(f"Error converting entity to SVG: {str(e)}")
@@ -287,10 +292,14 @@ class SimpleSVGRenderer:
                 elif entity['type'] in ['arc', 'circle']:
                     center = entity['center']
                     radius = entity['radius']
-                    min_x = min(min_x, center[0] - radius)
-                    max_x = max(max_x, center[0] + radius)
-                    min_y = min(min_y, center[1] - radius)
-                    max_y = max(max_y, center[1] + radius)
+                    center_x, center_y = center
+                    min_x = min(min_x, center_x - radius)
+                    center_x, center_y = center
+                    max_x = max(max_x, center_x + radius)
+                    center_x, center_y = center
+                    min_y = min(min_y, center_y - radius)
+                    center_x, center_y = center
+                    max_y = max(max_y, center_y + radius)
             
             return {
                 'min_x': min_x if min_x != float('inf') else 0,

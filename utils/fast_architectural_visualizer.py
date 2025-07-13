@@ -143,8 +143,10 @@ class FastArchitecturalVisualizer:
             # Add as circle shape (faster than scatter)
             fig.add_shape(
                 type="circle",
-                x0=center[0] - radius, y0=center[1] - radius,
-                x1=center[0] + radius, y1=center[1] + radius,
+                center_x, center_y = center
+                x0=center_x - radius, y0=center_y - radius,
+                center_x, center_y = center
+                x1=center_x + radius, y1=center_y + radius,
                 fillcolor=self.colors['entrances'],
                 line=dict(color=self.colors['entrances'], width=2),
                 opacity=0.8
