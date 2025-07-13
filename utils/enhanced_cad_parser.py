@@ -73,10 +73,13 @@ class EnhancedCADParser:
         self.logger = logging.getLogger(__name__)
         self.supported_formats = ['.dxf', '.dwg', '.pdf']
         
-        # Element detection patterns
+        # Element detection patterns - expanded for better wall detection
         self.wall_layers = [
             'WALLS', 'WALL', 'MUR', 'MURS', 'A-WALL', 'ARCH-WALL',
-            'PARTITION', 'CONSTRUCTION', 'STRUCTURE'
+            'PARTITION', 'CONSTRUCTION', 'STRUCTURE', 'ARCHITECTURAL',
+            'FLOOR', 'PLAN', 'BUILDING', 'OUTLINE', 'PERIMETER',
+            'INTERIOR', 'EXTERIOR', 'STRUCTURAL', 'FRAME', 'LAYOUT',
+            'BOUNDARY', 'ENCLOSURE', 'SEPARATOR', 'DIVISION'
         ]
         
         self.door_layers = [
@@ -93,8 +96,8 @@ class EnhancedCADParser:
             'DIM', 'COTE', 'ROOM', 'PIECE'
         ]
         
-        # Geometric analysis parameters
-        self.min_wall_length = 100  # mm
+        # Geometric analysis parameters - reduced for better detection
+        self.min_wall_length = 50  # mm (reduced from 100)
         self.wall_thickness_tolerance = 50  # mm
         self.connection_tolerance = 10  # mm
 
@@ -214,7 +217,7 @@ class EnhancedCADParser:
             return None
 
     def _extract_walls_from_dxf(self, layer_elements: Dict[str, List], floor_plan: FloorPlanData):
-        """Extract wall elements from DXF layers"""
+        """Extract wall elements from DXF layers with enhanced detection"""
         wall_entities = []
         
         # Collect entities from wall layers
@@ -222,18 +225,66 @@ class EnhancedCADParser:
             if any(wall_layer in layer_name for wall_layer in self.wall_layers):
                 wall_entities.extend(entities)
         
-        # Also check entities that look like walls (lines, polylines in construction layers)
+        # Enhanced wall detection - check ALL layers for wall-like entities
         for layer_name, entities in layer_elements.items():
-            if 'CONSTRUCTION' in layer_name or 'ARCH' in layer_name:
-                for entity in entities:
-                    if entity.dxftype() in ['LINE', 'LWPOLYLINE', 'POLYLINE']:
+            for entity in entities:
+                if entity.dxftype() in ['LINE', 'LWPOLYLINE', 'POLYLINE']:
+                    # Check if entity could be a wall based on multiple criteria
+                    if (self._is_potential_wall_entity(entity) and 
+                        entity not in wall_entities):
                         wall_entities.append(entity)
         
+        print(f"Found {len(wall_entities)} potential wall entities across all layers")
+        
         # Process wall entities
+        walls_added = 0
         for entity in wall_entities:
             wall_element = self._process_wall_entity(entity)
             if wall_element:
                 floor_plan.walls.append(wall_element)
+                walls_added += 1
+        
+        print(f"Successfully processed {walls_added} wall elements")
+
+    def _is_potential_wall_entity(self, entity) -> bool:
+        """Check if entity could represent a wall based on various criteria"""
+        try:
+            if entity.dxftype() == 'LINE':
+                start = (entity.dxf.start.x, entity.dxf.start.y)
+                end = (entity.dxf.end.x, entity.dxf.end.y)
+                length = np.sqrt((end[0] - start[0])**2 + (end[1] - start[1])**2)
+                
+                # Accept lines that are long enough to be walls
+                if length >= self.min_wall_length:
+                    return True
+                    
+            elif entity.dxftype() in ['LWPOLYLINE', 'POLYLINE']:
+                try:
+                    if hasattr(entity, 'vertices'):
+                        points = [(v.dxf.location.x, v.dxf.location.y) for v in entity.vertices]
+                    elif hasattr(entity, 'get_points'):
+                        points = [(p[0], p[1]) for p in entity.get_points()]
+                    else:
+                        return False
+                    
+                    if len(points) >= 2:
+                        # Calculate total length of polyline
+                        total_length = 0
+                        for i in range(len(points) - 1):
+                            dx = points[i+1][0] - points[i][0]
+                            dy = points[i+1][1] - points[i][1]
+                            total_length += np.sqrt(dx*dx + dy*dy)
+                        
+                        if total_length >= self.min_wall_length:
+                            return True
+                except:
+                    pass
+                    
+            return False
+            
+        except Exception as e:
+            self.logger.warning(f"Error checking potential wall entity: {str(e)}")
+            return False
 
     def _process_wall_entity(self, entity) -> Optional[CADElement]:
         """Process individual wall entity and create CADElement"""
@@ -245,6 +296,7 @@ class EnhancedCADParser:
                 # Check minimum length
                 length = np.sqrt((end[0] - start[0])**2 + (end[1] - start[1])**2)
                 if length < self.min_wall_length:
+                    print(f"Skipping short line: length={length:.2f}mm < {self.min_wall_length}mm")
                     return None
                 
                 geometry = LineString([start, end])
