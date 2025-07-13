@@ -32,39 +32,39 @@ class UltraHighPerformanceAnalyzer:
         except Exception as e:
             return self._create_empty_analysis_result(filename, f"Processing error: {str(e)}")
 
-def _create_empty_analysis_result(filename: str, reason: str) -> Dict[str, Any]:
-    """Create empty analysis result when no valid CAD data is found"""
-    return {
-        'filename': filename,
-        'processing_time': 0.0,
-        'status': 'no_valid_data',
-        'reason': reason,
-        'walls': [],
-        'doors': [],
-        'windows': [],
-        'rooms': [],
-        'openings': [],
-        'text_annotations': [],
-        'bounds': {'min_x': 0, 'max_x': 0, 'min_y': 0, 'max_y': 0},
-        'scale_factor': 1.0,
-        'units': 'meters',
-        'element_counts': {'walls': 0, 'doors': 0, 'windows': 0, 'rooms': 0},
-        'performance_metrics': {
-            'enhancement_level': 'NO_DATA_DETECTED',
-            'processing_speed_mbps': 0
-        },
-        'quality_metrics': {
-            'overall_quality_score': 0.0,
-            'geometric_accuracy': 0.0,
-            'completeness_score': 0.0
+def _create_empty_analysis_result(self, filename: str, reason: str) -> Dict[str, Any]:
+        """Create empty analysis result when no valid CAD data is found"""
+        return {
+            'filename': filename,
+            'processing_time': 0.0,
+            'status': 'no_valid_data',
+            'reason': reason,
+            'walls': [],
+            'doors': [],
+            'windows': [],
+            'rooms': [],
+            'openings': [],
+            'text_annotations': [],
+            'bounds': {'min_x': 0, 'max_x': 0, 'min_y': 0, 'max_y': 0},
+            'scale_factor': 1.0,
+            'units': 'meters',
+            'element_counts': {'walls': 0, 'doors': 0, 'windows': 0, 'rooms': 0},
+            'performance_metrics': {
+                'enhancement_level': 'NO_DATA_DETECTED',
+                'processing_speed_mbps': 0
+            },
+            'quality_metrics': {
+                'overall_quality_score': 0.0,
+                'geometric_accuracy': 0.0,
+                'completeness_score': 0.0
+            }
         }
-    }
 
-def _extract_text_elements(self, doc):
+    def _extract_text_elements(self, doc):
         """Extract text elements from CAD document"""
         pass # Placeholder since the original code has this function, keeping it for completeness
 
-def _create_analysis_result(self, walls, doors, windows, openings, filename):
+    def _create_analysis_result(self, walls, doors, windows, openings, filename):
         """Create analysis result from extracted elements"""
         # Calculate bounds from walls
         bounds = {"min_x": 0, "max_x": 100, "min_y": 0, "max_y": 100}
