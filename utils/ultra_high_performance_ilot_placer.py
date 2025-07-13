@@ -197,8 +197,9 @@ class UltraHighPerformanceIlotPlacer:
             radius = area['radius']
             
             # Convert to grid coordinates
-            grid_x = int((center[0] - bounds['min_x']) * 2)
-            grid_y = int((center[1] - bounds['min_y']) * 2)
+            center_x, center_y = center
+            grid_x = int((center_x - bounds['min_x']) * 2)
+            grid_y = int((center_y - bounds['min_y']) * 2)
             grid_radius = int(radius * 2)
             
             # Mark circular area

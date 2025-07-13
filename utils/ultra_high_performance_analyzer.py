@@ -764,9 +764,10 @@ class UltraHighPerformanceAnalyzer:
             elif geom['type'] == 'circle':
                 center = geom['center']
                 radius = geom['radius']
+                center_x, center_y = center
                 all_points.extend([
-                    [center[0] - radius, center[1] - radius],
-                    [center[0] + radius, center[1] + radius]
+                    [center_x - radius, center_y - radius],
+                    [center_x + radius, center_y + radius]
                 ])
         
         if not all_points:
@@ -842,7 +843,8 @@ class UltraHighPerformanceAnalyzer:
             if geometry['type'] == 'circle':
                 center = geometry['center']
                 radius = geometry['radius']
-                dist = np.sqrt((point.x - center[0])**2 + (point.y - center[1])**2)
+                center_x, center_y = center
+                dist = np.sqrt((point.x - center_x)**2 + (point.y - center_y)**2)
                 return dist <= radius
             
             elif geometry['type'] in ['line', 'polyline']:
