@@ -153,8 +153,8 @@ class ExactReferenceVisualizer:
         """Add red entrance zones (ENTREE/SORTIE) with curves like your reference"""
         for entrance in entrances:
             if 'center' in entrance and 'radius' in entrance:
-                center = entrance['center']
-                radius = entrance['radius']
+                center = entrance.get('center', [0, 0])
+                radius = entrance.get('radius', 1.0)
                 
                 # Create curved entrance marking
                 theta = np.linspace(0, np.pi, 50)  # Half circle for entrance

@@ -493,7 +493,7 @@ class UltraHighPerformanceAnalyzer:
         
         all_points = []
         for wall in walls:
-            all_points.extend([wall['start'], wall['end']])
+            all_points.extend([wall.get('start', [0, 0]), wall.get('end', [0, 0])])
         
         if not all_points:
             return {"min_x": 0, "max_x": 100, "min_y": 0, "max_y": 100}
@@ -759,13 +759,13 @@ class UltraHighPerformanceAnalyzer:
         all_points = []
         
         for geom in geometries:
-            if geom['type'] == 'line':
-                all_points.extend(geom['coordinates'])
-            elif geom['type'] == 'polyline':
-                all_points.extend(geom['coordinates'])
-            elif geom['type'] == 'circle':
-                center = geom['center']
-                radius = geom['radius']
+            if geom.get('type', 'line') == 'line':
+                all_points.extend(geom.get('coordinates', []))
+            elif geom.get('type', 'line') == 'polyline':
+                all_points.extend(geom.get('coordinates', []))
+            elif geom.get('type', 'line') == 'circle':
+                center = geom.get('center', [0, 0])
+                radius = geom.get('radius', 1.0)
                 center_x, center_y = center
                 all_points.extend([
                     [center_x - radius, center_y - radius],
@@ -820,19 +820,19 @@ class UltraHighPerformanceAnalyzer:
                 }
                 
                 # Check if zone intersects with restricted areas or entrances
-                zone_point = Point(zone['center'])
+                zone_point = Point(zone.get('center', [0, 0]))
                 
                 # Check restricted areas
                 for restricted in restricted_areas:
                     if self._point_in_geometry(zone_point, restricted):
-                        zone['type'] = 'restricted'
+                        zone.get('type', 'open') = 'restricted'
                         break
                 
                 # Check entrances
-                if zone['type'] == 'open':
+                if zone.get('type', 'open') == 'open':
                     for entrance in entrances:
                         if self._point_in_geometry(zone_point, entrance):
-                            zone['type'] = 'entrance'
+                            zone.get('type', 'open') = 'entrance'
                             break
                 
                 zones.append(zone)
@@ -842,16 +842,16 @@ class UltraHighPerformanceAnalyzer:
     def _point_in_geometry(self, point: Point, geometry: Dict) -> bool:
         """Fast point-in-geometry check"""
         try:
-            if geometry['type'] == 'circle':
-                center = geometry['center']
-                radius = geometry['radius']
+            if geometry.get('type', 'line') == 'circle':
+                center = geometry.get('center', [0, 0])
+                radius = geometry.get('radius', 1.0)
                 center_x, center_y = center
                 dist = np.sqrt((point.x - center_x)**2 + (point.y - center_y)**2)
                 return dist <= radius
             
-            elif geometry['type'] in ['line', 'polyline']:
+            elif geometry.get('type', 'line') in ['line', 'polyline']:
                 # Simple distance check for lines
-                coords = geometry['coordinates']
+                coords = geometry.get('coordinates', [])
                 if len(coords) >= 2:
                     line = LineString(coords)
                     return point.distance(line) < 1.0  # 1 unit tolerance

@@ -85,7 +85,7 @@ class UltraHighPerformanceIlotPlacer:
         for area in restricted_areas:
             area_type = area.get('type', 'circle')  # Default to circle if no type specified
             if area_type == 'circle' or 'radius' in area:
-                radius = area['radius']
+                radius = area.get('radius', 1.0)
                 restricted_area += math.pi * radius * radius
             elif area_type == 'polygon':
                 coords = area.get('coordinates', [])
@@ -199,8 +199,8 @@ class UltraHighPerformanceIlotPlacer:
         """Mark area in spatial grid"""
         area_type = area.get('type', 'circle')  # Default to circle if no type specified
         if area_type == 'circle' or 'radius' in area:
-            center = area['center']
-            radius = area['radius']
+            center = area.get('center', [0, 0])
+            radius = area.get('radius', 1.0)
             
             # Convert to grid coordinates
             center_x, center_y = center
@@ -217,7 +217,7 @@ class UltraHighPerformanceIlotPlacer:
                             grid[y, x] = value
         
         elif area_type == 'polygon':
-            coords = area['coordinates']
+            coords = area.get('coordinates', [])
             if len(coords) >= 3:
                 # Find bounding box
                 min_x = min(coord[0] for coord in coords)
@@ -245,8 +245,8 @@ class UltraHighPerformanceIlotPlacer:
         if wall_type == 'line' or ('start' in wall and 'end' in wall):
             # Handle walls with start/end format
             if 'start' in wall and 'end' in wall:
-                x1, y1 = wall['start']
-                x2, y2 = wall['end']
+                x1, y1 = wall.get('start', [0, 0])
+                x2, y2 = wall.get('end', [0, 0])
             else:
                 coords = wall.get('coordinates', [])
                 if len(coords) >= 2:
@@ -265,7 +265,7 @@ class UltraHighPerformanceIlotPlacer:
             self._mark_line_in_grid(grid, grid_x1, grid_y1, grid_x2, grid_y2, buffer_size, value)
         
         elif wall_type == 'polyline':
-            coords = wall['coordinates']
+            coords = wall.get('coordinates', [])
             for i in range(len(coords) - 1):
                 x1, y1 = coords[i]
                 x2, y2 = coords[i + 1]

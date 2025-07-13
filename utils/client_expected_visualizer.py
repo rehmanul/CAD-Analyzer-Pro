@@ -80,10 +80,10 @@ class ClientExpectedVisualizer:
         for wall in walls:
             # Handle both dict format and simple coordinate array format
             if isinstance(wall, dict) and 'type' in wall:
-                if wall['type'] == 'line':
-                    coords = wall['coordinates']
-                elif wall['type'] == 'polygon':
-                    coords = wall['coordinates']
+                if wall.get('type', 'line') == 'line':
+                    coords = wall.get('coordinates', [])
+                elif wall.get('type', 'line') == 'polygon':
+                    coords = wall.get('coordinates', [])
                 else:
                     coords = wall.get('coordinates', [])
             else:
@@ -107,8 +107,8 @@ class ClientExpectedVisualizer:
                     hoverinfo='skip'
                     ))
             
-            elif wall['type'] == 'polyline':
-                coords = wall['coordinates']
+            elif wall.get('type', 'line') == 'polyline':
+                coords = wall.get('coordinates', [])
                 if len(coords) >= 2:
                     x_coords = [coord[0] for coord in coords]
                     y_coords = [coord[1] for coord in coords]
@@ -127,11 +127,11 @@ class ClientExpectedVisualizer:
         for i, area in enumerate(restricted_areas):
             # Handle both dict format and simple coordinate array format
             if isinstance(area, dict) and 'type' in area:
-                if area['type'] == 'polygon':
-                    coords = area['coordinates']
-                elif area['type'] == 'circle':
-                    center = area['center']
-                    radius = area['radius']
+                if area.get('type', 'circle') == 'polygon':
+                    coords = area.get('coordinates', [])
+                elif area.get('type', 'circle') == 'circle':
+                    center = area.get('center', [0, 0])
+                    radius = area.get('radius', 1.0)
                     # Convert circle to polygon
                     angles = np.linspace(0, 2*np.pi, 50)
                     center_x, center_y = center
@@ -203,9 +203,9 @@ class ClientExpectedVisualizer:
                         borderwidth=1
                     )
             
-            elif area['type'] == 'circle':
-                center = area['center']
-                radius = area['radius']
+            elif area.get('type', 'circle') == 'circle':
+                center = area.get('center', [0, 0])
+                radius = area.get('radius', 1.0)
                 
                 # Create circle coordinates
                 angles = np.linspace(0, 2*np.pi, 50)
@@ -244,8 +244,8 @@ class ClientExpectedVisualizer:
         for entrance in entrances:
             # Handle both dict format and simple coordinate array format
             if isinstance(entrance, dict) and 'type' in entrance:
-                if entrance['type'] == 'polygon':
-                    coords = entrance['coordinates']
+                if entrance.get('type', 'circle') == 'polygon':
+                    coords = entrance.get('coordinates', [])
                 else:
                     coords = entrance.get('coordinates', [])
             else:
@@ -253,7 +253,7 @@ class ClientExpectedVisualizer:
                 coords = entrance
             
             if len(coords) >= 3:
-                coords = entrance['coordinates']
+                coords = entrance.get('coordinates', [])
                 if len(coords) >= 3:
                     x_coords = [coord[0] for coord in coords] + [coords[0][0]]
                     y_coords = [coord[1] for coord in coords] + [coords[0][1]]
@@ -285,8 +285,8 @@ class ClientExpectedVisualizer:
                         borderwidth=1
                     )
             
-            elif entrance['type'] == 'rectangle':
-                coords = entrance['coordinates']
+            elif entrance.get('type', 'circle') == 'rectangle':
+                coords = entrance.get('coordinates', [])
                 if len(coords) >= 4:
                     x_coords = [coord[0] for coord in coords]
                     y_coords = [coord[1] for coord in coords]
@@ -358,7 +358,7 @@ class ClientExpectedVisualizer:
     def _add_client_expected_corridors(self, fig: go.Figure, corridors: List[Dict]):
         """Add corridors matching client requirements - blue lines between îlots"""
         for corridor in corridors:
-            if corridor['type'] == 'mandatory':
+            if corridor.get('type', 'main') == 'mandatory':
                 # Mandatory corridors between facing îlots - blue lines
                 path = corridor['path']
                 if len(path) >= 2:
@@ -374,7 +374,7 @@ class ClientExpectedVisualizer:
                         hoverinfo='skip'
                     ))
             
-            elif corridor['type'] == 'access':
+            elif corridor.get('type', 'main') == 'access':
                 # Access corridors - lighter blue
                 path = corridor['path']
                 if len(path) >= 2:

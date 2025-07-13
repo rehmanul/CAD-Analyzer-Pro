@@ -420,9 +420,9 @@ class Advanced3DRenderer:
             if 'points' in wall:
                 return wall['points']
             elif 'coordinates' in wall:
-                return wall['coordinates']
+                return wall.get('coordinates', [])
             elif 'start' in wall and 'end' in wall:
-                return [wall['start'], wall['end']]
+                return [wall.get('start', [0, 0]), wall.get('end', [0, 0])]
         elif isinstance(wall, (list, tuple)):
             if len(wall) >= 2:
                 return wall

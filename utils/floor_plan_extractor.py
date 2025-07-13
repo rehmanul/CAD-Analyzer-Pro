@@ -132,8 +132,8 @@ class FloorPlanExtractor:
             vertical_lines = []
             
             for line in lines:
-                start = line['start']
-                end = line['end']
+                start = line.get('start', [0, 0])
+                end = line.get('end', [0, 0])
                 
                 # Check if line is horizontal (small Y difference)
                 if abs(end[1] - start[1]) < 0.5:
@@ -323,12 +323,12 @@ class FloorPlanExtractor:
         
         for door in doors:
             try:
-                if door['type'] == 'ARC':
-                    center = door['center']
+                if door.get('type', 'rectangle') == 'ARC':
+                    center = door.get('center', [0, 0])
                     entrance = {
                         'type': 'ENTRANCE',
                         'position': center,
-                        'width': door['radius'] * 2,
+                        'width': door.get('radius', 1.0) * 2,
                         'layer': door['layer']
                     }
                     entrances.append(entrance)

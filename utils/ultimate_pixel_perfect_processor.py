@@ -211,8 +211,8 @@ class UltimatePixelPerfectProcessor:
             for entrance in entrances:
                 if entrance.get('type') == 'arc':
                     # Create arc points
-                    center = entrance['center']
-                    radius = entrance['radius']
+                    center = entrance.get('center', [0, 0])
+                    radius = entrance.get('radius', 1.0)
                     start_angle = entrance.get('start_angle', 0)
                     end_angle = entrance.get('end_angle', np.pi)
                     
@@ -438,7 +438,7 @@ class UltimatePixelPerfectProcessor:
                     color=corridor['color'],
                     width=corridor['width'] * 2  # Scale for visibility
                 ),
-                name=f"Corridor {corridor['type']}",
+                name=f"Corridor {corridor.get('type', 'main')}",
                 showlegend=True,
                 hoverinfo='text',
                 hovertext=f"Length: {corridor['length']:.1f}m"

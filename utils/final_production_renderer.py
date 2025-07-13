@@ -254,20 +254,20 @@ class FinalProductionRenderer:
     def _entity_to_svg(self, entity: Dict, color: str, stroke_width: float = 1.0) -> str:
         """Convert entity to SVG element"""
         try:
-            if entity['type'] == 'line':
-                start = entity['start']
-                end = entity['end']
+            if entity.get('type', 'line') == 'line':
+                start = entity.get('start', [0, 0])
+                end = entity.get('end', [0, 0])
                 return f'<line x1="{start[0]}" y1="{start[1]}" x2="{end[0]}" y2="{end[1]}" stroke="{color}" stroke-width="{stroke_width}" />'
                 
-            elif entity['type'] == 'polyline':
+            elif entity.get('type', 'line') == 'polyline':
                 points = entity['points']
                 points_str = ' '.join([f"{p[0]},{p[1]}" for p in points])
                 fill = 'none' if not entity.get('closed', False) else f'{color}40'  # Semi-transparent fill
                 return f'<polyline points="{points_str}" stroke="{color}" stroke-width="{stroke_width}" fill="{fill}" />'
                 
-            elif entity['type'] == 'arc':
-                center = entity['center']
-                radius = entity['radius']
+            elif entity.get('type', 'line') == 'arc':
+                center = entity.get('center', [0, 0])
+                radius = entity.get('radius', 1.0)
                 start_angle = entity['start_angle']
                 end_angle = entity['end_angle']
                 
@@ -289,9 +289,9 @@ class FinalProductionRenderer:
                 large_arc = 1 if abs(end_angle - start_angle) > 180 else 0
                 return f'<path d="M {x1} {y1} A {radius} {radius} 0 {large_arc} 1 {x2} {y2}" stroke="{color}" stroke-width="{stroke_width}" fill="none" />'
                 
-            elif entity['type'] == 'circle':
-                center = entity['center']
-                radius = entity['radius']
+            elif entity.get('type', 'line') == 'circle':
+                center = entity.get('center', [0, 0])
+                radius = entity.get('radius', 1.0)
                 center_x, center_y = center
                 return f'<circle cx="{center_x}" cy="{center_y}" r="{radius}" stroke="{color}" stroke-width="{stroke_width}" fill="none" />'
                 
@@ -307,23 +307,23 @@ class FinalProductionRenderer:
             max_x = max_y = float('-inf')
             
             for entity in entities:
-                if entity['type'] == 'line':
-                    start, end = entity['start'], entity['end']
+                if entity.get('type', 'line') == 'line':
+                    start, end = entity.get('start', [0, 0]), entity.get('end', [0, 0])
                     min_x = min(min_x, start[0], end[0])
                     max_x = max(max_x, start[0], end[0])
                     min_y = min(min_y, start[1], end[1])
                     max_y = max(max_y, start[1], end[1])
                     
-                elif entity['type'] == 'polyline':
+                elif entity.get('type', 'line') == 'polyline':
                     for point in entity['points']:
                         min_x = min(min_x, point[0])
                         max_x = max(max_x, point[0])
                         min_y = min(min_y, point[1])
                         max_y = max(max_y, point[1])
                         
-                elif entity['type'] in ['arc', 'circle']:
-                    center = entity['center']
-                    radius = entity['radius']
+                elif entity.get('type', 'line') in ['arc', 'circle']:
+                    center = entity.get('center', [0, 0])
+                    radius = entity.get('radius', 1.0)
                     center_x, center_y = center
                     min_x = min(min_x, center_x - radius)
                     center_x, center_y = center

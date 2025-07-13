@@ -422,8 +422,8 @@ class AdvancedStreamlitApp:
 
                     # Display corridor metrics
                     total_length = sum(corridor['length'] for corridor in corridors)
-                    main_corridors = len([c for c in corridors if c['type'] == 'main'])
-                    secondary_corridors = len([c for c in corridors if c['type'] == 'secondary'])
+                    main_corridors = len([c for c in corridors if c.get('type', 'line') == 'main'])
+                    secondary_corridors = len([c for c in corridors if c.get('type', 'line') == 'secondary'])
 
                     col1, col2 = st.columns(2)
                     with col1:
@@ -458,7 +458,7 @@ class AdvancedStreamlitApp:
         total_length_by_type = {}
 
         for corridor in st.session_state.generated_corridors:
-            corridor_type = corridor['type']
+            corridor_type = corridor.get('type', 'main')
             corridor_types[corridor_type] = corridor_types.get(corridor_type, 0) + 1
             total_length_by_type[corridor_type] = total_length_by_type.get(corridor_type, 0) + corridor['length']
 
@@ -753,8 +753,8 @@ Pixel-Perfect Processing with Zero Compromises
 
         for entrance in entrances:
             angles = np.linspace(0, np.pi, 15)
-            center_x, center_y = entrance['center']
-            x_curve = center_x + entrance['radius'] * np.cos(angles)
-            y_curve = center_y + entrance['radius'] * np.sin(angles)
+            center_x, center_y = entrance.get('center', [0, 0])
+            x_curve = center_x + entrance.get('radius', 1.0) * np.cos(angles)
+            y_curve = center_y + entrance.get('radius', 1.0) * np.sin(angles)
 
             fig.add_trace

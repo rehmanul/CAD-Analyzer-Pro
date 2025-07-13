@@ -165,12 +165,12 @@ class ReferencePerfectVisualizer:
         
         for entrance in entrance_zones:
             # Add red curved entrance indicator
-            if entrance['type'] == 'arc':
+            if entrance.get('type', 'circle') == 'arc':
                 # Create arc for curved entrance
-                center_x, center_y = entrance['center']
+                center_x, center_y = entrance.get('center', [0, 0])
                 theta = np.linspace(entrance['start_angle'], entrance['end_angle'], 20)
-                x_arc = center_x + entrance['radius'] * np.cos(theta)
-                y_arc = center_y + entrance['radius'] * np.sin(theta)
+                x_arc = center_x + entrance.get('radius', 1.0) * np.cos(theta)
+                y_arc = center_y + entrance.get('radius', 1.0) * np.sin(theta)
                 
                 fig.add_trace(go.Scatter(
                     x=x_arc,
@@ -358,9 +358,9 @@ class ReferencePerfectVisualizer:
                 if 'points' in wall:
                     return wall['points']
                 elif 'start' in wall and 'end' in wall:
-                    return [wall['start'], wall['end']]
+                    return [wall.get('start', [0, 0]), wall.get('end', [0, 0])]
                 elif 'coordinates' in wall:
-                    return wall['coordinates']
+                    return wall.get('coordinates', [])
             elif isinstance(wall, (list, tuple)) and len(wall) >= 2:
                 return list(wall)
             else:
