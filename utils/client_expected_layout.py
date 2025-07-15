@@ -281,7 +281,8 @@ class ClientExpectedLayoutVisualizer:
                 y=0.5,
                 bgcolor="rgba(255, 255, 255, 0.8)",
                 bordercolor=self.colors['text'],
-                borderwidth=1
+                borderwidth=1,
+                font=dict(color='black')
             ),
             width=1400,
             height=900,

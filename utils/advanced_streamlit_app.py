@@ -75,12 +75,17 @@ class AdvancedStreamlitApp:
 
         .metric-card {
             background: white;
+            color: black;
             padding: 1.5rem;
             border-radius: 12px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.1);
             border-left: 4px solid #667eea;
             margin: 0.5rem 0;
             text-align: left;
+        }
+        
+        .metric-card h3, .metric-card h4, .metric-card p {
+            color: black !important;
         }
 
         .stMetric {
@@ -384,7 +389,7 @@ class AdvancedStreamlitApp:
         total_area_by_size = {}
 
         for ilot in st.session_state.placed_ilots:
-            category = ilot['category']
+            category = ilot.get('category', ilot.get('size_category', 'medium'))
             size_counts[category] = size_counts.get(category, 0) + 1
             total_area_by_size[category] = total_area_by_size.get(category, 0) + ilot['area']
 
