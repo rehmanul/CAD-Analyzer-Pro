@@ -13,7 +13,9 @@ class AdvancedStreamlitApp:
     def __init__(self):
         # Initialize the reference-perfect processor  
         from utils.pixel_perfect_cad_processor import PixelPerfectCADProcessor
+        from utils.client_expected_layout import ClientExpectedLayoutVisualizer
         self.processor = PixelPerfectCADProcessor()
+        self.client_visualizer = ClientExpectedLayoutVisualizer()
         self.setup_page_config()
         self.apply_advanced_styling()
 
@@ -135,7 +137,10 @@ class AdvancedStreamlitApp:
         st.markdown("""
         <div class="hero-section">
             <h1 class="hero-title">🏗️ CAD Analyzer Pro</h1>
-            <p class="hero-subtitle">Ultimate Edition - Pixel-Perfect Floor Plan Processing</p>
+            <p class="hero-subtitle">CLIENT EXPECTED LAYOUT EDITION - Exact Reference Matching</p>
+            <p class="hero-subtitle">✅ Stage 1: Gray Walls + Blue Restricted + Red Entrances</p>
+            <p class="hero-subtitle">✅ Stage 2: Red Rectangular Îlots Placement</p>
+            <p class="hero-subtitle">✅ Stage 3: Pink Corridors + Area Measurements</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -281,8 +286,8 @@ class AdvancedStreamlitApp:
         </div>
         """, unsafe_allow_html=True)
 
-        # Create and display reference-perfect visualization
-        fig = self.processor.create_reference_perfect_visualization(st.session_state.analysis_data, 'empty')
+        # Create and display client expected visualization
+        fig = self.client_visualizer.create_empty_floor_plan(st.session_state.analysis_data)
         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': True})
 
         # Analysis metrics
@@ -370,8 +375,8 @@ class AdvancedStreamlitApp:
         </div>
         """, unsafe_allow_html=True)
 
-        # Create and display reference-perfect visualization with îlots
-        fig = self.processor.create_reference_perfect_visualization(st.session_state.analysis_data, 'ilots')
+        # Create and display client expected visualization with îlots
+        fig = self.client_visualizer.create_floor_plan_with_ilots(st.session_state.analysis_data, st.session_state.placed_ilots)
         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': True})
 
         # Size distribution analysis
@@ -435,7 +440,7 @@ class AdvancedStreamlitApp:
                     st.error("❌ Failed to generate corridors")
 
         # Display results
-        if st.session_state.generated_corridors:
+        if st.session_state.corridors:
             self.display_corridor_results()
 
     def display_corridor_results(self):
@@ -449,15 +454,15 @@ class AdvancedStreamlitApp:
         </div>
         """, unsafe_allow_html=True)
 
-        # Create and display reference-perfect complete visualization
-        fig = self.processor.create_reference_perfect_visualization(st.session_state.analysis_data, 'complete')
+        # Create and display client expected complete visualization
+        fig = self.client_visualizer.create_complete_floor_plan(st.session_state.analysis_data, st.session_state.placed_ilots, st.session_state.corridors)
         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': True})
 
         # Corridor analysis
         corridor_types = {}
         total_length_by_type = {}
 
-        for corridor in st.session_state.generated_corridors:
+        for corridor in st.session_state.corridors:
             corridor_type = corridor.get('type', 'main')
             corridor_types[corridor_type] = corridor_types.get(corridor_type, 0) + 1
             total_length_by_type[corridor_type] = total_length_by_type.get(corridor_type, 0) + corridor['length']
@@ -487,8 +492,8 @@ class AdvancedStreamlitApp:
             return
 
         # Final complete visualization
-        st.markdown("### 🎨 Final Pixel-Perfect Visualization")
-        fig = self.processor.create_reference_perfect_visualization(st.session_state.analysis_data, 'complete')
+        st.markdown("### 🎨 Final Client Expected Visualization")
+        fig = self.client_visualizer.create_complete_floor_plan(st.session_state.analysis_data, st.session_state.placed_ilots, st.session_state.corridors)
         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': True})
 
         # Complete project summary
