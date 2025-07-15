@@ -527,13 +527,27 @@ class PixelPerfectCADProcessor:
         
         for i, pos in enumerate(placement_candidates[:25]):  # Limit to 25 îlots
             size = sizes[i % len(sizes)]
+            # Determine category based on area
+            if size["area"] < 20:
+                category = "small"
+            elif size["area"] < 40:
+                category = "medium"
+            elif size["area"] < 60:
+                category = "large"
+            else:
+                category = "xlarge"
+            
             ilots.append({
                 "id": f"ilot_{i+1}",
                 "center": pos,
+                "x": pos[0],
+                "y": pos[1],
                 "width": size["width"],
                 "height": size["height"],
                 "area": size["area"],
-                "type": "furniture"
+                "type": "furniture",
+                "category": category,
+                "size_category": category
             })
         
         return ilots
