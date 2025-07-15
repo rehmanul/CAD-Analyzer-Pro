@@ -11,10 +11,10 @@ class AdvancedStreamlitApp:
     """Advanced Streamlit application with pixel-perfect CAD processing"""
 
     def __init__(self):
-        # Initialize the reference-perfect processor  
-        from utils.pixel_perfect_cad_processor import PixelPerfectCADProcessor
+        # Initialize the complete pixel-perfect system
+        from utils.complete_pixel_perfect_system import CompletePixelPerfectSystem
         from utils.client_expected_layout import ClientExpectedLayoutVisualizer
-        self.processor = PixelPerfectCADProcessor()
+        self.complete_system = CompletePixelPerfectSystem()
         self.client_visualizer = ClientExpectedLayoutVisualizer()
         self.setup_page_config()
         self.apply_advanced_styling()
@@ -247,36 +247,52 @@ class AdvancedStreamlitApp:
             self.display_analysis_results()
 
     def process_file_ultimate(self, uploaded_file):
-        """Process file with ultimate precision"""
-        with st.spinner("🔥 Processing with ultimate precision..."):
+        """Process file with complete pixel-perfect system"""
+        with st.spinner("🔥 Processing with complete pixel-perfect system..."):
             # Read file content
             uploaded_file.seek(0)
             file_content = uploaded_file.read()
 
-            # Process with reference-perfect processor
-            result = self.processor.process_cad_file(file_content, uploaded_file.name)
+            # Process with complete pixel-perfect system
+            result = self.complete_system.process_complete_cad_system(file_content, uploaded_file.name)
 
-            if result and not result.get('analysis_data', {}).get('error'):
-                st.session_state.analysis_data = result.get('analysis_data', result)
-                st.session_state.processing_stage = 'analyzed'
+            if result and not result.get('error'):
+                # Store all results in session state
+                st.session_state.analysis_data = result.get('processed_floor_plan')
+                st.session_state.placed_ilots = result.get('placed_ilots', [])
+                st.session_state.corridors = result.get('corridor_network', [])
+                st.session_state.visualizations = result.get('visualizations', {})
+                st.session_state.processing_stage = 'complete'
 
                 st.markdown("""
                 <div class="success-banner">
-                    ✅ Ultimate Processing Complete - Pixel-Perfect Results Ready!
+                    ✅ Complete Processing Finished - Pixel-Perfect Results Achieved!
                 </div>
                 """, unsafe_allow_html=True)
 
-                # Display processing metrics with better spacing
-                analysis_data = result.get('analysis_data', result)
-                col1, col2 = st.columns(2)
+                # Display processing summary
+                summary = self.complete_system.get_processing_summary()
+                col1, col2, col3 = st.columns(3)
                 with col1:
-                    st.metric("Processing Phases", len(result.get('processing_phases', [])))
-                    st.metric("Walls Detected", len(analysis_data.get('walls', [])))
+                    st.metric("Processing Time", f"{summary['total_processing_time']:.2f}s")
+                    st.metric("Walls Detected", summary['elements_processed'].get('walls', 0))
                 with col2:
-                    st.metric("Restricted Areas", len(analysis_data.get('restricted_areas', [])))
-                    st.metric("Entrances", len(analysis_data.get('entrances', [])))
+                    st.metric("Overall Quality", f"{summary['overall_quality']:.2f}")
+                    st.metric("Îlots Placed", summary['elements_processed'].get('ilots', 0))
+                with col3:
+                    st.metric("Phase Times", f"{len(summary['phase_times'])}")
+                    st.metric("Corridors Generated", summary['elements_processed'].get('corridors', 0))
+                    
+                # Display phase quality scores
+                st.markdown("### Quality Metrics")
+                quality_cols = st.columns(4)
+                quality_scores = summary['quality_scores']
+                for i, (phase, score) in enumerate(quality_scores.items()):
+                    with quality_cols[i]:
+                        st.metric(f"{phase.replace('_', ' ').title()}", f"{score:.3f}")
+                        
             else:
-                error_msg = result.get('analysis_data', {}).get('error', result.get('error', 'Unknown error'))
+                error_msg = result.get('error', 'Unknown error')
                 st.error(f"❌ Processing failed: {error_msg}")
                 st.info("💡 Ensure your file contains valid CAD geometric data")
 
