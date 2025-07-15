@@ -319,6 +319,65 @@ class PixelPerfectCADProcessor:
         self.measurement_system.add_corridor_measurements(fig, corridors)
         return fig
     
+    def _phase_2_memory_optimized(self, analysis_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Memory-optimized Phase 2 for large CAD files"""
+        bounds = analysis_data.get('bounds', {'min_x': 0, 'max_x': 100, 'min_y': 0, 'max_y': 100})
+        
+        # Simple grid-based îlot placement for large files
+        ilots = []
+        grid_size = 15  # Larger grid for performance
+        target_count = min(25, int((bounds['max_x'] - bounds['min_x']) / grid_size) * 
+                          int((bounds['max_y'] - bounds['min_y']) / grid_size))
+        
+        # Place îlots in simple grid pattern
+        x_step = (bounds['max_x'] - bounds['min_x']) / (target_count // 5 + 1)
+        y_step = (bounds['max_y'] - bounds['min_y']) / 5
+        
+        for i in range(target_count):
+            row = i // 5
+            col = i % 5
+            
+            x = bounds['min_x'] + (col + 1) * x_step
+            y = bounds['min_y'] + (row + 1) * y_step
+            
+            # Ensure within bounds
+            if x < bounds['max_x'] - 5 and y < bounds['max_y'] - 5:
+                category = ["small", "medium", "large", "xlarge"][i % 4]
+                area = {"small": 12, "medium": 20, "large": 35, "xlarge": 50}[category]
+                
+                ilots.append({
+                    'id': f'ilot_{i+1}',
+                    'x': x,
+                    'y': y,
+                    'center': [x, y],
+                    'width': 8,
+                    'height': 6,
+                    'area': area,
+                    'category': category,
+                    'size_category': category,
+                    'type': 'furniture'
+                })
+        
+        # Simple corridor generation
+        corridors = []
+        if len(ilots) > 0:
+            # Main horizontal corridor
+            corridors.append({
+                'id': 'main_corridor',
+                'type': 'main',
+                'path': [[bounds['min_x'], bounds['min_y'] + (bounds['max_y'] - bounds['min_y'])/2],
+                        [bounds['max_x'], bounds['min_y'] + (bounds['max_y'] - bounds['min_y'])/2]],
+                'width': 2.0,
+                'color': '#FF69B4'
+            })
+        
+        return {
+            "ilots": ilots,
+            "corridors": corridors,
+            "placement_algorithm": "memory_optimized_grid",
+            "pathfinding_algorithm": "simple_linear"
+        }
+    
     def create_reference_perfect_visualization(self, analysis_data: Dict, stage: str = "empty") -> go.Figure:
         """Create reference-perfect visualization for specific stage"""
         if stage == "empty":
@@ -473,20 +532,31 @@ class PixelPerfectCADProcessor:
     def _phase_2_advanced_algorithms(self, analysis_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Phase 2: Advanced Algorithms - Îlot Placement + Corridor Generation
-        Implements 4 placement strategies and 4 pathfinding algorithms
+        Memory-optimized for large CAD files
         """
-        # Advanced Îlot Placement
-        ilots = self._advanced_ilot_placement(analysis_data)
-        
-        # Advanced Corridor Generation
-        corridors = self._advanced_corridor_generation(analysis_data, ilots)
-        
-        return {
-            "ilots": ilots,
-            "corridors": corridors,
-            "placement_algorithm": "hybrid_optimization",
-            "pathfinding_algorithm": "a_star_with_traffic_flow"
-        }
+        try:
+            # Check if file is too large (>5000 walls = memory risk)
+            wall_count = len(analysis_data.get('walls', []))
+            if wall_count > 5000:
+                print(f"Large file detected ({wall_count} walls) - using memory-optimized processing")
+                return self._phase_2_memory_optimized(analysis_data)
+            
+            # Advanced Îlot Placement
+            ilots = self._advanced_ilot_placement(analysis_data)
+            
+            # Advanced Corridor Generation
+            corridors = self._advanced_corridor_generation(analysis_data, ilots)
+            
+            return {
+                "ilots": ilots,
+                "corridors": corridors,
+                "placement_algorithm": "hybrid_optimization",
+                "pathfinding_algorithm": "a_star_with_traffic_flow"
+            }
+            
+        except Exception as e:
+            print(f"Phase 2 error: {str(e)} - using memory-optimized processing")
+            return self._phase_2_memory_optimized(analysis_data)
     
     def _advanced_ilot_placement(self, analysis_data: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Advanced îlot placement with 4 strategies"""
